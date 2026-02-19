@@ -1,0 +1,30 @@
+.competitor-page {}
+.back-btn { margin-bottom: 20px; font-size: 13px; }
+.competitor-page h1 { font-size: 28px; margin-bottom: 24px; }
+.competitor-page h2 { font-size: 18px; margin-bottom: 16px; margin-top: 32px; }
+
+.score-cards { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 32px; }
+.score-card { flex: 1; min-width: 140px; text-align: center; }
+.score-card-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px; }
+.score-card-value { font-size: 32px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.score-card-total .total { color: var(--accent); }
+.score-card-count { font-size: 11px; color: var(--border); margin-top: 4px; }
+
+.history-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.history-table th {
+  padding: 10px 16px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+.history-table td { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.history-table tr:last-child td { border-bottom: none; }
+.history-table tbody tr:hover { background: var(--surface2); }
+.null-score { color: var(--border); }
+
+.empty-state { color: var(--text-muted); text-align: center; padding: 48px; }
+.table-wrapper { padding: 0; overflow-x: auto; }

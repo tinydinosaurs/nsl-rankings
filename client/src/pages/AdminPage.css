@@ -1,0 +1,39 @@
+.admin-page h1 { font-size: 24px; margin-bottom: 20px; }
+
+.tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+.tab {
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.tab:hover { color: var(--text); border-color: var(--accent); }
+.tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+.admin-section h2 { font-size: 16px; margin-bottom: 16px; font-weight: 600; }
+
+.inline-form { display: flex; gap: 8px; margin-bottom: 16px; align-items: flex-end; }
+.inline-form input { flex: 1; }
+
+.manual-form { max-width: 560px; }
+.form-row { display: flex; gap: 16px; }
+.form-row .form-group { flex: 1; }
+.event-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+
+.events-mini { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.checkbox-label { display: flex; align-items: center; font-size: 14px; color: var(--text); margin: 0; }
+
+.list { display: flex; flex-direction: column; gap: 8px; }
+.list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface2);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.list-name { flex: 1; font-size: 14px; }
+.empty { color: var(--text-muted); font-size: 13px; }

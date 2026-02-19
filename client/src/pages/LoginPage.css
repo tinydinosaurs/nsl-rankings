@@ -1,0 +1,15 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-card h1 { font-size: 22px; margin-bottom: 4px; }
+.login-subtitle { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
