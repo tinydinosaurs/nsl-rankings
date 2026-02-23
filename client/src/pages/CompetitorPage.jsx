@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
+import { EVENTS, EVENT_LABELS } from '../constants/events';
 import './CompetitorPage.css';
-
-const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
-const EVENT_LABELS = { knockdowns: 'Knockdowns', distance: 'Distance', speed: 'Speed', woods: 'Woods Course' };
 
 function fmt(val) {
   if (val === null || val === undefined) return '—';

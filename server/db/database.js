@@ -2,12 +2,17 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'rankings.db');
+// Support test database path for integration testing
+const DB_PATH =
+	process.env.TEST_DATABASE_PATH ||
+	path.join(__dirname, '..', 'data', 'rankings.db');
 
-// Ensure data directory exists
+// Ensure data directory exists (for production database)
 const fs = require('fs');
-const dataDir = path.join(__dirname, '..', 'data');
-if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+if (!process.env.TEST_DATABASE_PATH) {
+	const dataDir = path.join(__dirname, '..', 'data');
+	if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+}
 
 const db = new Database(DB_PATH);
 
@@ -20,7 +25,7 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK(role IN ('admin', 'user')),
+    role TEXT NOT NULL CHECK(role IN ('owner', 'admin', 'user')),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -58,12 +63,42 @@ db.exec(`
   );
 `);
 
-// Seed a default admin user if none exists
-const existingAdmin = db.prepare('SELECT id FROM users WHERE role = ?').get('admin');
-if (!existingAdmin) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run('admin', hash, 'admin');
-  console.log('Default admin created: username=admin, password=admin123 — CHANGE THIS IMMEDIATELY');
+// Seed a default owner user if none exists
+const existingOwner = db
+	.prepare('SELECT id FROM users WHERE role = ?')
+	.get('owner');
+if (!existingOwner) {
+	const hash = bcrypt.hashSync('owner123', 10);
+	db.prepare(
+		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+	).run('owner', hash, 'owner');
+	console.log(
+		'Default owner created: username=owner, password=owner123 — CHANGE THIS IMMEDIATELY',
+	);
 }
 
+// Seed a default admin user if none exists
+const existingAdmin = db
+	.prepare('SELECT id FROM users WHERE role = ?')
+	.get('admin');
+if (!existingAdmin) {
+	const hash = bcrypt.hashSync('admin123', 10);
+	db.prepare(
+		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+	).run('admin', hash, 'admin');
+	console.log(
+		'Default admin created: username=admin, password=admin123 — CHANGE THIS IMMEDIATELY',
+	);
+}
+
+const existingUser = db
+	.prepare('SELECT id FROM users WHERE role = ?')
+	.get('user');
+if (!existingUser) {
+	const hash = bcrypt.hashSync('user123', 10);
+	db.prepare(
+		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+	).run('user', hash, 'user');
+	console.log('Default user created: username=user, password=user123');
+}
 module.exports = db;

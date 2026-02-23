@@ -1,12 +1,10 @@
 import { useState, useRef } from 'react';
 import api from '../utils/api';
+import { EVENTS, EVENT_LABELS } from '../constants/events';
 import './UploadPage.css';
 
-const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
-const EVENT_LABELS = { knockdowns: 'Knockdowns', distance: 'Distance', speed: 'Speed', woods: 'Woods Course' };
-
 const defaultSettings = () => ({
-  activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+  activeEvents: EVENTS,
   totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
   tournamentName: '',
   tournamentDate: '',

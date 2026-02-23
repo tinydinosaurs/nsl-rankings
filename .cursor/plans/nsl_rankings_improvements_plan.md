@@ -1,11 +1,101 @@
 ---
 name: NSL Rankings Improvements
 overview: A prioritized set of improvements across testing, security, validation, error handling, accessibility, code structure, and configuration—addressing gaps identified in the PROJECT_SUMMARY and codebase analysis.
-todos: []
+todos:
+    - id: '1'
+      content: Add .env.example and env validation (JWT_SECRET production check)
+      status: completed
+    - id: '2'
+      content: Add Helmet and rate limiting to server (express-rate-limit on /api/auth/login)
+      status: completed
+    - id: '3'
+      content: Fix seeded viewer account - add viewer/viewer123 user in server/db/database.js
+      status: completed
+    - id: '4'
+      content: Extract shared constants - create client/src/constants/events.js and server/constants/events.js, remove duplicates
+      status: completed
+    - id: '5'
+      content: Add testing setup - Vitest config, test scripts, comprehensive business logic tests for rankings.js
+      status: completed
+    - id: '6'
+      content: Add request validation - express-validator or Zod for all API routes
+      status: pending
+    - id: '7'
+      content: Consistent error handling - add getErrorMessage() helper in client/src/utils/api.js
+      status: pending
+    - id: '8'
+      content: Accessibility improvements - htmlFor labels, ARIA for tabs, focus management
+      status: pending
+    - id: '9'
+      content: Production API URL - add VITE_API_URL env var support in client
+      status: pending
+    - id: '10'
+      content: Refactor AdminPage - extract CompetitorManager, TournamentManager, ManualEntryForm, UserManager components
+      status: pending
+    - id: '11'
+      content: Improve upload error shape consistency - standardize ApiError format
+      status: pending
+    - id: '12'
+      content: Competitor merge/deduplication UI - allow admins to merge duplicate competitors
+      status: pending
+    - id: '13'
+      content: Deployment setup - Supabase (Postgres), Railway/Render backend, Vercel frontend
+      status: pending
+    - id: '14'
+      content: LLM-assisted CSV parsing - AI agent for messy spreadsheet extraction
+      status: pending
+    - id: '15'
+      content: Handwriting recognition - OCR on scanned score sheets (Google Document AI or AWS Textract)
+      status: pending
+    - id: '16'
+      content: Agent layer - automate full import pipeline for admins
+      status: pending
 isProject: false
 ---
 
 # NSL Rankings — Improvement Plan
+
+## Current Status & Next Steps
+
+### ✅ Completed (High Priority)
+
+- **Environment & Security Hardening**: `.env.example`, JWT validation, Helmet, rate limiting
+- **Code Organization**: Shared constants extraction, duplicates removed
+- **Testing Foundation**: Comprehensive business logic tests (6 test suite covering scoring edge cases)
+- **Infrastructure**: Vitest setup, test scripts, database testing patterns
+
+### 🎯 Next Priority (Production-Critical Tests)
+
+- **Auth Security Tests**: Login flows, JWT validation, role-based access
+- **Upload Integration Tests**: CSV workflows using mock-data files
+- **Rankings Integration Tests**: Full tournament → results → computed rankings
+
+### 📋 Todo List Status
+
+- Add .env.example and env validation (JWT_SECRET production check)
+- Add Helmet and rate limiting to server (express-rate-limit on /api/auth/login)
+- Fix seeded viewer account - add viewer/viewer123 user in server/db/database.js
+- Extract shared constants - remove EVENTS/EVENT_LABELS duplicates
+- Add testing setup - Vitest config, comprehensive business logic tests
+- Add critical security tests - auth routes, JWT validation
+- Add integration tests - CSV upload using mock-data files
+- Add request validation - express-validator or Zod for all API routes
+- Consistent error handling - add getErrorMessage() helper in client/src/utils/api.js
+- Accessibility improvements - htmlFor labels, ARIA for tabs, focus management
+- Production API URL - add VITE_API_URL env var support in client
+- Refactor AdminPage - extract CompetitorManager, TournamentManager, etc.
+- Improve upload error shape consistency - standardize ApiError format
+- Mock data integration for tests
+- Structured logging
+- Health check endpoint
+- Performance monitoring
+- Competitor merge/deduplication UI
+- Deployment setup - Supabase (Postgres), Railway/Render backend, Vercel frontend
+- LLM-assisted CSV parsing - AI agent for messy spreadsheet extraction
+- Handwriting recognition - OCR on scanned score sheets
+- Agent layer - automate full import pipeline for admins
+
+---
 
 ## Summary
 
@@ -21,13 +111,16 @@ The codebase is well-structured per PROJECT_SUMMARY, but has gaps in testing, se
 
 **Plan:**
 
-- Add **Vitest** for unit tests (Vite-native, fast). Create `client/package.json` script and `vitest.config.js`.
-- Add server tests with **Vitest** or **Node's built-in test runner**; test scoring logic in `server/db/rankings.js` (computeRankings, computeCompetitorScores) and critical routes (auth, rankings).
-- Start with:
-    - `server/db/rankings.test.js` — scoring logic (true average, null vs 0, /4 total)
-    - `server/routes/auth.test.js` — login success/failure, validation
-    - `client/src/utils/api.test.js` — interceptor behavior
-- Optional: Playwright for E2E (login → rankings → competitor drill-down).
+**✅ COMPLETED**: Vitest setup with comprehensive business logic tests
+
+- ✅ `server/db/rankings.test.js` — 6 tests covering scoring logic (true average, null vs 0, /4 total, edge cases)
+- ✅ Vitest config and test scripts for server
+
+**NEXT PRIORITY** (Most Critical Tests for Production Confidence):
+
+- `server/routes/auth.test.js` — login success/failure, JWT validation, role-based access
+- `server/routes/upload.test.js` — CSV integration using mock-data/.csv files
+- `server/db/rankings.integration.test.js` — full tournament → results → rankings workflow
 
 **Files:** `client/vitest.config.js`, `client/package.json` (test script), new `*.test.js` files in `client/src` and `server/`.
 

@@ -3,6 +3,7 @@ const multer = require('multer');
 const db = require('../db/database');
 const { requireAdmin } = require('../middleware/auth');
 const { parseCSV } = require('../db/csvParser');
+const { EVENTS } = require('../constants/events');
 
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
@@ -21,7 +22,6 @@ router.post('/preview', requireAdmin, upload.single('csv'), (req, res) => {
   // Parse tournament settings from form fields
   const activeEvents = [];
   const totalPoints = {};
-  const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
 
   for (const event of EVENTS) {
     if (req.body[`has_${event}`] === 'true' || req.body[`has_${event}`] === true) {
@@ -67,8 +67,6 @@ router.post('/commit', requireAdmin, (req, res) => {
 
   if (!tournament_date) return res.status(400).json({ error: 'Tournament date is required' });
   if (!competitors?.length) return res.status(400).json({ error: 'No competitors provided' });
-
-  const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
 
   // Check for duplicate tournament
   const duplicate = db.prepare(

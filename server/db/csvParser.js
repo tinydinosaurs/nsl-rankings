@@ -1,6 +1,6 @@
 const Papa = require('papaparse');
 
-const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
+const { EVENTS } = require('../constants/events');
 
 // Aliases: maps various human-entered column names to canonical event names
 const COLUMN_ALIASES = {

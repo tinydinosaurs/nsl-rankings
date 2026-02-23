@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import { EVENTS, EVENT_LABELS } from '../constants/events';
 import './AdminPage.css';
-
-const EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
-const EVENT_LABELS = { knockdowns: 'Knockdowns', distance: 'Distance', speed: 'Speed', woods: 'Woods Course' };
 
 // ── Sub-components ──────────────────────────────────────────────────────────
 

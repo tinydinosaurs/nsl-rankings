@@ -18,8 +18,17 @@ function authenticate(req, res, next) {
 
 function requireAdmin(req, res, next) {
   authenticate(req, res, () => {
-    if (req.user.role !== 'admin') {
+    if (!['owner', 'admin'].includes(req.user.role)) {
       return res.status(403).json({ error: 'Admin access required' });
+    }
+    next();
+  });
+}
+
+function requireOwner(req, res, next) {
+  authenticate(req, res, () => {
+    if (req.user.role !== 'owner') {
+      return res.status(403).json({ error: 'Owner access required' });
     }
     next();
   });
@@ -33,4 +42,4 @@ function signToken(user) {
   );
 }
 
-module.exports = { authenticate, requireAdmin, signToken };
+module.exports = { authenticate, requireAdmin, requireOwner, signToken };
