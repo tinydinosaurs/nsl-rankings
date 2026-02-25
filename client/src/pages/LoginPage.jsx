@@ -16,8 +16,13 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(username, password);
-      navigate('/');
+      const user = await login(username, password);
+      // Redirect admin/owner to dashboard, others to public rankings
+      if (user.role === 'admin' || user.role === 'owner') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {

@@ -15,7 +15,7 @@ function RequireAuth({ children }) {
 function RequireAdmin({ children }) {
   const { user } = useAuth();
   if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'admin') return <Navigate to="/" replace />;
+  if (!['admin', 'owner'].includes(user.role)) return <Navigate to="/" replace />;
   return children;
 }
 
@@ -25,8 +25,12 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
+          {/* Public leaderboard route */}
+          <Route path="/" element={<Layout />}>
             <Route index element={<RankingsPage />} />
+          </Route>
+          {/* Authenticated routes */}
+          <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
             <Route path="competitors/:id" element={<CompetitorPage />} />
             <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
             <Route path="upload" element={<RequireAdmin><UploadPage /></RequireAdmin>} />

@@ -31,7 +31,8 @@ export default function RankingsPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    api.get('/rankings')
+    // Use public endpoint since leaderboard should be publicly accessible
+    api.get('/rankings/public')
       .then(res => setData(res.data))
       .catch(() => setError('Failed to load rankings'))
       .finally(() => setLoading(false));
