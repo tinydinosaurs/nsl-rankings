@@ -49,13 +49,13 @@ function computeCompetitorScores(competitorId, dbInstance = db) {
 /**
  * Compute full rankings: all competitors with their scores, sorted by total desc.
  */
-function computeRankings() {
-	const competitors = db
+function computeRankings(dbInstance = db) {
+	const competitors = dbInstance
 		.prepare('SELECT id, name FROM competitors ORDER BY name')
 		.all();
 
 	const rankings = competitors.map((c) => {
-		const scores = computeCompetitorScores(c.id);
+		const scores = computeCompetitorScores(c.id, dbInstance);
 		return {
 			id: c.id,
 			name: c.name,
@@ -81,8 +81,8 @@ function computeRankings() {
 /**
  * Get full tournament history for a single competitor.
  */
-function getCompetitorHistory(competitorId) {
-	const results = db
+function getCompetitorHistory(competitorId, dbInstance = db) {
+	const results = dbInstance
 		.prepare(
 			`
     SELECT

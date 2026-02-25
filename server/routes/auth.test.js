@@ -4,14 +4,34 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import fs from 'fs';
 import path from 'path';
 
-// Import actual production modules for integration tests
-import authRoutes from './auth.js';
+// Import factory function and auth middleware
+const createAuthRouter = require('./auth.js');
 import { authenticate, requireAdmin, requireOwner, signToken } from '../middleware/auth.js';
+const { errorHandler } = require('../middleware/errors.js');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+
+// Create testable app using the factory function - shared across test suites
+function createTestApp(database) {
+	const app = express();
+	app.use(express.json());
+	app.use('/api/auth', createAuthRouter(database));
+	
+	// Add routes for testing middleware directly
+	app.get('/api/protected', authenticate, (req, res) => {
+		res.json({ message: 'Protected route accessed', user: req.user });
+	});
+	app.get('/api/admin-only', requireAdmin, (req, res) => {
+		res.json({ message: 'Admin route accessed' });
+	});
+	
+	// Add global error handler (must be last)
+	app.use(errorHandler);
+	
+	return app;
+}
 
 // --- UNIT TESTS: Core Auth Logic ---
 describe('Auth Logic Unit Tests', () => {
@@ -52,93 +72,11 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 	let db;
 	let app;
 	let adminToken;
+	let ownerToken;
 	let userToken;
 
-	// Create testable auth routes (similar to rankings pattern)
-	function createTestAuthRoutes(database) {
-		const router = express.Router();
-
-		// Simplified login route for testing
-		router.post('/login', (req, res) => {
-			const { username, password } = req.body;
-			if (!username || !password) {
-				return res
-					.status(400)
-					.json({ error: 'Username and password required' });
-			}
-
-			const user = database
-				.prepare('SELECT * FROM users WHERE username = ?')
-				.get(username);
-			if (!user || !bcrypt.compareSync(password, user.password_hash)) {
-				return res.status(401).json({ error: 'Invalid credentials' });
-			}
-
-			const token = signToken(user);
-			res.json({
-				token,
-				user: { id: user.id, username: user.username, role: user.role },
-			});
-		});
-
-		// User creation route
-		router.post('/users', (req, res) => {
-			// Simple auth check for testing
-			const authHeader = req.headers.authorization;
-			if (!authHeader?.startsWith('Bearer ')) {
-				return res.status(401).json({ error: 'No token provided' });
-			}
-
-			try {
-				const token = authHeader.slice(7);
-				const decoded = jwt.verify(token, JWT_SECRET);
-				if (decoded.role !== 'admin') {
-					return res
-						.status(403)
-						.json({ error: 'Admin access required' });
-				}
-			} catch {
-				return res.status(401).json({ error: 'Invalid token' });
-			}
-
-			const { username, password, role } = req.body;
-			if (!username || !password || !role) {
-				return res
-					.status(400)
-					.json({ error: 'username, password, and role required' });
-			}
-			if (!['owner', 'admin', 'user'].includes(role)) {
-				return res
-					.status(400)
-					.json({ error: 'role must be owner, admin, or user' });
-			}
-
-			const existing = database
-				.prepare('SELECT id FROM users WHERE username = ?')
-				.get(username);
-			if (existing)
-				return res
-					.status(409)
-					.json({ error: 'Username already exists' });
-
-			const hash = bcrypt.hashSync(password, 10);
-			const result = database
-				.prepare(
-					'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-				)
-				.run(username, hash, role);
-			res.status(201).json({
-				id: result.lastInsertRowid,
-				username,
-				role,
-			});
-		});
-
-		return router;
-	}
-
 	beforeEach(() => {
-		// Create fresh in-memory database
+		// Create in-memory database
 		db = new Database(':memory:');
 
 		// Create users table
@@ -154,6 +92,7 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 
 		// Seed test users
 		const adminHash = bcrypt.hashSync('admin123', 10);
+		const ownerHash = bcrypt.hashSync('owner123', 10);
 		const userHash = bcrypt.hashSync('user123', 10);
 
 		db.prepare(
@@ -161,16 +100,18 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 		).run('testadmin', adminHash, 'admin');
 		db.prepare(
 			'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+		).run('testowner', ownerHash, 'owner');
+		db.prepare(
+			'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 		).run('testuser', userHash, 'user');
 
 		// Create tokens
 		adminToken = signToken({ id: 1, username: 'testadmin', role: 'admin' });
-		userToken = signToken({ id: 2, username: 'testuser', role: 'user' });
+		ownerToken = signToken({ id: 2, username: 'testowner', role: 'owner' });
+		userToken = signToken({ id: 3, username: 'testuser', role: 'user' });
 
 		// Create test app
-		app = express();
-		app.use(express.json());
-		app.use('/api/auth', createTestAuthRoutes(db));
+		app = createTestApp(db);
 
 		// Add middleware test endpoints
 		app.get('/api/protected', authenticate, (req, res) => {
@@ -212,9 +153,10 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 				.send({ username: 'testadmin' });
 
 			expect(response.status).toBe(400);
-			expect(response.body).toEqual({
-				error: 'Username and password required',
-			});
+			expect(response.body.error).toBe('Validation failed');
+			expect(response.body.details).toHaveLength(1);
+			expect(response.body.details[0].field).toBe('password');
+			expect(response.body.details[0].message).toBe('password is required');
 		});
 	});
 
@@ -246,13 +188,13 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 	});
 
 	describe('User Management', () => {
-		it('should allow admin to create new users', async () => {
+		it('should allow owner to create new users', async () => {
 			const response = await request(app)
 				.post('/api/auth/users')
-				.set('Authorization', `Bearer ${adminToken}`)
+				.set('Authorization', `Bearer ${ownerToken}`)
 				.send({
 					username: 'newuser',
-					password: 'newpassword123',
+					password: 'NewPassword123',
 					role: 'user',
 				});
 
@@ -271,10 +213,10 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 		it('should reject duplicate usernames', async () => {
 			const response = await request(app)
 				.post('/api/auth/users')
-				.set('Authorization', `Bearer ${adminToken}`)
+				.set('Authorization', `Bearer ${ownerToken}`)
 				.send({
 					username: 'testadmin', // already exists
-					password: 'newpassword123',
+					password: 'NewPassword123',
 					role: 'user',
 				});
 
@@ -286,16 +228,15 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 
 // --- INTEGRATION SMOKE TESTS: Real Production Routes ---
 describe('Auth Integration Smoke Tests', () => {
-	let testDbPath;
+	let db;
 	let app;
 
 	beforeEach(() => {
-		// Create a temporary real database file for integration testing
-		testDbPath = path.join(__dirname, '../data/test-auth.db');
-
+		// Create in-memory database for smoke tests
+		db = new Database(':memory:');
+		
 		// Create minimal test database
-		const testDb = new Database(testDbPath);
-		testDb.exec(`
+		db.exec(`
       CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT NOT NULL UNIQUE,
@@ -307,27 +248,21 @@ describe('Auth Integration Smoke Tests', () => {
 
 		// Seed test user
 		const hash = bcrypt.hashSync('smoketest123', 10);
-		testDb
+		db
 			.prepare(
 				'INSERT OR REPLACE INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)',
 			)
 			.run(1, 'smoketest', hash, 'admin');
-		testDb.close();
 
-		// Create app with real production routes
-		app = express();
-		app.use(express.json());
-
-		// Temporarily point to test database
-		process.env.TEST_DATABASE_PATH = testDbPath;
+		// Create app with factory function for smoke tests
+		app = createTestApp(db);
 	});
 
 	afterEach(() => {
-		// Clean up test database
-		if (fs.existsSync(testDbPath)) {
-			fs.unlinkSync(testDbPath);
+		// Clean up in-memory database
+		if (db) {
+			db.close();
 		}
-		delete process.env.TEST_DATABASE_PATH;
 	});
 
 	it('should perform end-to-end login flow', async () => {

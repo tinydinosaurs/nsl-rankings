@@ -8,6 +8,12 @@ import path from 'path';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
+// Import factory functions
+const createAuthRouter = require('./routes/auth.js');
+const createRankingsRouter = require('./routes/rankings.js');
+const createUploadRouter = require('./routes/upload.js');
+const { errorHandler, notFoundHandler } = require('./middleware/errors.js');
+
 // Mock CSV data for testing
 const cleanCsvData = `name,knockdowns,distance,speed,woods
 Alice Nguyen,108,95,112,88
@@ -20,33 +26,24 @@ Bob Travers,130,105,95,120
 Carmen Reyes,80,85,85,65
 David Park,115,105,118,102`;
 
-function createIntegrationApp(testDbPath) {
-	// Set test database path BEFORE importing any modules that use the database
-	process.env.TEST_DATABASE_PATH = testDbPath;
-
-	// Clear the module cache to ensure fresh imports with new database path
-	delete require.cache[require.resolve('./db/database.js')];
-	delete require.cache[require.resolve('./routes/auth.js')];
-	delete require.cache[require.resolve('./routes/rankings.js')];
-	delete require.cache[require.resolve('./routes/upload.js')];
-
-	// Import routes after clearing cache
-	const authRoutes = require('./routes/auth.js');
-	const rankingsRoutes = require('./routes/rankings.js');
-	const uploadRoutes = require('./routes/upload.js');
-
+function createIntegrationApp(db) {
 	const app = express();
 	app.use(express.json());
-	app.use('/api/auth', authRoutes);
-	app.use('/api/rankings', rankingsRoutes);
-	app.use('/api/upload', uploadRoutes);
+
+	// Use factory functions to create routes with database dependency injection
+	app.use('/api/auth', createAuthRouter(db));
+	app.use('/api/rankings', createRankingsRouter(db));
+	app.use('/api/upload', createUploadRouter(db));
+
+	// Add error handling middleware
+	app.use(notFoundHandler);
+	app.use(errorHandler);
 
 	return app;
 }
 
 describe('NSL Rankings Integration Tests', () => {
 	let db;
-	let testDbPath;
 	let app;
 	let adminToken;
 	let userToken;
@@ -54,15 +51,8 @@ describe('NSL Rankings Integration Tests', () => {
 	let regularUser;
 
 	beforeEach(async () => {
-		// Create temporary real database file with unique timestamp
-		testDbPath = path.join(
-			__dirname,
-			'data',
-			`integration-test-${Date.now()}-${Math.random()}.db`,
-		);
-
-		// Create test database with full schema
-		db = new Database(testDbPath);
+		// Create in-memory database
+		db = new Database(':memory:');
 
 		// Create all required tables (from database.js schema)
 		db.exec(`
@@ -76,7 +66,8 @@ describe('NSL Rankings Integration Tests', () => {
 
       CREATE TABLE competitors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        email TEXT UNIQUE,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -108,7 +99,7 @@ describe('NSL Rankings Integration Tests', () => {
       );
     `);
 
-		// Seed test users
+		// Seed ONLY test users - no competitors or tournaments initially
 		const adminHash = bcrypt.hashSync('admin123', 10);
 		const userHash = bcrypt.hashSync('user123', 10);
 
@@ -143,25 +134,28 @@ describe('NSL Rankings Integration Tests', () => {
 		adminToken = signToken(adminUser);
 		userToken = signToken(regularUser);
 
-		// Create test app
-		app = createIntegrationApp(testDbPath);
-		db.close();
+		// Create integration app with database dependency injection
+		app = createIntegrationApp(db);
+
+		// Verify database is clean (no competitors/tournaments initially)
+		const competitorCount = db
+			.prepare('SELECT COUNT(*) as count FROM competitors')
+			.get().count;
+		const tournamentCount = db
+			.prepare('SELECT COUNT(*) as count FROM tournaments')
+			.get().count;
+		if (competitorCount !== 0 || tournamentCount !== 0) {
+			throw new Error(
+				`Database not clean: ${competitorCount} competitors, ${tournamentCount} tournaments`,
+			);
+		}
 	});
 
 	afterEach(() => {
-		// Clean up test database
-		delete process.env.TEST_DATABASE_PATH;
-		if (fs.existsSync(testDbPath)) {
-			fs.unlinkSync(testDbPath);
+		// Clean up in-memory database
+		if (db) {
+			db.close();
 		}
-
-		// Clear module cache to ensure fresh modules for each test
-		delete require.cache[require.resolve('./db/database.js')];
-		delete require.cache[require.resolve('./routes/auth.js')];
-		delete require.cache[require.resolve('./routes/rankings.js')];
-		delete require.cache[require.resolve('./routes/upload.js')];
-		delete require.cache[require.resolve('./middleware/auth.js')];
-		delete require.cache[require.resolve('./db/rankings.js')];
 	});
 
 	describe('Full Application Flows', () => {

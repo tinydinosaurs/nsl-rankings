@@ -1,34 +1,44 @@
 const jwt = require('jsonwebtoken');
+const { 
+  AuthenticationError, 
+  AuthorizationError 
+} = require('./errors');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
 function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'No token provided' });
+    return next(new AuthenticationError('No token provided'));
   }
   const token = authHeader.slice(7);
   try {
     req.user = jwt.verify(token, JWT_SECRET);
     next();
   } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return next(new AuthenticationError('Invalid or expired token'));
   }
 }
 
 function requireAdmin(req, res, next) {
-  authenticate(req, res, () => {
+  authenticate(req, res, (err) => {
+    if (err) {
+      return next(err);
+    }
+
     if (!['owner', 'admin'].includes(req.user.role)) {
-      return res.status(403).json({ error: 'Admin access required' });
+      return next(new AuthorizationError('Admin access required'));
     }
     next();
   });
 }
 
 function requireOwner(req, res, next) {
-  authenticate(req, res, () => {
+  authenticate(req, res, (err) => {
+    if (err) return next(err);
+    
     if (req.user.role !== 'owner') {
-      return res.status(403).json({ error: 'Owner access required' });
+      return next(new AuthorizationError('Owner access required'));
     }
     next();
   });

@@ -4,11 +4,13 @@
  */
 
 const { EVENTS } = require('../constants/events');
+const { ValidationError } = require('./errors');
 
 /**
- * Validation error class for consistent error handling
+ * Legacy ValidationError class for backward compatibility with field-specific errors
+ * This will be converted by the global error handler
  */
-class ValidationError extends Error {
+class FieldValidationError extends Error {
 	constructor(field, message, value = null) {
 		super(message);
 		this.name = 'ValidationError';
@@ -24,14 +26,14 @@ const validators = {
 	// String validators
 	required: (value, field) => {
 		if (!value || (typeof value === 'string' && value.trim() === '')) {
-			throw new ValidationError(field, `${field} is required`);
+			throw new FieldValidationError(field, `${field} is required`);
 		}
 		return value;
 	},
 
 	string: (value, field) => {
 		if (typeof value !== 'string') {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be a string`,
 				value,
@@ -42,7 +44,7 @@ const validators = {
 
 	minLength: (min) => (value, field) => {
 		if (value.length < min) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be at least ${min} characters long`,
 				value,
@@ -53,7 +55,7 @@ const validators = {
 
 	maxLength: (max) => (value, field) => {
 		if (value.length > max) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be no more than ${max} characters long`,
 				value,
@@ -65,7 +67,7 @@ const validators = {
 	// Username validation
 	username: (value, field) => {
 		if (!/^[a-zA-Z0-9_-]{3,30}$/.test(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'Username must be 3-30 characters and contain only letters, numbers, underscores, and hyphens',
 				value,
@@ -77,25 +79,25 @@ const validators = {
 	// Strong password validation
 	password: (value, field) => {
 		if (value.length < 8) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'Password must be at least 8 characters long',
 			);
 		}
 		if (!/(?=.*[a-z])/.test(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'Password must contain at least one lowercase letter',
 			);
 		}
 		if (!/(?=.*[A-Z])/.test(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'Password must contain at least one uppercase letter',
 			);
 		}
 		if (!/(?=.*\d)/.test(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'Password must contain at least one number',
 			);
@@ -107,7 +109,7 @@ const validators = {
 	role: (value, field) => {
 		const validRoles = ['owner', 'admin', 'user'];
 		if (!validRoles.includes(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`Role must be one of: ${validRoles.join(', ')}`,
 				value,
@@ -120,7 +122,7 @@ const validators = {
 	number: (value, field) => {
 		const num = Number(value);
 		if (isNaN(num)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be a valid number`,
 				value,
@@ -132,7 +134,7 @@ const validators = {
 	positiveNumber: (value, field) => {
 		const num = validators.number(value, field);
 		if (num <= 0) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be a positive number`,
 				value,
@@ -144,7 +146,7 @@ const validators = {
 	// Date validation
 	date: (value, field) => {
 		if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be in YYYY-MM-DD format`,
 				value,
@@ -152,7 +154,7 @@ const validators = {
 		}
 		const date = new Date(value + 'T00:00:00.000Z');
 		if (isNaN(date.getTime())) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be a valid date`,
 				value,
@@ -164,7 +166,7 @@ const validators = {
 	// Event validation
 	event: (value, field) => {
 		if (!EVENTS.includes(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be one of: ${EVENTS.join(', ')}`,
 				value,
@@ -176,7 +178,7 @@ const validators = {
 	// Array validation
 	array: (value, field) => {
 		if (!Array.isArray(value)) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must be an array`,
 				value,
@@ -188,7 +190,7 @@ const validators = {
 	nonEmptyArray: (value, field) => {
 		const arr = validators.array(value, field);
 		if (arr.length === 0) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				`${field} must not be empty`,
 				value,
@@ -200,7 +202,7 @@ const validators = {
 	// File validation
 	file: (value, field) => {
 		if (!value) {
-			throw new ValidationError(field, `${field} is required`);
+			throw new FieldValidationError(field, `${field} is required`);
 		}
 		return value;
 	},
@@ -208,7 +210,7 @@ const validators = {
 	csvFile: (value, field) => {
 		validators.file(value, field);
 		if (!value.originalname?.toLowerCase().endsWith('.csv')) {
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'File must be a CSV file',
 				value.originalname,
@@ -216,7 +218,7 @@ const validators = {
 		}
 		if (value.size > 5 * 1024 * 1024) {
 			// 5MB limit
-			throw new ValidationError(
+			throw new FieldValidationError(
 				field,
 				'File size must be less than 5MB',
 				`${Math.round(value.size / 1024 / 1024)}MB`,
@@ -259,7 +261,7 @@ function validateBody(schema) {
 				const value = req.body[fieldName];
 				sanitized[fieldName] = validateField(value, rules, fieldName);
 			} catch (error) {
-				if (error instanceof ValidationError) {
+				if (error instanceof FieldValidationError) {
 					errors.push({
 						field: error.field,
 						message: error.message,
@@ -272,10 +274,8 @@ function validateBody(schema) {
 		}
 
 		if (errors.length > 0) {
-			return res.status(400).json({
-				error: 'Validation failed',
-				details: errors,
-			});
+			const validationError = new ValidationError('Validation failed', errors);
+			return next(validationError);
 		}
 
 		// Replace req.body with sanitized values
@@ -294,19 +294,16 @@ function validateFile(fieldName, rules = []) {
 			validateField(file, rules, fieldName);
 			next();
 		} catch (error) {
-			if (error instanceof ValidationError) {
-				return res.status(400).json({
-					error: 'File validation failed',
-					details: [
-						{
-							field: error.field,
-							message: error.message,
-							value: error.value,
-						},
-					],
-				});
+			if (error instanceof FieldValidationError) {
+				const validationError = new ValidationError('File validation failed', [{
+					field: error.field,
+					message: error.message,
+					value: error.value,
+				}]);
+				return next(validationError);
+			} else {
+				return next(error);
 			}
-			throw error;
 		}
 	};
 }
@@ -330,7 +327,7 @@ function validateQuery(schema) {
 					);
 				}
 			} catch (error) {
-				if (error instanceof ValidationError) {
+				if (error instanceof FieldValidationError) {
 					errors.push({
 						field: error.field,
 						message: error.message,
@@ -342,12 +339,10 @@ function validateQuery(schema) {
 			}
 		}
 
-		if (errors.length > 0) {
-			return res.status(400).json({
-				error: 'Query validation failed',
-				details: errors,
-			});
-		}
+			if (errors.length > 0) {
+				const validationError = new ValidationError('Query validation failed', errors);
+				return next(validationError);
+			}
 
 		// Add sanitized values to req.query
 		Object.assign(req.query, sanitized);
@@ -356,7 +351,7 @@ function validateQuery(schema) {
 }
 
 module.exports = {
-	ValidationError,
+	FieldValidationError,
 	validators,
 	validateBody,
 	validateFile,

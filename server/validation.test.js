@@ -3,42 +3,33 @@ import request from 'supertest';
 import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import express from 'express';
-import fs from 'fs';
-import path from 'path';
 
-// Clear module cache and create test app
-function createValidationTestApp(testDbPath) {
-	process.env.TEST_DATABASE_PATH = testDbPath;
+const createAuthRouter = require('./routes/auth.js');
+const { errorHandler, notFoundHandler } = require('./middleware/errors.js');
 
-	// Clear cache
-	delete require.cache[require.resolve('./db/database.js')];
-	delete require.cache[require.resolve('./routes/auth.js')];
-	delete require.cache[require.resolve('./middleware/validation.js')];
-
-	const authRoutes = require('./routes/auth.js');
+function createValidationTestApp(db) {
+	const authRoutes = createAuthRouter(db);
 
 	const app = express();
 	app.use(express.json());
 	app.use('/api/auth', authRoutes);
+
+	// Add error handling middleware
+	app.use(notFoundHandler);
+	app.use(errorHandler);
 
 	return app;
 }
 
 describe('Request Validation Tests', () => {
 	let db;
-	let testDbPath;
 	let app;
 	let adminToken;
 	let ownerToken;
 
 	beforeEach(() => {
-		// Create test database
-		testDbPath = path.join(
-			__dirname,
-			'data',
-			`validation-test-${Date.now()}-${Math.random()}.db`,
-		);
-		db = new Database(testDbPath);
+		// Create in-memory database
+		db = new Database(':memory:');
 
 		// Create schema
 		db.exec(`
@@ -76,20 +67,13 @@ describe('Request Validation Tests', () => {
 			{ expiresIn: '24h' },
 		);
 
-		app = createValidationTestApp(testDbPath);
-		db.close();
+		// Create app with in-memory database
+		app = createValidationTestApp(db);
 	});
 
 	afterEach(() => {
-		delete process.env.TEST_DATABASE_PATH;
-		if (fs.existsSync(testDbPath)) {
-			fs.unlinkSync(testDbPath);
-		}
-
-		// Clear cache
-		delete require.cache[require.resolve('./db/database.js')];
-		delete require.cache[require.resolve('./routes/auth.js')];
-		delete require.cache[require.resolve('./middleware/validation.js')];
+		// Clean up in-memory database
+		db.close();
 	});
 
 	describe('Login Validation', () => {

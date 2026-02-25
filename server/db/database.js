@@ -32,6 +32,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS competitors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    email TEXT UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -68,12 +69,14 @@ const existingOwner = db
 	.prepare('SELECT id FROM users WHERE role = ?')
 	.get('owner');
 if (!existingOwner) {
-	const hash = bcrypt.hashSync('owner123', 10);
+	const username = process.env.OWNER_USERNAME || 'owner';
+	const password = process.env.OWNER_PASSWORD || 'owner123';
+	const hash = bcrypt.hashSync(password, 10);
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-	).run('owner', hash, 'owner');
+	).run(username, hash, 'owner');
 	console.log(
-		'Default owner created: username=owner, password=owner123 — CHANGE THIS IMMEDIATELY',
+		`Default owner created: username=${username} — CHANGE THIS PASSWORD IF USING DEFAULT`,
 	);
 }
 
@@ -82,23 +85,15 @@ const existingAdmin = db
 	.prepare('SELECT id FROM users WHERE role = ?')
 	.get('admin');
 if (!existingAdmin) {
-	const hash = bcrypt.hashSync('admin123', 10);
+	const username = process.env.ADMIN_USERNAME || 'admin';
+	const password = process.env.ADMIN_PASSWORD || 'admin123';
+	const hash = bcrypt.hashSync(password, 10);
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-	).run('admin', hash, 'admin');
+	).run(username, hash, 'admin');
 	console.log(
-		'Default admin created: username=admin, password=admin123 — CHANGE THIS IMMEDIATELY',
+		`Default admin created: username=${username} — CHANGE THIS PASSWORD IF USING DEFAULT`,
 	);
 }
 
-const existingUser = db
-	.prepare('SELECT id FROM users WHERE role = ?')
-	.get('user');
-if (!existingUser) {
-	const hash = bcrypt.hashSync('user123', 10);
-	db.prepare(
-		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-	).run('user', hash, 'user');
-	console.log('Default user created: username=user, password=user123');
-}
 module.exports = db;

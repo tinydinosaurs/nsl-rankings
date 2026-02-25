@@ -7,7 +7,9 @@
 		"dev": "nodemon index.js",
 		"start": "node index.js",
 		"test": "vitest run",
-		"test:watch": "vitest"
+		"test:watch": "vitest",
+		"seed:demo": "node seed-demo.js",
+		"seed:reset": "node seed-reset.js"
 	},
 	"dependencies": {
 		"bcryptjs": "^2.4.3",

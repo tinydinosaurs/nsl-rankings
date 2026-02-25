@@ -9,6 +9,7 @@ const COLUMN_ALIASES = {
   speed: ['speed', 'spd', 'sp', 'velocity'],
   woods: ['woods', 'wood', 'woods course', 'woods_course', 'woodscourse', 'forest', 'wc'],
   name: ['name', 'competitor', 'athlete', 'player', 'participant', 'full name', 'fullname', 'full_name'],
+  email: ['email', 'e-mail', 'email address', 'emailaddress', 'e_mail'],
 };
 
 function normalizeHeader(h) {
@@ -18,6 +19,13 @@ function normalizeHeader(h) {
 function detectColumn(header, field) {
   const normalized = normalizeHeader(header);
   return COLUMN_ALIASES[field].some(alias => normalizeHeader(alias) === normalized);
+}
+
+function generatePlaceholderEmail(name) {
+  const slug = name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.|\.$/, '');
+  return `${slug}.nsl@placeholder.local`;
 }
 
 /**
@@ -78,7 +86,7 @@ function parseCSV(csvText, tournamentSettings) {
   // Map column indices
   const colMap = {};
   headerRow.forEach((h, i) => {
-    for (const field of ['name', ...EVENTS]) {
+    for (const field of ['name', 'email', ...EVENTS]) {
       if (!colMap[field] && detectColumn(h, field)) {
         colMap[field] = i;
       }
@@ -100,7 +108,8 @@ function parseCSV(csvText, tournamentSettings) {
   // Parse data rows
   const dataRows = rows.slice(headerRowIndex + 1);
   const competitors = [];
-  const seenNames = new Set();
+  const competitorsWithoutEmail = [];
+  const seenEmails = new Set();
 
   dataRows.forEach((row, rowIndex) => {
     const lineNum = headerRowIndex + rowIndex + 2; // 1-based, accounting for header
@@ -111,13 +120,24 @@ function parseCSV(csvText, tournamentSettings) {
       return;
     }
 
-    if (seenNames.has(rawName.toLowerCase())) {
-      warnings.push(`Row ${lineNum}: Duplicate name "${rawName}" — skipped. If this is a different person, resolve before uploading.`);
+    let rawEmail = colMap.email !== undefined ? row[colMap.email]?.toString().trim() : '';
+    let isPlaceholder = false;
+    
+    // Generate placeholder email if missing
+    if (!rawEmail) {
+      rawEmail = generatePlaceholderEmail(rawName);
+      isPlaceholder = true;
+      competitorsWithoutEmail.push(rawName);
+    }
+
+    // Check for duplicate emails within this CSV
+    if (seenEmails.has(rawEmail.toLowerCase())) {
+      warnings.push(`Row ${lineNum} (${rawName}): Duplicate email "${rawEmail}" — this row will be skipped.`);
       return;
     }
-    seenNames.add(rawName.toLowerCase());
+    seenEmails.add(rawEmail.toLowerCase());
 
-    const competitor = { name: rawName };
+    const competitor = { name: rawName, email: rawEmail };
 
     for (const event of EVENTS) {
       if (!activeEvents.includes(event)) {
@@ -156,6 +176,11 @@ function parseCSV(csvText, tournamentSettings) {
 
     competitors.push(competitor);
   });
+
+  // Add specific warning for competitors without email addresses
+  if (competitorsWithoutEmail.length > 0) {
+    warnings.push(`The following competitors had no email address — placeholder emails were generated. Update these in the admin panel: [${competitorsWithoutEmail.join(', ')}]`);
+  }
 
   if (competitors.length === 0) {
     errors.push('No valid competitor rows found after parsing.');
