@@ -1,9 +1,8 @@
 name,email,knockdowns,distance,speed,woods
 Alice Chen,alice.chen@email.com,108,95,112,88
-Bob Martinez,bob.martinez@email.com,120,110,100,115
+Bob Martinez,,120,110,100,115
 Carmen Rodriguez,carmen.rodriguez@email.com,72,80,90,60
 David Park,david.park@email.com,115,105,118,102
-Elena Volkov,elena.volkov@email.com,60,55,70,45
+Elena Volkov,,60,55,70,45
 Frank Johnson,frank.johnson@email.com,95,100,88,92
-Grace Kim,grace.kim@email.com,110,98,105,99
-Hassan Ali,hassan.ali@email.com,85,75,80,78
+New Person Without Email,,85,90,95,80
