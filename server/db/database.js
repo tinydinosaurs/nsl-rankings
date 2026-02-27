@@ -2,6 +2,9 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 
+// Load environment variables
+require('dotenv').config();
+
 // Support test database path for integration testing
 const DB_PATH =
 	process.env.TEST_DATABASE_PATH ||
@@ -75,25 +78,21 @@ if (!existingOwner) {
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 	).run(username, hash, 'owner');
-	console.log(
-		`Default owner created: username=${username} — CHANGE THIS PASSWORD IF USING DEFAULT`,
-	);
+	console.log(`Owner created: username=${username}`);
 }
+// NO else block
 
-// Seed a default admin user if none exists
+// Admin seed
 const existingAdmin = db
 	.prepare('SELECT id FROM users WHERE role = ?')
 	.get('admin');
-if (!existingAdmin) {
-	const username = process.env.ADMIN_USERNAME || 'admin';
-	const password = process.env.ADMIN_PASSWORD || 'admin123';
-	const hash = bcrypt.hashSync(password, 10);
+if (!existingAdmin && process.env.ADMIN_USERNAME) {
+	const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-	).run(username, hash, 'admin');
-	console.log(
-		`Default admin created: username=${username} — CHANGE THIS PASSWORD IF USING DEFAULT`,
-	);
+	).run(process.env.ADMIN_USERNAME, hash, 'admin');
+	console.log(`Admin created: username=${process.env.ADMIN_USERNAME}`);
 }
+// NO else block
 
 module.exports = db;

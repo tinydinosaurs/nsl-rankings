@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
+import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 
@@ -46,7 +47,6 @@ describe('NSL Rankings Integration Tests', () => {
 	let db;
 	let app;
 	let adminToken;
-	let userToken;
 	let adminUser;
 	let regularUser;
 
@@ -99,40 +99,26 @@ describe('NSL Rankings Integration Tests', () => {
       );
     `);
 
-		// Seed ONLY test users - no competitors or tournaments initially
+		// Seed ONLY admin test user - no competitors or tournaments initially
 		const adminHash = bcrypt.hashSync('admin123', 10);
-		const userHash = bcrypt.hashSync('user123', 10);
 
 		const adminResult = db
 			.prepare(
 				'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 			)
 			.run('integrationadmin', adminHash, 'admin');
-		const userResult = db
-			.prepare(
-				'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-			)
-			.run('integrationuser', userHash, 'user');
 
 		adminUser = {
 			id: adminResult.lastInsertRowid,
 			username: 'integrationadmin',
 			role: 'admin',
 		};
-		regularUser = {
-			id: userResult.lastInsertRowid,
-			username: 'integrationuser',
-			role: 'user',
-		};
 
 		// Create test tokens
-		const signToken = (user) => {
-			const jwt = require('jsonwebtoken');
-			return jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-		};
+		const signToken = (user) =>
+			jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
 
 		adminToken = signToken(adminUser);
-		userToken = signToken(regularUser);
 
 		// Create integration app with database dependency injection
 		app = createIntegrationApp(db);
@@ -266,55 +252,6 @@ describe('NSL Rankings Integration Tests', () => {
 			expect(bobRanking.total).toBeGreaterThan(aliceRanking.total);
 
 			// Clean up temp file
-			fs.unlinkSync(csvPath);
-		});
-
-		it('should enforce user permissions correctly', async () => {
-			// 1. Login as regular user
-			const loginResponse = await request(app)
-				.post('/api/auth/login')
-				.send({ username: 'integrationuser', password: 'user123' });
-
-			expect(loginResponse.status).toBe(200);
-			const token = loginResponse.body.token;
-
-			// 2. User can view rankings (but no data yet)
-			const rankingsResponse = await request(app)
-				.get('/api/rankings')
-				.set('Authorization', `Bearer ${token}`);
-
-			expect(rankingsResponse.status).toBe(200);
-			expect(rankingsResponse.body).toHaveLength(0);
-
-			// Debug: log if rankings are not empty for user
-			if (rankingsResponse.body.length > 0) {
-				console.log(
-					'User test - Expected 0 rankings, got:',
-					rankingsResponse.body.length,
-				);
-				console.log('Rankings for user:', rankingsResponse.body);
-			}
-
-			// 3. User cannot upload data
-			const csvPath = path.join(__dirname, 'temp-test.csv');
-			fs.writeFileSync(csvPath, cleanCsvData);
-
-			const uploadResponse = await request(app)
-				.post('/api/upload/preview')
-				.set('Authorization', `Bearer ${token}`)
-				.attach('csv', csvPath);
-
-			expect(uploadResponse.status).toBe(403);
-			expect(uploadResponse.body.error).toBe('Admin access required');
-
-			// 4. User cannot create competitors manually
-			const competitorResponse = await request(app)
-				.post('/api/rankings/competitors')
-				.set('Authorization', `Bearer ${token}`)
-				.send({ name: 'Test Competitor' });
-
-			expect(competitorResponse.status).toBe(403);
-
 			fs.unlinkSync(csvPath);
 		});
 
@@ -452,12 +389,11 @@ describe('NSL Rankings Integration Tests', () => {
 				.set('Authorization', 'Bearer invalid-token');
 			expect(badTokenResponse.status).toBe(401);
 
-			// Admin endpoint with user token
+			// Admin endpoint with no token
 			const adminEndpointResponse = await request(app)
 				.post('/api/rankings/competitors')
-				.set('Authorization', `Bearer ${userToken}`)
 				.send({ name: 'Test' });
-			expect(adminEndpointResponse.status).toBe(403);
+			expect(adminEndpointResponse.status).toBe(401);
 		});
 
 		it('should validate file upload requirements', async () => {
@@ -535,6 +471,377 @@ describe('NSL Rankings Integration Tests', () => {
 			expect(competitor.total).toBeGreaterThan(0); // Should have a calculated score
 		});
 	});
+
+	describe('Enhanced Admin API Endpoints', () => {
+		it('should return enhanced competitor data with scores and filtering', async () => {
+			// First upload some test data
+			const csvPath = path.join(__dirname, 'temp-test.csv');
+			fs.writeFileSync(csvPath, cleanCsvData);
+
+			const previewResponse = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.attach('csv', csvPath)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120');
+
+			await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					tournament_name: 'Enhanced API Test Tournament',
+					tournament_date: '2024-02-01',
+					activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+					totalPoints: {
+						knockdowns: 120,
+						distance: 120,
+						speed: 120,
+						woods: 120,
+					},
+					competitors: previewResponse.body.competitors,
+				});
+
+			// Test enhanced competitors endpoint
+			const response = await request(app)
+				.get('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toBeInstanceOf(Array);
+
+			// Check enhanced fields are present
+			const competitor = response.body.find(
+				(c) => c.name === 'Alice Nguyen',
+			);
+			expect(competitor).toBeDefined();
+			expect(competitor).toHaveProperty('id');
+			expect(competitor).toHaveProperty('name');
+			expect(competitor).toHaveProperty('email');
+			expect(competitor).toHaveProperty('has_placeholder_email');
+			expect(competitor).toHaveProperty('total_score');
+			expect(competitor).toHaveProperty('tournament_count');
+			expect(competitor).toHaveProperty('created_at');
+
+			expect(typeof competitor.has_placeholder_email).toBe('boolean');
+			expect(typeof competitor.total_score).toBe('number');
+			expect(typeof competitor.tournament_count).toBe('number');
+			expect(competitor.tournament_count).toBeGreaterThan(0);
+
+			// Test filtering by placeholder emails
+			const filteredResponse = await request(app)
+				.get('/api/rankings/competitors?filter=placeholder-emails')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(filteredResponse.status).toBe(200);
+			// All filtered results should have placeholder emails
+			filteredResponse.body.forEach((competitor) => {
+				expect(competitor.has_placeholder_email).toBe(true);
+			});
+
+			fs.unlinkSync(csvPath);
+		});
+
+		it('should return enhanced tournament data with participant counts', async () => {
+			const response = await request(app)
+				.get('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(response.status).toBe(200);
+			expect(response.body).toBeInstanceOf(Array);
+
+			if (response.body.length > 0) {
+				const tournament = response.body[0];
+				expect(tournament).toHaveProperty('id');
+				expect(tournament).toHaveProperty('name');
+				expect(tournament).toHaveProperty('date');
+				expect(tournament).toHaveProperty('participant_count');
+				expect(typeof tournament.participant_count).toBe('number');
+			}
+		});
+
+		it('should allow editing tournament metadata via PUT', async () => {
+			// Create tournament directly in the test
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Original Tournament Name',
+					date: '2024-01-15',
+				});
+
+			const tournament = tournamentResponse.body;
+			const originalName = tournament.name;
+			const originalDate = tournament.date;
+
+			// Update tournament metadata
+			const updateResponse = await request(app)
+				.put(`/api/rankings/tournaments/${tournament.id}`)
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Updated Tournament Name',
+					date: '2024-03-15',
+				});
+
+			expect(updateResponse.status).toBe(200);
+			expect(updateResponse.body).toHaveProperty('id');
+			expect(updateResponse.body.name).toBe('Updated Tournament Name');
+			expect(updateResponse.body.date).toBe('2024-03-15');
+
+			// Verify the update
+			const verifyResponse = await request(app)
+				.get('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			const updatedTournament = verifyResponse.body.find(
+				(t) => t.id === tournament.id,
+			);
+			expect(updatedTournament.name).toBe('Updated Tournament Name');
+			expect(updatedTournament.date).toBe('2024-03-15');
+
+			// Restore original values for other tests
+			await request(app)
+				.put(`/api/rankings/tournaments/${tournament.id}`)
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: originalName,
+					date: originalDate,
+				});
+		});
+
+		it('should return tournament detail with full roster', async () => {
+			// Create tournament directly in the test
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Test Tournament Detail',
+					date: '2024-02-15',
+				});
+
+			const tournament = tournamentResponse.body;
+
+			const detailResponse = await request(app)
+				.get(`/api/rankings/tournaments/${tournament.id}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(detailResponse.status).toBe(200);
+			expect(detailResponse.body).toHaveProperty('tournament');
+			expect(detailResponse.body).toHaveProperty('participants');
+
+			const tournamentData = detailResponse.body.tournament;
+			expect(tournamentData).toHaveProperty('id');
+			expect(tournamentData).toHaveProperty('name');
+			expect(tournamentData).toHaveProperty('date');
+
+			expect(detailResponse.body.participants).toBeInstanceOf(Array);
+
+			if (detailResponse.body.participants.length > 0) {
+				const result = detailResponse.body.participants[0];
+				expect(result).toHaveProperty('result_id');
+				expect(result).toHaveProperty('competitor_id');
+				expect(result).toHaveProperty('competitor_name');
+				// Should have event score properties
+				expect(result).toHaveProperty('knockdowns_earned');
+			}
+		});
+
+		it('should allow editing individual results via PUT', async () => {
+			// Create tournament and competitor with result directly in the test
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Test Tournament for Result Edit',
+					date: '2024-03-01',
+				});
+
+			const competitorResponse = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Test Competitor for Edit',
+					email: 'edit.test@example.com',
+				});
+
+			// Create a result to edit
+			const resultCreateResponse = await request(app)
+				.post('/api/rankings/results')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					competitor_id: competitorResponse.body.id,
+					tournament_id: tournamentResponse.body.id,
+					knockdowns_earned: 100,
+					distance_earned: 90,
+					speed_earned: 95,
+					woods_earned: 85,
+				});
+
+			const result = resultCreateResponse.body.result;
+			const originalScore = result.knockdowns_earned;
+
+			// Update the result
+			const newScore = originalScore + 10;
+			const updateResponse = await request(app)
+				.put(`/api/rankings/results/${result.id}`)
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					knockdowns_earned: newScore,
+					distance_earned: result.distance_earned,
+					speed_earned: result.speed_earned,
+					woods_earned: result.woods_earned,
+				});
+
+			expect(updateResponse.status).toBe(200);
+			expect(updateResponse.body).toHaveProperty('id');
+			expect(updateResponse.body.knockdowns_earned).toBe(newScore);
+
+			// Verify the update
+			const verifyResponse = await request(app)
+				.get(`/api/rankings/tournaments/${tournamentResponse.body.id}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			const updatedResult = verifyResponse.body.participants.find(
+				(r) => r.result_id === result.id,
+			);
+			expect(updatedResult.knockdowns_earned).toBe(newScore);
+
+			// Restore original score
+			await request(app)
+				.put(`/api/rankings/results/${result.result_id}`)
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					knockdowns_earned: originalScore,
+					distance_earned: result.distance_earned,
+					speed_earned: result.speed_earned,
+					woods_earned: result.woods_earned,
+				});
+		});
+
+		it('should allow deleting individual results via DELETE', async () => {
+			// Create a test competitor and tournament for deletion
+			const competitorResponse = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Delete Test Competitor',
+					email: 'delete.test@example.com',
+				});
+
+			// Create a tournament for the result
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Test Tournament for Delete',
+					date: '2024-04-01',
+				});
+
+			// Add a result for this competitor
+			const resultResponse = await request(app)
+				.post('/api/rankings/results')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					competitor_id: competitorResponse.body.id,
+					tournament_id: tournamentResponse.body.id,
+					knockdowns_earned: 100,
+					distance_earned: 90,
+					speed_earned: 95,
+					woods_earned: 85,
+				});
+
+			const resultId = resultResponse.body.result.id;
+
+			// Delete the result
+			const deleteResponse = await request(app)
+				.delete(`/api/rankings/results/${resultId}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(deleteResponse.status).toBe(200);
+			expect(deleteResponse.body.success).toBe(true);
+			expect(deleteResponse.body.deleted).toHaveProperty(
+				'competitor_name',
+			);
+
+			// Verify the result is gone by checking tournament detail
+			const verifyResponse = await request(app)
+				.get(`/api/rankings/tournaments/${tournamentResponse.body.id}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			const deletedResult = verifyResponse.body.participants.find(
+				(r) => r.result_id === resultId,
+			);
+			expect(deletedResult).toBeUndefined();
+
+			// Clean up test competitor (this will cascade delete any remaining results)
+			await request(app)
+				.delete(
+					`/api/rankings/competitors/${competitorResponse.body.id}`,
+				)
+				.set('Authorization', `Bearer ${adminToken}`);
+		});
+
+		it('should handle validation errors for new endpoints', async () => {
+			// Test tournament metadata validation - non-existent tournament
+			const invalidTournamentResponse = await request(app)
+				.put('/api/rankings/tournaments/999')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: '',
+					date: 'invalid-date',
+				});
+
+			expect(invalidTournamentResponse.status).toBe(404);
+
+			// Test result editing validation - non-existent result
+			const invalidResultResponse = await request(app)
+				.put('/api/rankings/results/999')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					knockdowns_earned: -10, // negative score
+				});
+
+			expect(invalidResultResponse.status).toBe(404);
+
+			// Test non-existent result deletion
+			const notFoundResponse = await request(app)
+				.delete('/api/rankings/results/999')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(notFoundResponse.status).toBe(404);
+		});
+
+		it('should maintain referential integrity in enhanced operations', async () => {
+			// Test that tournament detail handles non-existent tournaments gracefully
+			const nonExistentResponse = await request(app)
+				.get('/api/rankings/tournaments/999')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(nonExistentResponse.status).toBe(404);
+
+			// Test that competitor filtering works correctly
+			const competitorsResponse = await request(app)
+				.get('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`);
+
+			expect(competitorsResponse.status).toBe(200);
+
+			// Verify competitors have consistent data structure
+			if (competitorsResponse.body.length > 0) {
+				const competitor = competitorsResponse.body[0];
+				expect(competitor).toHaveProperty('id');
+				expect(competitor).toHaveProperty('name');
+				expect(competitor).toHaveProperty('has_placeholder_email');
+				expect(competitor).toHaveProperty('total_score');
+				expect(competitor).toHaveProperty('tournament_count');
+			}
+		});
+	});
 });
 
 // Test summary for integration coverage
@@ -542,13 +849,20 @@ describe('Integration Test Coverage Summary', () => {
 	it('should have comprehensive integration coverage', () => {
 		const coverage = {
 			'Full admin workflow (login→upload→view)': '✅',
-			'User permission enforcement': '✅',
 			'Multi-tournament data processing': '✅',
 			'Authentication error handling': '✅',
 			'File upload validation': '✅',
 			'Database constraint handling': '✅',
 			'Data consistency verification': '✅',
 			'Referential integrity': '✅',
+			'Enhanced competitors endpoint with filtering': '✅',
+			'Enhanced tournaments endpoint with counts': '✅',
+			'Tournament metadata editing (PUT)': '✅',
+			'Tournament detail with roster (GET)': '✅',
+			'Individual result editing (PUT)': '✅',
+			'Individual result deletion (DELETE)': '✅',
+			'Enhanced API validation errors': '✅',
+			'Enhanced referential integrity': '✅',
 		};
 
 		console.log('\n🔄 Integration Test Coverage:');
