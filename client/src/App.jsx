@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import RankingsPage from './pages/RankingsPage.jsx';
 import CompetitorPage from './pages/CompetitorPage.jsx';
+import CompetitorsListPage from './pages/CompetitorsListPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import UploadPage from './pages/UploadPage.jsx';
 import Layout from './components/shared/Layout.jsx';
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/" element={<RequireAuth><Layout /></RequireAuth>}>
             <Route path="competitors/:id" element={<CompetitorPage />} />
             <Route path="admin" element={<RequireAdmin><AdminPage /></RequireAdmin>} />
+            <Route path="admin/competitors" element={<RequireAdmin><CompetitorsListPage /></RequireAdmin>} />
             <Route path="upload" element={<RequireAdmin><UploadPage /></RequireAdmin>} />
           </Route>
         </Routes>

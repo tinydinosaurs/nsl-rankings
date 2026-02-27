@@ -27,6 +27,14 @@ export default function Layout() {
 								Dashboard
 							</NavLink>
 							<NavLink
+								to="/admin/competitors"
+								className={({ isActive }) =>
+									isActive ? 'nav-link active' : 'nav-link'
+								}
+							>
+								Competitors
+							</NavLink>
+							<NavLink
 								to="/upload"
 								className={({ isActive }) =>
 									isActive ? 'nav-link active' : 'nav-link'
