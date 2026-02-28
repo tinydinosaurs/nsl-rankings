@@ -121,12 +121,10 @@ function parseCSV(csvText, tournamentSettings) {
     }
 
     let rawEmail = colMap.email !== undefined ? row[colMap.email]?.toString().trim() : '';
-    let isPlaceholder = false;
     
     // Generate placeholder email if missing
     if (!rawEmail) {
       rawEmail = generatePlaceholderEmail(rawName);
-      isPlaceholder = true;
       competitorsWithoutEmail.push(rawName);
     }
 

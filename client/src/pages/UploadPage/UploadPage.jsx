@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
-import api from '../utils/api';
-import { EVENTS, EVENT_LABELS } from '../constants/events';
+import api from '../../utils/api';
+import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import './UploadPage.css';
 
 const defaultSettings = () => ({

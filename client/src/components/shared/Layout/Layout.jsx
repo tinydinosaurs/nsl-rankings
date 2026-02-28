@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../hooks/useAuth.jsx';
+import { useAuth } from '../../../hooks/useAuth.jsx';
 import './Layout.css';
 
 export default function Layout() {

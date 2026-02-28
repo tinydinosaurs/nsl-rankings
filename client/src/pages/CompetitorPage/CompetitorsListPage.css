@@ -1,0 +1,193 @@
+/* PageHeader styles → components/shared/PageHeader/PageHeader.css */
+/* EmptyState styles → components/shared/EmptyState/EmptyState.css */
+
+.page-loading {
+	color: var(--text-muted);
+	padding: 48px 0;
+	text-align: center;
+}
+
+.page-controls {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 24px;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.search-controls {
+	flex: 1;
+	min-width: 200px;
+}
+
+.search-input {
+	width: 100%;
+	max-width: 320px;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.search-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.filter-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.checkbox-label {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	cursor: pointer;
+	user-select: none;
+}
+
+.checkbox-label input[type='checkbox'] {
+	margin: 0;
+}
+
+.table-wrapper {
+	padding: 0;
+	overflow-x: auto;
+}
+
+.competitors-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 14px;
+}
+
+.competitors-table th {
+	padding: 12px 16px;
+	text-align: left;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted);
+	border-bottom: 1px solid var(--border);
+	white-space: nowrap;
+	user-select: none;
+}
+
+.competitors-table th.sortable {
+	cursor: pointer;
+}
+
+.competitors-table th.sortable:hover {
+	color: var(--text);
+}
+
+.competitors-table td {
+	padding: 12px 16px;
+	border-bottom: 1px solid var(--border);
+	vertical-align: middle;
+}
+
+.competitors-table tr:last-child td {
+	border-bottom: none;
+}
+
+.competitors-table tbody tr:hover {
+	background: var(--surface2);
+}
+
+.competitor-link {
+	background: none;
+	border: none;
+	padding: 0;
+	color: var(--accent);
+	font-size: 14px;
+	font-weight: 500;
+	cursor: pointer;
+	text-align: left;
+}
+
+.competitor-link:hover {
+	color: var(--accent-hover);
+	text-decoration: underline;
+}
+
+.score-value {
+	font-variant-numeric: tabular-nums;
+	font-weight: 600;
+}
+
+.score-null {
+	color: var(--border);
+}
+
+.tournament-count {
+	font-variant-numeric: tabular-nums;
+	color: var(--text-muted);
+}
+
+.btn-small {
+	padding: 4px 8px;
+	font-size: 12px;
+}
+
+.btn-secondary {
+	background: transparent;
+	color: var(--text-muted);
+	border: 1px solid var(--border);
+}
+
+.btn-secondary:hover:not(:disabled) {
+	border-color: var(--accent);
+	color: var(--accent);
+}
+
+.form-group {
+	margin-bottom: 16px;
+}
+
+.form-group label {
+	display: block;
+	margin-bottom: 4px;
+	font-weight: 500;
+	font-size: 14px;
+}
+
+.form-group input {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 14px;
+}
+
+.form-group input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.form-help {
+	display: block;
+	margin-top: 4px;
+	font-size: 12px;
+	color: var(--text-muted);
+}
+
+/* Modal shell styles (.modal-overlay, .modal-content, .modal-header, .modal-body, .modal-actions)
+   have moved to components/shared/Modal/Modal.css */
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.page-controls {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.search-input {
+		max-width: none;
+	}
+}

@@ -8,16 +8,22 @@ import {
 	flexRender,
 	createColumnHelper,
 } from '@tanstack/react-table';
-import api from '../utils/api';
+import api from '../../utils/api.js';
+import Badge from '../../components/shared/Badge/Badge.jsx';
+import Modal from '../../components/shared/Modal/Modal.jsx';
+import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
+import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
+import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import './CompetitorsListPage.css';
 
 const columnHelper = createColumnHelper();
 
 function EmailStatusBadge({ competitor }) {
-	if (competitor.has_placeholder_email) {
-		return <span className="badge badge-warning">Placeholder Email</span>;
-	}
-	return <span className="badge badge-success">Email Verified</span>;
+	return competitor.has_placeholder_email ? (
+		<Badge text="Placeholder Email" variant="warning" />
+	) : (
+		<Badge text="Email Verified" variant="success" />
+	);
 }
 
 function AddCompetitorModal({ isOpen, onClose, onAdd }) {
@@ -52,66 +58,47 @@ function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 		}
 	};
 
-	if (!isOpen) return null;
-
 	return (
-		<div className="modal-overlay" onClick={onClose}>
-			<div className="modal-content" onClick={(e) => e.stopPropagation()}>
-				<div className="modal-header">
-					<h3>Add Competitor</h3>
-					<button className="modal-close" onClick={onClose}>
-						×
-					</button>
+		<Modal isOpen={isOpen} onClose={onClose} title="Add Competitor">
+			<form onSubmit={handleSubmit}>
+				{error && <div className="alert alert-error">{error}</div>}
+
+				<div className="form-group">
+					<label htmlFor="competitor-name">Name *</label>
+					<input
+						id="competitor-name"
+						type="text"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						placeholder="Enter competitor's full name"
+						required
+					/>
 				</div>
 
-				<form onSubmit={handleSubmit} className="modal-body">
-					{error && <div className="alert alert-error">{error}</div>}
+				<div className="form-group">
+					<label htmlFor="competitor-email">Email</label>
+					<input
+						id="competitor-email"
+						type="email"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						placeholder="competitor@example.com (optional)"
+					/>
+					<small className="form-help">
+						If empty, a placeholder email will be generated
+					</small>
+				</div>
 
-					<div className="form-group">
-						<label htmlFor="competitor-name">Name *</label>
-						<input
-							id="competitor-name"
-							type="text"
-							value={name}
-							onChange={(e) => setName(e.target.value)}
-							placeholder="Enter competitor's full name"
-							required
-						/>
-					</div>
-
-					<div className="form-group">
-						<label htmlFor="competitor-email">Email</label>
-						<input
-							id="competitor-email"
-							type="email"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							placeholder="competitor@example.com (optional)"
-						/>
-						<small className="form-help">
-							If empty, a placeholder email will be generated
-						</small>
-					</div>
-
-					<div className="modal-actions">
-						<button
-							type="button"
-							className="btn-secondary"
-							onClick={onClose}
-						>
-							Cancel
-						</button>
-						<button
-							type="submit"
-							className="btn-primary"
-							disabled={isSubmitting}
-						>
-							{isSubmitting ? 'Adding...' : 'Add Competitor'}
-						</button>
-					</div>
-				</form>
-			</div>
-		</div>
+				<div className="modal-actions">
+					<button type="button" className="btn-secondary" onClick={onClose}>
+						Cancel
+					</button>
+					<button type="submit" className="btn-primary" disabled={isSubmitting}>
+						{isSubmitting ? 'Adding...' : 'Add Competitor'}
+					</button>
+				</div>
+			</form>
+		</Modal>
 	);
 }
 
@@ -123,6 +110,7 @@ export default function CompetitorsListPage() {
 	const [filtering, setFiltering] = useState('');
 	const [showPlaceholdersOnly, setShowPlaceholdersOnly] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
+	const [confirmTarget, setConfirmTarget] = useState(null);
 	const navigate = useNavigate();
 
 	const loadCompetitors = async () => {
@@ -134,7 +122,7 @@ export default function CompetitorsListPage() {
 			const res = await api.get(endpoint);
 			setData(res.data);
 			setError('');
-		} catch (err) {
+		} catch (_err) {
 			setError('Failed to load competitors');
 		} finally {
 			setLoading(false);
@@ -143,27 +131,21 @@ export default function CompetitorsListPage() {
 
 	useEffect(() => {
 		loadCompetitors();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [showPlaceholdersOnly]);
 
-	const handleDelete = async (competitor) => {
-		const tournamentText =
-			competitor.tournament_count > 0
-				? ` and ${competitor.tournament_count} tournament result(s)`
-				: '';
+	const handleDelete = (competitor) => {
+		setConfirmTarget(competitor);
+	};
 
-		const confirmed = window.confirm(
-			`Delete "${competitor.name}"${tournamentText}?\n\nThis cannot be undone.`,
-		);
-
-		if (!confirmed) return;
-
+	const handleDeleteConfirmed = async () => {
 		try {
-			await api.delete(`/rankings/competitors/${competitor.id}`);
+			await api.delete(`/rankings/competitors/${confirmTarget.id}`);
+			setConfirmTarget(null);
 			loadCompetitors();
 		} catch (err) {
-			setError(
-				err.response?.data?.error || 'Failed to delete competitor',
-			);
+			setError(err.response?.data?.error || 'Failed to delete competitor');
+			setConfirmTarget(null);
 		}
 	};
 
@@ -175,9 +157,7 @@ export default function CompetitorsListPage() {
 					<button
 						className="competitor-link"
 						onClick={() =>
-							navigate(
-								`/admin/competitors/${info.row.original.id}`,
-							)
+							navigate(`/admin/competitors/${info.row.original.id}`)
 						}
 					>
 						{info.getValue()}
@@ -186,9 +166,7 @@ export default function CompetitorsListPage() {
 			}),
 			columnHelper.accessor('email', {
 				header: 'Email Status',
-				cell: (info) => (
-					<EmailStatusBadge competitor={info.row.original} />
-				),
+				cell: (info) => <EmailStatusBadge competitor={info.row.original} />,
 				enableSorting: false,
 			}),
 			columnHelper.accessor('total_score', {
@@ -197,9 +175,7 @@ export default function CompetitorsListPage() {
 					const value = info.getValue();
 					if (value === null || value === 0)
 						return <span className="score-null">—</span>;
-					return (
-						<span className="score-value">{value.toFixed(1)}</span>
-					);
+					return <span className="score-value">{value.toFixed(1)}</span>;
 				},
 			}),
 			columnHelper.accessor('tournament_count', {
@@ -240,25 +216,19 @@ export default function CompetitorsListPage() {
 		getFilteredRowModel: getFilteredRowModel(),
 	});
 
-	if (loading)
-		return <div className="page-loading">Loading competitors…</div>;
+	if (loading) return <div className="page-loading">Loading competitors…</div>;
 
 	return (
 		<div className="competitors-list-page">
-			<div className="page-header">
-				<div className="page-title">
-					<h1>Competitors</h1>
-					<span className="competitor-count">
-						{data.length} competitors
-					</span>
-				</div>
-				<button
-					className="btn-primary"
-					onClick={() => setShowAddModal(true)}
-				>
-					Add Competitor
-				</button>
-			</div>
+			<PageHeader
+				title="Competitors"
+				subtitle={`${data.length} competitors`}
+				action={
+					<button className="btn-primary" onClick={() => setShowAddModal(true)}>
+						Add Competitor
+					</button>
+				}
+			/>
 
 			{error && <div className="alert alert-error">{error}</div>}
 
@@ -278,9 +248,7 @@ export default function CompetitorsListPage() {
 						<input
 							type="checkbox"
 							checked={showPlaceholdersOnly}
-							onChange={(e) =>
-								setShowPlaceholdersOnly(e.target.checked)
-							}
+							onChange={(e) => setShowPlaceholdersOnly(e.target.checked)}
 						/>
 						Show only placeholder emails
 					</label>
@@ -288,18 +256,15 @@ export default function CompetitorsListPage() {
 			</div>
 
 			{data.length === 0 ? (
-				<div className="card empty-state">
-					{showPlaceholdersOnly ? (
-						<p>No competitors with placeholder emails found.</p>
-					) : filtering ? (
-						<p>No competitors match your search.</p>
-					) : (
-						<p>
-							No competitors yet. Add some competitors to get
-							started.
-						</p>
-					)}
-				</div>
+				<EmptyState
+					message={
+						showPlaceholdersOnly
+							? 'No competitors with placeholder emails found.'
+							: filtering
+								? 'No competitors match your search.'
+								: 'No competitors yet. Add some competitors to get started.'
+					}
+				/>
 			) : (
 				<div className="table-wrapper card">
 					<table className="competitors-table">
@@ -310,20 +275,14 @@ export default function CompetitorsListPage() {
 										<th
 											key={header.id}
 											onClick={header.column.getToggleSortingHandler()}
-											className={
-												header.column.getCanSort()
-													? 'sortable'
-													: ''
-											}
+											className={header.column.getCanSort() ? 'sortable' : ''}
 										>
 											{flexRender(
 												header.column.columnDef.header,
 												header.getContext(),
 											)}
-											{header.column.getIsSorted() ===
-												'asc' && ' ↑'}
-											{header.column.getIsSorted() ===
-												'desc' && ' ↓'}
+											{header.column.getIsSorted() === 'asc' && ' ↑'}
+											{header.column.getIsSorted() === 'desc' && ' ↓'}
 										</th>
 									))}
 								</tr>
@@ -351,6 +310,18 @@ export default function CompetitorsListPage() {
 				isOpen={showAddModal}
 				onClose={() => setShowAddModal(false)}
 				onAdd={loadCompetitors}
+			/>
+			<ConfirmDialog
+				isOpen={confirmTarget !== null}
+				title="Delete Competitor"
+				message={
+					confirmTarget
+						? `Delete "${confirmTarget.name}"${confirmTarget.tournament_count > 0 ? ` and ${confirmTarget.tournament_count} tournament result(s)` : ''}? This cannot be undone.`
+						: ''
+				}
+				confirmLabel="Delete"
+				onConfirm={handleDeleteConfirmed}
+				onCancel={() => setConfirmTarget(null)}
 			/>
 		</div>
 	);

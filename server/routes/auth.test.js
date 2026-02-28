@@ -4,11 +4,10 @@ import Database from 'better-sqlite3';
 import bcrypt from 'bcryptjs';
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import path from 'path';
 
 // Import factory function and auth middleware
 const createAuthRouter = require('./auth.js');
-import { authenticate, requireAdmin, requireOwner, signToken } from '../middleware/auth.js';
+import { authenticate, requireAdmin, signToken } from '../middleware/auth.js';
 const { errorHandler } = require('../middleware/errors.js');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
@@ -229,8 +228,6 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 // --- INTEGRATION SMOKE TESTS: Real Production Routes ---
 describe('Auth Integration Smoke Tests', () => {
 	let db;
-	let app;
-
 	beforeEach(() => {
 		// Create in-memory database for smoke tests
 		db = new Database(':memory:');
@@ -255,7 +252,7 @@ describe('Auth Integration Smoke Tests', () => {
 			.run(1, 'smoketest', hash, 'admin');
 
 		// Create app with factory function for smoke tests
-		app = createTestApp(db);
+		createTestApp(db);
 	});
 
 	afterEach(() => {

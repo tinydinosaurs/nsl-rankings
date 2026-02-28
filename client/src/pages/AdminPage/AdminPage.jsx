@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import api from '../utils/api';
-import { EVENTS, EVENT_LABELS } from '../constants/events';
+import api from '../../utils/api';
+import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import './AdminPage.css';
 
 // ── Sub-components ──────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ function CompetitorManager() {
 			</form>
 			<div className="list">
 				{competitors.map((c) => (
-				<div className="list-row" key={`competitor-${c.id}`}>
+					<div className="list-row" key={`competitor-${c.id}`}>
 						{editId === c.id ? (
 							<>
 								<input
@@ -200,7 +200,10 @@ function ManualResultEntry() {
 					>
 						<option value="">Select competitor…</option>
 						{competitors.map((c) => (
-						<option key={`manual-competitor-${c.id}`} value={c.id}>
+							<option
+								key={`manual-competitor-${c.id}`}
+								value={c.id}
+							>
 								{c.name}
 							</option>
 						))}

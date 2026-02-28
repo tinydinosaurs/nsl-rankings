@@ -48,7 +48,6 @@ describe('NSL Rankings Integration Tests', () => {
 	let app;
 	let adminToken;
 	let adminUser;
-	let regularUser;
 
 	beforeEach(async () => {
 		// Create in-memory database

@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
-const { signToken, requireAdmin, requireOwner } = require('../middleware/auth');
+const { signToken, requireOwner } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validation');
 const {
 	AuthenticationError,

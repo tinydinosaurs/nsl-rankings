@@ -1,5 +1,4 @@
 const db = require('./db/database');
-const bcrypt = require('bcryptjs');
 
 /**
  * Demo seed data for POC testing

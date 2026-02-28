@@ -117,7 +117,7 @@ function asyncHandler(fn) {
  * Global error handling middleware
  * Must be placed after all routes in Express app
  */
-function errorHandler(err, req, res, next) {
+function errorHandler(err, req, res, _next) {
 	let error = err;
 
 	// Convert known error types to ApiError instances

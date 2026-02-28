@@ -24,7 +24,6 @@ function createValidationTestApp(db) {
 describe('Request Validation Tests', () => {
 	let db;
 	let app;
-	let adminToken;
 	let ownerToken;
 
 	beforeEach(() => {
@@ -56,11 +55,6 @@ describe('Request Validation Tests', () => {
 		const jwt = require('jsonwebtoken');
 		const JWT_SECRET =
 			process.env.JWT_SECRET || 'dev-secret-change-in-production';
-		adminToken = jwt.sign(
-			{ id: 1, username: 'validationadmin', role: 'admin' },
-			JWT_SECRET,
-			{ expiresIn: '24h' },
-		);
 		ownerToken = jwt.sign(
 			{ id: 2, username: 'validationowner', role: 'owner' },
 			JWT_SECRET,
