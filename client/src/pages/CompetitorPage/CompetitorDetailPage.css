@@ -1,0 +1,103 @@
+.competitor-detail-page {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+/* Profile */
+.competitor-detail__profile {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.competitor-detail__email-status {
+	padding-top: 0.25rem;
+}
+
+/* Editable field */
+.editable-field {
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+	flex-wrap: wrap;
+}
+
+.editable-field--editing {
+	flex-direction: column;
+	align-items: flex-start;
+}
+
+.editable-field__label {
+	font-weight: 600;
+	min-width: 5rem;
+	color: var(--color-text-muted);
+	font-size: 0.875rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.editable-field__value {
+	flex: 1;
+}
+
+.editable-field__input {
+	width: 100%;
+	max-width: 24rem;
+}
+
+.editable-field__actions {
+	display: flex;
+	gap: 0.5rem;
+}
+
+.editable-field__error {
+	color: var(--color-danger);
+	font-size: 0.875rem;
+}
+
+.muted {
+	color: var(--color-text-muted);
+}
+
+/* Score cards */
+.competitor-detail__scores .score-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+	gap: 1rem;
+}
+
+.score-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.35rem;
+	padding: 1rem;
+	background: var(--color-bg);
+	border-radius: var(--radius);
+	border: 1px solid var(--color-border);
+}
+
+.score-card__label {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	font-weight: 600;
+}
+
+.score-card__value {
+	font-size: 1.75rem;
+	font-weight: 700;
+	color: var(--color-primary);
+}
+
+/* History table */
+.competitor-detail__history .table-wrapper {
+	overflow-x: auto;
+}
+
+.score-cell {
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}

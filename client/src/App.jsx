@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import LoginPage from './pages/LoginPage/LoginPage.jsx';
 import RankingsPage from './pages/RankingsPage/RankingsPage.jsx';
-import CompetitorPage from './pages/CompetitorPage/CompetitorPage.jsx';
+import CompetitorDetailPage from './pages/CompetitorPage/CompetitorDetailPage.jsx';
 import CompetitorsListPage from './pages/CompetitorPage/CompetitorsListPage.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
 import UploadPage from './pages/UploadPage/UploadPage.jsx';
@@ -41,14 +41,18 @@ export default function App() {
 						}
 					>
 						<Route
-							path="competitors/:id"
-							element={<CompetitorPage />}
-						/>
-						<Route
 							path="admin"
 							element={
 								<RequireAdmin>
 									<AdminPage />
+								</RequireAdmin>
+							}
+						/>
+						<Route
+							path="upload"
+							element={
+								<RequireAdmin>
+									<UploadPage />
 								</RequireAdmin>
 							}
 						/>
@@ -61,12 +65,8 @@ export default function App() {
 							}
 						/>
 						<Route
-							path="upload"
-							element={
-								<RequireAdmin>
-									<UploadPage />
-								</RequireAdmin>
-							}
+							path="admin/competitors/:id"
+							element={<CompetitorDetailPage />}
 						/>
 					</Route>
 				</Routes>

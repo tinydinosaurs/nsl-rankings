@@ -1,4 +1,5 @@
 const db = require('./db/database');
+const { generatePlaceholderEmail } = require('./utils/competitorUtils');
 
 /**
  * Demo seed data for POC testing
@@ -9,7 +10,7 @@ console.log('🌱 Seeding demo data...');
 
 // Demo competitors - mix of realistic names with email addresses
 const demoCompetitors = [
-	{ name: 'Alice Chen', email: 'alice.chen@email.com' },
+	{ name: 'Alice Chen', email: null }, // Missing email → placeholder test
 	{ name: 'Bob Martinez', email: 'bob.martinez@email.com' },
 	{ name: 'Carmen Rodriguez', email: 'carmen.rodriguez@email.com' },
 	{ name: 'David Park', email: 'david.park@email.com' },
@@ -34,6 +35,8 @@ const demoCompetitors = [
 	{ name: 'Xavier Dubois', email: 'xavier.dubois@email.com' },
 	{ name: 'Yuki Tanaka', email: 'yuki.tanaka@email.com' },
 	{ name: 'Zoe Mitchell', email: 'zoe.mitchell@email.com' },
+	{ name: 'Jordan Reeves', email: null }, // Missing email → placeholder test
+	{ name: 'Sam Holloway', email: null }, // Missing email → placeholder test
 	{ name: 'Alex Morgan', email: 'alex.morgan@email.com' },
 	{ name: 'Blair Hughes', email: 'blair.hughes@email.com' },
 	{ name: 'Casey Smith', email: 'casey.smith@email.com' },
@@ -49,6 +52,7 @@ const demoCompetitors = [
 	{ name: 'Mia Thompson', email: 'mia.thompson@email.com' },
 	{ name: 'Nathan Reed', email: 'nathan.reed@email.com' },
 	{ name: 'Oscar Silva', email: 'oscar.silva@email.com' },
+	{ name: 'River Blackwood-James', email: null }, // long hyphenated name → placeholder email test
 ];
 
 // Demo tournaments with realistic data
@@ -98,7 +102,10 @@ for (const competitor of demoCompetitors) {
 	try {
 		const result = db
 			.prepare('INSERT INTO competitors (name, email) VALUES (?, ?)')
-			.run(competitor.name, competitor.email);
+			.run(
+				competitor.name,
+				competitor.email ?? generatePlaceholderEmail(competitor.name),
+			);
 		competitorIds.push(result.lastInsertRowid);
 	} catch (e) {
 		if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -150,9 +157,7 @@ for (const tournament of demoTournaments) {
 		if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
 			// Tournament already exists, get ID
 			const existing = db
-				.prepare(
-					'SELECT id FROM tournaments WHERE name = ? AND date = ?',
-				)
+				.prepare('SELECT id FROM tournaments WHERE name = ? AND date = ?')
 				.get(tournament.name, tournament.date);
 			tournamentIds.push(existing.id);
 		} else {
@@ -261,7 +266,7 @@ if (alice) {
 }
 
 // Create some ties by making a few competitors have identical scores
-const tieCompetitors = competitorIds.slice(5, 8); // Bob, Carmen, David
+const tieCompetitors = competitorIds.slice(5, 8); // Frank, Grace, Hassan
 const tieTournament = tournamentIds[1];
 const tieScore = 75;
 for (const competitorId of tieCompetitors) {
@@ -278,6 +283,46 @@ for (const competitorId of tieCompetitors) {
 	}
 }
 
+// Zero score — participated but scored nothing in one event
+const zeroScorer = db
+	.prepare('SELECT id FROM competitors WHERE name = ?')
+	.get('Logan Scott');
+if (zeroScorer) {
+	try {
+		db.prepare(
+			`
+            INSERT OR REPLACE INTO tournament_results
+            (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+		).run(zeroScorer.id, tournamentIds[2], 0, 0, 0, 0);
+	} catch (e) {
+		console.log('Could not add zero score:', e.message);
+	}
+}
+
+// Single tournament competitor — only attended one event
+const singleTournament = db
+	.prepare('SELECT id FROM competitors WHERE name = ?')
+	.get('Mia Thompson');
+if (singleTournament) {
+	// Delete any existing results for this competitor first
+	db.prepare('DELETE FROM tournament_results WHERE competitor_id = ?').run(
+		singleTournament.id,
+	);
+	try {
+		db.prepare(
+			`
+            INSERT INTO tournament_results
+            (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `,
+		).run(singleTournament.id, tournamentIds[0], 85, 90, 78, 88);
+	} catch (e) {
+		console.log('Could not add single tournament result:', e.message);
+	}
+}
+
 console.log('✅ Demo data seeded successfully!');
 console.log(`📊 Added ${demoCompetitors.length} competitors`);
 console.log(`🏆 Added ${demoTournaments.length} tournaments`);
@@ -285,8 +330,7 @@ console.log('🎯 Includes edge cases: perfect scores, ties, missing events');
 console.log('');
 console.log('You can now:');
 console.log('🌐 Visit http://localhost:5173 for public leaderboard');
-console.log('🔐 Login as admin/admin123 for full access');
-console.log('👑 Login as owner/owner123 for owner functions');
+console.log('🔐 Login with credentials from your .env file');
 console.log('🗑️  Run "npm run seed:reset" to clear data');
 
 db.close();
