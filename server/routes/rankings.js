@@ -26,7 +26,12 @@ function createRankingsRouter(db) {
 	// GET /api/rankings/public — public rankings table (no auth required)
 	router.get('/public', (req, res) => {
 		const rankings = computeRankings(db);
-		res.json(rankings);
+		const { tournament_count, last_updated } = db
+			.prepare(
+				`SELECT COUNT(*) as tournament_count, MAX(date) as last_updated FROM tournaments`,
+			)
+			.get();
+		res.json({ rankings, tournament_count, last_updated });
 	});
 
 	// GET /api/rankings/competitors — enhanced list with scores, counts, and filtering
