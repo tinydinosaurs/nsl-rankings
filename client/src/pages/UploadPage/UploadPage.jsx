@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import './UploadPage.css';
@@ -16,6 +17,7 @@ export default function UploadPage() {
 	const [step, setStep] = useState('configure'); // configure | preview | success
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [conflictTournamentId, setConflictTournamentId] = useState(null);
 	const [successInfo, setSuccessInfo] = useState(null);
 	const fileRef = useRef();
 
@@ -84,6 +86,7 @@ export default function UploadPage() {
 
 	const handleCommit = async () => {
 		setError('');
+		setConflictTournamentId(null);
 		setLoading(true);
 		try {
 			const { data } = await api.post('/upload/commit', {
@@ -96,7 +99,12 @@ export default function UploadPage() {
 			setSuccessInfo(data);
 			setStep('success');
 		} catch (err) {
-			setError(err.response?.data?.error || 'Commit failed');
+			const d = err.response?.data;
+			if (err.response?.status === 409 && d?.tournament_id) {
+				setConflictTournamentId(d.tournament_id);
+			} else {
+				setError(d?.error || 'Save failed — the data was not changed. You can try again.');
+			}
 		} finally {
 			setLoading(false);
 		}
@@ -107,6 +115,7 @@ export default function UploadPage() {
 		setSettings(defaultSettings());
 		setPreview(null);
 		setError('');
+		setConflictTournamentId(null);
 		setSuccessInfo(null);
 		if (fileRef.current) fileRef.current.value = '';
 	};
@@ -118,36 +127,27 @@ export default function UploadPage() {
 				<div className="alert alert-success">
 					Tournament saved successfully.
 					{successInfo?.new_competitors?.length > 0 && (
-						<>
-							{' '}
-							{successInfo.new_competitors.length} new
-							competitor(s) added.
-						</>
+						<> {successInfo.new_competitors.length} new competitor(s) added.</>
 					)}
 					{successInfo?.updated_competitors?.length > 0 && (
-						<>
-							{' '}
-							{successInfo.updated_competitors.length}{' '}
-							competitor(s) updated.
-						</>
+						<> {successInfo.updated_competitors.length} competitor(s) updated.</>
 					)}
 				</div>
 				<div className="button-row">
-					<button className="btn-primary" onClick={handleReset}>
+					{successInfo?.tournament_id && (
+						<Link
+							to={`/admin/tournaments/${successInfo.tournament_id}`}
+							className="btn btn-primary"
+						>
+							View Tournament
+						</Link>
+					)}
+					<button className="btn btn-secondary" onClick={handleReset}>
 						Upload Another
 					</button>
-					<a
-						href="/"
-						className="btn-ghost"
-						style={{
-							padding: '8px 16px',
-							borderRadius: 'var(--radius)',
-							border: '1px solid var(--border)',
-							color: 'var(--text-muted)',
-						}}
-					>
+					<Link to="/" className="btn btn-ghost">
 						View Rankings
-					</a>
+					</Link>
 				</div>
 			</div>
 		);
@@ -289,6 +289,15 @@ export default function UploadPage() {
 			{step === 'preview' && preview && (
 				<div className="preview-section">
 					{error && <div className="alert alert-error">{error}</div>}
+					{conflictTournamentId && (
+						<div className="alert alert-error">
+							A tournament with this name and date already exists.{' '}
+							<Link to={`/admin/tournaments/${conflictTournamentId}`}>
+								View existing tournament
+							</Link>{' '}
+							or go back and change the name or date.
+						</div>
+					)}
 
 					{preview.warnings?.length > 0 && (
 						<div className="alert alert-warn">

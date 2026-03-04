@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
 	useReactTable,
 	getCoreRowModel,
@@ -16,25 +15,29 @@ function ScoreCell({ value }) {
 	if (value === null || value === undefined)
 		return <span className="score-null">—</span>;
 	const pct = Math.round(value * 10) / 10;
-	const hue = (pct / 100) * 120; // red → green
-	return (
-		<span className="score-cell" style={{ color: `hsl(${hue}, 70%, 65%)` }}>
-			{pct.toFixed(1)}
-		</span>
-	);
+	return <span className="score-cell">{pct.toFixed(1)}</span>;
 }
 
 export default function RankingsPage() {
 	const [data, setData] = useState([]);
+	const [meta, setMeta] = useState({
+		tournament_count: null,
+		last_updated: null,
+	});
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [sorting, setSorting] = useState([{ id: 'total', desc: true }]);
-	const navigate = useNavigate();
 
 	useEffect(() => {
-		// Use public endpoint since leaderboard should be publicly accessible
-		api.get('/rankings/public')
-			.then((res) => setData(res.data))
+		api
+			.get('/rankings/public')
+			.then((res) => {
+				setData(res.data.rankings);
+				setMeta({
+					tournament_count: res.data.tournament_count,
+					last_updated: res.data.last_updated,
+				});
+			})
 			.catch(() => setError('Failed to load rankings'))
 			.finally(() => setLoading(false));
 	}, []);
@@ -43,23 +46,12 @@ export default function RankingsPage() {
 		() => [
 			columnHelper.accessor('rank', {
 				header: '#',
-				cell: (info) => (
-					<span className="rank-num">{info.getValue()}</span>
-				),
+				cell: (info) => <span className="rank-num">{info.getValue()}</span>,
 				size: 48,
 			}),
 			columnHelper.accessor('name', {
 				header: 'Competitor',
-				cell: (info) => (
-					<button
-						className="competitor-link"
-						onClick={() =>
-							navigate(`/competitors/${info.row.original.id}`)
-						}
-					>
-						{info.getValue()}
-					</button>
-				),
+				cell: (info) => info.getValue(),
 			}),
 			columnHelper.accessor('knockdowns', {
 				header: 'Knockdowns',
@@ -82,7 +74,7 @@ export default function RankingsPage() {
 				cell: (info) => <ScoreCell value={info.getValue()} />,
 			}),
 		],
-		[navigate],
+		[],
 	);
 
 	// eslint-disable-next-line react-hooks/incompatible-library
@@ -102,16 +94,25 @@ export default function RankingsPage() {
 		<div className="rankings-page">
 			<div className="page-header">
 				<h1>National Rankings</h1>
-				<span className="competitor-count">
-					{data.length} competitors
-				</span>
+				<div className="rankings-meta">
+					{meta.tournament_count != null && (
+						<span className="meta-stat">
+							{data.length} competitor{data.length !== 1 ? 's' : ''} &middot;{' '}
+							{meta.tournament_count} tournament
+							{meta.tournament_count !== 1 ? 's' : ''}
+						</span>
+					)}
+					{meta.last_updated && (
+						<span className="meta-updated">Updated {meta.last_updated}</span>
+					)}
+				</div>
 			</div>
 
 			{data.length === 0 ? (
 				<div className="card empty-state">
 					<p>
-						No rankings yet. Upload a CSV or add results manually to
-						get started.
+						No rankings yet. Results will appear here once an admin uploads
+						tournament data.
 					</p>
 				</div>
 			) : (
@@ -124,11 +125,7 @@ export default function RankingsPage() {
 										<th
 											key={header.id}
 											onClick={header.column.getToggleSortingHandler()}
-											className={
-												header.column.getCanSort()
-													? 'sortable'
-													: ''
-											}
+											className={header.column.getCanSort() ? 'sortable' : ''}
 											style={{
 												width:
 													header.getSize() !== 150
@@ -140,10 +137,8 @@ export default function RankingsPage() {
 												header.column.columnDef.header,
 												header.getContext(),
 											)}
-											{header.column.getIsSorted() ===
-												'asc' && ' ↑'}
-											{header.column.getIsSorted() ===
-												'desc' && ' ↓'}
+											{header.column.getIsSorted() === 'asc' && ' ↑'}
+											{header.column.getIsSorted() === 'desc' && ' ↓'}
 										</th>
 									))}
 								</tr>

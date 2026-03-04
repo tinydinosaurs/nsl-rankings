@@ -1,90 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
+import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
+import EditableField from '../../components/shared/EditableField/EditableField.jsx';
 import './CompetitorDetailPage.css';
-
-function EditableField({ label, value, onSave, type = 'text', placeholder }) {
-	const [editing, setEditing] = useState(false);
-	const [draft, setDraft] = useState(value ?? '');
-	const [error, setError] = useState('');
-	const [saving, setSaving] = useState(false);
-
-	const handleSave = async () => {
-		setSaving(true);
-		setError('');
-		try {
-			await onSave(draft.trim());
-			setEditing(false);
-		} catch (err) {
-			setError(err.message || 'Failed to save');
-		} finally {
-			setSaving(false);
-		}
-	};
-
-	const handleCancel = () => {
-		setDraft(value ?? '');
-		setError('');
-		setEditing(false);
-	};
-
-	if (!editing) {
-		return (
-			<div className="editable-field">
-				<span className="editable-field__label">{label}</span>
-				<span className="editable-field__value">
-					{value ||
-						(placeholder ? (
-							<em className="muted">{placeholder}</em>
-						) : (
-							<em className="muted">Not set</em>
-						))}
-				</span>
-				<button
-					className="btn btn-sm btn-secondary"
-					onClick={() => setEditing(true)}
-				>
-					Edit
-				</button>
-			</div>
-		);
-	}
-
-	return (
-		<div className="editable-field editable-field--editing">
-			<span className="editable-field__label">{label}</span>
-			<input
-				className="editable-field__input"
-				type={type}
-				value={draft}
-				placeholder={placeholder}
-				onChange={(e) => setDraft(e.target.value)}
-				autoFocus
-			/>
-			<div className="editable-field__actions">
-				<button
-					className="btn btn-sm btn-primary"
-					onClick={handleSave}
-					disabled={saving}
-				>
-					{saving ? 'Saving…' : 'Save'}
-				</button>
-				<button
-					className="btn btn-sm btn-secondary"
-					onClick={handleCancel}
-					disabled={saving}
-				>
-					Cancel
-				</button>
-			</div>
-			{error && <span className="editable-field__error">{error}</span>}
-		</div>
-	);
-}
 
 function ScoreCard({ label, score }) {
 	return (
@@ -107,9 +30,10 @@ export default function CompetitorDetailPage() {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [deleteResultTarget, setDeleteResultTarget] = useState(null);
+	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteCompetitorOpen, setDeleteCompetitorOpen] = useState(false);
 
-	const load = async () => {
+	const load = useCallback(async () => {
 		setLoading(true);
 		setError('');
 		try {
@@ -122,11 +46,11 @@ export default function CompetitorDetailPage() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [id]);
 
 	useEffect(() => {
 		load();
-	}, [id]);
+	}, [load]);
 
 	const handleSaveName = async (name) => {
 		if (!name) throw new Error('Name is required');
@@ -156,7 +80,6 @@ export default function CompetitorDetailPage() {
 	if (loading) return <div className="page-loading">Loading competitor…</div>;
 	if (error) return <div className="alert alert-error">{error}</div>;
 	if (!competitor) return <EmptyState message="Competitor not found." />;
-	console.log('COMPETITOR DATA', competitor.email);
 	return (
 		<div className="competitor-detail-page">
 			<PageHeader
@@ -245,7 +168,13 @@ export default function CompetitorDetailPage() {
 										</td>
 										<td className="score-cell">{result.speed_earned ?? '—'}</td>
 										<td className="score-cell">{result.woods_earned ?? '—'}</td>
-										<td>
+										<td className="row-actions">
+											<button
+												className="btn btn-sm btn-secondary"
+												onClick={() => setEditResultTarget(result)}
+											>
+												Edit
+											</button>
 											<button
 												className="btn btn-sm btn-danger"
 												onClick={() => setDeleteResultTarget(result)}
@@ -260,7 +189,15 @@ export default function CompetitorDetailPage() {
 					</div>
 				)}
 			</section>
-
+			{editResultTarget && (
+				<EditResultModal
+					key={editResultTarget.result_id}
+					result={editResultTarget}
+					title={`Edit Result — ${editResultTarget.tournament_name}`}
+					onClose={() => setEditResultTarget(null)}
+					onSaved={load}
+				/>
+			)}
 			{/* Delete result confirmation */}
 			<ConfirmDialog
 				isOpen={!!deleteResultTarget}

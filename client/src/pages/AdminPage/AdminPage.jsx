@@ -1,463 +1,178 @@
 import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import './AdminPage.css';
 
-// ── Sub-components ──────────────────────────────────────────────────────────
+// ── Stat Card ──────────────────────────────────────────────────────────────
 
-function CompetitorManager() {
-	const [competitors, setCompetitors] = useState([]);
-	const [newName, setNewName] = useState('');
-	const [editId, setEditId] = useState(null);
-	const [editName, setEditName] = useState('');
-	const [error, setError] = useState('');
-
-	const load = () =>
-		api.get('/rankings/competitors').then((r) => {
-			setCompetitors(r.data);
-		});
-	useEffect(() => {
-		load();
-	}, []);
-
-	const add = async (e) => {
-		e.preventDefault();
-		setError('');
-		try {
-			await api.post('/rankings/competitors', { name: newName });
-			setNewName('');
-			load();
-		} catch (err) {
-			setError(err.response?.data?.error || 'Failed to add competitor');
-		}
-	};
-
-	const save = async (id) => {
-		setError('');
-		try {
-			await api.put(`/rankings/competitors/${id}`, { name: editName });
-			setEditId(null);
-			load();
-		} catch (err) {
-			setError(err.response?.data?.error || 'Failed to update');
-		}
-	};
-
-	const remove = async (id, name) => {
-		if (
-			!confirm(
-				`Delete "${name}" and all their results? This cannot be undone.`,
-			)
-		)
-			return;
-		await api.delete(`/rankings/competitors/${id}`);
-		load();
-	};
-
-	return (
-		<div className="admin-section">
-			<h2>Competitors</h2>
-			{error && <div className="alert alert-error">{error}</div>}
-			<form onSubmit={add} className="inline-form">
-				<input
-					type="text"
-					placeholder="Competitor name"
-					value={newName}
-					onChange={(e) => setNewName(e.target.value)}
-					required
-				/>
-				<button type="submit" className="btn-primary">
-					Add
-				</button>
-			</form>
-			<div className="list">
-				{competitors.map((c) => (
-					<div className="list-row" key={`competitor-${c.id}`}>
-						{editId === c.id ? (
-							<>
-								<input
-									value={editName}
-									onChange={(e) =>
-										setEditName(e.target.value)
-									}
-								/>
-								<button
-									className="btn-primary"
-									onClick={() => save(c.id)}
-								>
-									Save
-								</button>
-								<button
-									className="btn-ghost"
-									onClick={() => setEditId(null)}
-								>
-									Cancel
-								</button>
-							</>
-						) : (
-							<>
-								<span className="list-name">{c.name}</span>
-								<button
-									className="btn-ghost"
-									onClick={() => {
-										setEditId(c.id);
-										setEditName(c.name);
-									}}
-								>
-									Rename
-								</button>
-								<button
-									className="btn-danger"
-									onClick={() => remove(c.id, c.name)}
-								>
-									Delete
-								</button>
-							</>
-						)}
-					</div>
-				))}
-				{competitors.length === 0 && (
-					<p className="empty">No competitors yet.</p>
-				)}
-			</div>
+function StatCard({ label, value, sub, to, accent }) {
+	const inner = (
+		<div className={`stat-card${accent ? ' stat-card--accent' : ''}`}>
+			<div className="stat-value">{value ?? '—'}</div>
+			<div className="stat-label">{label}</div>
+			{sub && <div className="stat-sub">{sub}</div>}
 		</div>
+	);
+	return to ? (
+		<Link to={to} className="stat-card-link">
+			{inner}
+		</Link>
+	) : (
+		inner
 	);
 }
 
-function ManualResultEntry() {
-	const [competitors, setCompetitors] = useState([]);
-	const [tournaments, setTournaments] = useState([]);
-	const [form, setForm] = useState({
-		competitor_id: '',
-		tournament_id: '',
-		knockdowns_earned: '',
-		distance_earned: '',
-		speed_earned: '',
-		woods_earned: '',
-	});
-	const [activeTournamentEvents, setActiveTournamentEvents] = useState([]);
-	const [status, setStatus] = useState('');
-	const [error, setError] = useState('');
-
-	useEffect(() => {
-		api.get('/rankings/competitors').then((r) => {
-			setCompetitors(r.data);
-		});
-		api.get('/rankings/tournaments').then((r) => setTournaments(r.data));
-	}, []);
-
-	const selectTournament = (id) => {
-		const t = tournaments.find((t) => t.id === parseInt(id));
-		if (t) {
-			const active = EVENTS.filter((e) => t[`has_${e}`]);
-			setActiveTournamentEvents(active);
-		} else {
-			setActiveTournamentEvents([]);
-		}
-		setForm((f) => ({ ...f, tournament_id: id }));
-	};
-
-	const submit = async (e) => {
-		e.preventDefault();
-		setError('');
-		setStatus('');
-		const payload = {
-			competitor_id: parseInt(form.competitor_id),
-			tournament_id: parseInt(form.tournament_id),
-		};
-		for (const event of EVENTS) {
-			payload[`${event}_earned`] = activeTournamentEvents.includes(event)
-				? form[`${event}_earned`] !== ''
-					? parseFloat(form[`${event}_earned`])
-					: 0
-				: null;
-		}
-		try {
-			await api.post('/rankings/results', payload);
-			setStatus('Result saved.');
-		} catch (err) {
-			setError(err.response?.data?.error || 'Failed to save');
-		}
-	};
-
-	return (
-		<div className="admin-section">
-			<h2>Manual Result Entry</h2>
-			{error && <div className="alert alert-error">{error}</div>}
-			{status && <div className="alert alert-success">{status}</div>}
-			<form onSubmit={submit} className="manual-form">
-				<div className="form-group">
-					<label>Competitor</label>
-					<select
-						value={form.competitor_id}
-						onChange={(e) =>
-							setForm((f) => ({
-								...f,
-								competitor_id: e.target.value,
-							}))
-						}
-						required
-					>
-						<option value="">Select competitor…</option>
-						{competitors.map((c) => (
-							<option
-								key={`manual-competitor-${c.id}`}
-								value={c.id}
-							>
-								{c.name}
-							</option>
-						))}
-					</select>
-				</div>
-				<div className="form-group">
-					<label>Tournament</label>
-					<select
-						value={form.tournament_id}
-						onChange={(e) => selectTournament(e.target.value)}
-						required
-					>
-						<option value="">Select tournament…</option>
-						{tournaments.map((t) => (
-							<option key={t.id} value={t.id}>
-								{t.name ? `${t.name} (${t.date})` : t.date}
-							</option>
-						))}
-					</select>
-				</div>
-				{activeTournamentEvents.length > 0 && (
-					<div className="event-inputs">
-						{activeTournamentEvents.map((event) => (
-							<div className="form-group" key={event}>
-								<label>{EVENT_LABELS[event]} earned</label>
-								<input
-									type="number"
-									min="0"
-									step="0.01"
-									placeholder="0"
-									value={form[`${event}_earned`]}
-									onChange={(e) =>
-										setForm((f) => ({
-											...f,
-											[`${event}_earned`]: e.target.value,
-										}))
-									}
-								/>
-							</div>
-						))}
-					</div>
-				)}
-				<button
-					type="submit"
-					className="btn-primary"
-					disabled={!form.competitor_id || !form.tournament_id}
-				>
-					Save Result
-				</button>
-			</form>
-		</div>
-	);
-}
-
-function TournamentManager() {
-	const [tournaments, setTournaments] = useState([]);
-	const [form, setForm] = useState({
-		name: '',
-		date: '',
-		has_knockdowns: true,
-		has_distance: true,
-		has_speed: true,
-		has_woods: true,
-		total_points_knockdowns: 120,
-		total_points_distance: 120,
-		total_points_speed: 120,
-		total_points_woods: 120,
-	});
-	const [error, setError] = useState('');
-	const [status, setStatus] = useState('');
-
-	const load = () =>
-		api.get('/rankings/tournaments').then((r) => setTournaments(r.data));
-	useEffect(() => {
-		load();
-	}, []);
-
-	const add = async (e) => {
-		e.preventDefault();
-		setError('');
-		setStatus('');
-		try {
-			await api.post('/rankings/tournaments', form);
-			setStatus('Tournament created.');
-			load();
-		} catch (err) {
-			setError(
-				err.response?.data?.error || 'Failed to create tournament',
-			);
-		}
-	};
-
-	const remove = async (id, label) => {
-		if (
-			!confirm(
-				`Delete tournament "${label}" and ALL its results? This cannot be undone.`,
-			)
-		)
-			return;
-		await api.delete(`/rankings/tournaments/${id}`);
-		load();
-	};
-
-	return (
-		<div className="admin-section">
-			<h2>Tournaments</h2>
-			{error && <div className="alert alert-error">{error}</div>}
-			{status && <div className="alert alert-success">{status}</div>}
-
-			<form onSubmit={add} className="manual-form">
-				<div className="form-row">
-					<div className="form-group">
-						<label>
-							Name{' '}
-							<span
-								style={{
-									color: 'var(--text-muted)',
-									fontSize: 11,
-								}}
-							>
-								(optional)
-							</span>
-						</label>
-						<input
-							value={form.name}
-							onChange={(e) =>
-								setForm((f) => ({ ...f, name: e.target.value }))
-							}
-							placeholder="Spring Regional 2025"
-						/>
-					</div>
-					<div className="form-group">
-						<label>
-							Date{' '}
-							<span style={{ color: 'var(--danger)' }}>*</span>
-						</label>
-						<input
-							type="date"
-							value={form.date}
-							onChange={(e) =>
-								setForm((f) => ({ ...f, date: e.target.value }))
-							}
-							required
-						/>
-					</div>
-				</div>
-				<div className="events-mini">
-					{EVENTS.map((event) => (
-						<label
-							key={event}
-							className="checkbox-label"
-							style={{ marginBottom: 8 }}
-						>
-							<input
-								type="checkbox"
-								checked={form[`has_${event}`]}
-								onChange={(e) =>
-									setForm((f) => ({
-										...f,
-										[`has_${event}`]: e.target.checked,
-									}))
-								}
-								style={{ width: 'auto', marginRight: 6 }}
-							/>
-							{EVENT_LABELS[event]}
-							<input
-								type="number"
-								min="1"
-								value={form[`total_points_${event}`]}
-								onChange={(e) =>
-									setForm((f) => ({
-										...f,
-										[`total_points_${event}`]:
-											parseFloat(e.target.value) || 120,
-									}))
-								}
-								disabled={!form[`has_${event}`]}
-								style={{ width: 80, marginLeft: 8 }}
-							/>
-							pts
-						</label>
-					))}
-				</div>
-				<button type="submit" className="btn-primary">
-					Create Tournament
-				</button>
-			</form>
-
-			<div className="list" style={{ marginTop: 16 }}>
-				{tournaments.map((t) => {
-					const label = t.name ? `${t.name} (${t.date})` : t.date;
-					const eventList = EVENTS.filter((e) => t[`has_${e}`])
-						.map((e) => EVENT_LABELS[e])
-						.join(', ');
-					return (
-						<div className="list-row" key={t.id}>
-							<div>
-								<span className="list-name">{label}</span>
-								<span
-									style={{
-										fontSize: 12,
-										color: 'var(--text-muted)',
-										marginLeft: 8,
-									}}
-								>
-									{eventList}
-								</span>
-							</div>
-							<button
-								className="btn-danger"
-								onClick={() => remove(t.id, label)}
-							>
-								Delete
-							</button>
-						</div>
-					);
-				})}
-				{tournaments.length === 0 && (
-					<p className="empty">No tournaments yet.</p>
-				)}
-			</div>
-		</div>
-	);
-}
-
-// ── Main Admin Page ──────────────────────────────────────────────────────────
+// ── Dashboard ──────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-	const [tab, setTab] = useState('competitors');
+	const [competitors, setCompetitors] = useState(null);
+	const [tournaments, setTournaments] = useState(null);
+	const [rankings, setRankings] = useState(null);
+	const navigate = useNavigate();
 
-	const tabs = [
-		{ id: 'competitors', label: 'Competitors' },
-		{ id: 'tournaments', label: 'Tournaments' },
-		{ id: 'results', label: 'Manual Entry' },
-	];
+	useEffect(() => {
+		api.get('/rankings/competitors').then((r) => setCompetitors(r.data));
+		api.get('/rankings/tournaments').then((r) => setTournaments(r.data));
+		api.get('/rankings/public').then((r) => setRankings(r.data.rankings));
+	}, []);
+
+	const placeholderCount = competitors?.filter((c) => c.has_placeholder_email).length ?? null;
+
+	const recentTournaments = tournaments
+		? [...tournaments]
+				.sort((a, b) => new Date(b.date) - new Date(a.date))
+				.slice(0, 5)
+		: [];
+
+	const topFive = rankings ? rankings.slice(0, 5) : [];
+	const leader = rankings?.[0];
 
 	return (
 		<div className="admin-page">
-			<h1>Admin</h1>
-			<div className="tabs">
-				{tabs.map((t) => (
-					<button
-						key={t.id}
-						className={`tab ${tab === t.id ? 'active' : ''}`}
-						onClick={() => setTab(t.id)}
-					>
-						{t.label}
-					</button>
-				))}
+			<h1 className="dashboard-title">Dashboard</h1>
+
+			{/* ── Stat Cards ── */}
+			<div className="stat-grid">
+				<StatCard
+					label="Competitors"
+					value={competitors?.length ?? '—'}
+					to="/admin/competitors"
+				/>
+				<StatCard
+					label="Tournaments"
+					value={tournaments?.length ?? '—'}
+					to="/admin/tournaments"
+				/>
+				<StatCard
+					label="Need real email"
+					value={placeholderCount ?? '—'}
+					sub={
+						placeholderCount === 0
+							? 'All emails set'
+							: placeholderCount > 0
+								? 'Placeholder addresses'
+								: null
+					}
+					accent={placeholderCount > 0}
+					to="/admin/competitors?filter=placeholder"
+				/>
+				<StatCard
+					label="Top Ranked"
+					value={leader?.name ?? '—'}
+					sub={
+						leader?.total != null ? `Score: ${leader.total.toFixed(1)}` : null
+					}
+					to={leader ? `/admin/competitors/${leader.id}` : null}
+				/>
 			</div>
-			<div className="card">
-				{tab === 'competitors' && <CompetitorManager />}
-				{tab === 'tournaments' && <TournamentManager />}
-				{tab === 'results' && <ManualResultEntry />}
+
+			{/* ── Quick Actions ── */}
+			<section className="dashboard-section">
+				<h2 className="section-heading">Quick Actions</h2>
+				<div className="action-grid">
+					<button className="action-card" onClick={() => navigate('/upload')}>
+						<span className="action-label">Upload Tournament Results</span>
+					</button>
+					<button
+						className="action-card"
+						onClick={() => navigate('/admin/competitors')}
+					>
+						<span className="action-label">Manage Competitors</span>
+					</button>
+					<button
+						className="action-card"
+						onClick={() => navigate('/admin/tournaments')}
+					>
+						<span className="action-label">Manage Tournaments</span>
+					</button>
+					<button className="action-card" onClick={() => navigate('/')}>
+						<span className="action-label">View Public Leaderboard</span>
+					</button>
+				</div>
+			</section>
+
+			{/* ── Two-column panel ── */}
+			<div className="dashboard-columns">
+				{/* Recent Tournaments */}
+				<section className="dashboard-section">
+					<div className="section-row">
+						<h2 className="section-heading">Recent Tournaments</h2>
+						<Link to="/admin/tournaments" className="section-link">
+							View all
+						</Link>
+					</div>
+					{tournaments !== null && recentTournaments.length === 0 && (
+						<p className="empty-state">
+							No tournaments yet. <Link to="/admin/upload">Upload a CSV</Link>{' '}
+							to get started.
+						</p>
+					)}
+					<div className="panel-list">
+						{recentTournaments.map((t) => (
+							<Link
+								key={t.id}
+								to={`/admin/tournaments/${t.id}`}
+								className="panel-row"
+							>
+								<div className="panel-name">{t.name || t.date}</div>
+								<div className="panel-meta">
+									{t.name && <span className="meta-date">{t.date}</span>}
+									<span className="meta-count">
+										{t.participant_count ?? 0} competitors
+									</span>
+								</div>
+							</Link>
+						))}
+					</div>
+				</section>
+
+				{/* Top 5 Snapshot */}
+				<section className="dashboard-section">
+					<div className="section-row">
+						<h2 className="section-heading">Top 5</h2>
+						<Link to="/" className="section-link">
+							Full leaderboard
+						</Link>
+					</div>
+					{rankings !== null && topFive.length === 0 && (
+						<p className="empty-state">No rankings yet.</p>
+					)}
+					<div className="panel-list">
+						{topFive.map((c) => (
+							<Link
+								key={c.id}
+								to={`/admin/competitors/${c.id}`}
+								className="panel-row"
+							>
+								<span className="top-rank">#{c.rank}</span>
+								<span className="top-name">{c.name}</span>
+								<span className="top-score">
+									{c.total?.toFixed(1) ?? '0.0'}
+								</span>
+							</Link>
+						))}
+					</div>
+				</section>
 			</div>
 		</div>
 	);

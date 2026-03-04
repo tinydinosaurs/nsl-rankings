@@ -1,0 +1,55 @@
+.tournament-list-page {
+	display: flex;
+	flex-direction: column;
+	gap: 1.5rem;
+}
+
+/* Event badges in table */
+.event-badges {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.35rem;
+}
+
+/* Add tournament form */
+.add-tournament-form {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.form-fieldset {
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius);
+	padding: 1rem;
+	margin: 0;
+}
+
+.form-legend {
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	padding: 0 0.5rem;
+}
+
+.event-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.75rem;
+}
+
+.event-checkbox {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	cursor: pointer;
+	font-size: 0.95rem;
+}
+
+.points-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
+	gap: 0.75rem;
+}

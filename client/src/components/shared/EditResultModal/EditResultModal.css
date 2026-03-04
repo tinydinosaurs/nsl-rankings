@@ -1,0 +1,11 @@
+.edit-result-form {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.edit-result-form__actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 4px;
+}

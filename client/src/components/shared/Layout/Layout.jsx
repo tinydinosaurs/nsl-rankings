@@ -35,6 +35,15 @@ export default function Layout() {
 								Competitors
 							</NavLink>
 							<NavLink
+								to="/admin/tournaments"
+								className={({ isActive }) =>
+									isActive ? 'nav-link active' : 'nav-link'
+								}
+							>
+								Tournaments
+							</NavLink>
+
+							<NavLink
 								to="/upload"
 								className={({ isActive }) =>
 									isActive ? 'nav-link active' : 'nav-link'
@@ -57,14 +66,9 @@ export default function Layout() {
 				<div className="navbar-user">
 					{user ? (
 						<>
-							<span className={`badge badge-${user.role}`}>
-								{user.role}
-							</span>
+							<span className={`badge badge-${user.role}`}>{user.role}</span>
 							<span className="username">{user.username}</span>
-							<button
-								className="btn-ghost"
-								onClick={handleLogout}
-							>
+							<button className="btn-ghost" onClick={handleLogout}>
 								Sign out
 							</button>
 						</>
