@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
@@ -31,6 +31,7 @@ function AddTournamentModal({ isOpen, onClose, onAdd }) {
 		total_points_woods: 100,
 	});
 	const [error, setError] = useState('');
+	const [conflictTournamentId, setConflictTournamentId] = useState(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	const handleSubmit = async (e) => {
@@ -40,6 +41,7 @@ function AddTournamentModal({ isOpen, onClose, onAdd }) {
 
 		setIsSubmitting(true);
 		setError('');
+		setConflictTournamentId(null);
 
 		try {
 			await api.post('/rankings/tournaments', {
@@ -67,7 +69,11 @@ function AddTournamentModal({ isOpen, onClose, onAdd }) {
 			});
 			onClose();
 		} catch (err) {
-			setError(err.response?.data?.error || 'Failed to add tournament');
+			const d = err.response?.data;
+			if (err.response?.status === 409 && d?.details?.tournament_id) {
+				setConflictTournamentId(d.details.tournament_id);
+			}
+			setError(d?.error || 'Failed to add tournament');
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -76,7 +82,14 @@ function AddTournamentModal({ isOpen, onClose, onAdd }) {
 	return (
 		<Modal isOpen={isOpen} onClose={onClose} title="Add Tournament">
 			<form onSubmit={handleSubmit} className="add-tournament-form">
-				{error && <div className="alert alert-error">{error}</div>}
+				{error && (
+					<div className="alert alert-error">
+						{error}
+						{conflictTournamentId && (
+							<> — <Link to={`/admin/tournaments/${conflictTournamentId}`}>View existing tournament</Link></>
+						)}
+					</div>
+				)}
 
 				<div className="form-group">
 					<label className="form-label" htmlFor="tournament-name">

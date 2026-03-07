@@ -6,6 +6,7 @@ import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
+import EditableField from '../../components/shared/EditableField/EditableField.jsx';
 import './TournamentDetailPage.css';
 
 const EVENTS = [
@@ -71,6 +72,16 @@ export default function TournamentDetailPage() {
 		}
 	};
 
+	const handleSaveName = async (newName) => {
+		await api.put(`/rankings/tournaments/${id}`, { name: newName });
+		setTournament((t) => ({ ...t, name: newName }));
+	};
+
+	const handleSaveDate = async (newDate) => {
+		await api.put(`/rankings/tournaments/${id}`, { date: newDate });
+		setTournament((t) => ({ ...t, date: newDate }));
+	};
+
 	const activeEvents = tournament
 		? EVENTS.filter((e) => tournament[`has_${e.key}`])
 		: [];
@@ -97,6 +108,17 @@ export default function TournamentDetailPage() {
 			{/* Metadata */}
 			<section className="card tournament-detail__meta">
 				<h2 className="section-title">Details</h2>
+				<EditableField
+					label="Name"
+					value={tournament.name}
+					onSave={handleSaveName}
+				/>
+				<EditableField
+					label="Date"
+					value={tournament.date}
+					onSave={handleSaveDate}
+					type="date"
+				/>
 				<div className="meta-row">
 					<span className="meta-label">Events</span>
 					<div className="meta-value event-badges">

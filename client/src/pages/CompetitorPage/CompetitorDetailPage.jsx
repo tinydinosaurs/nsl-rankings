@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
@@ -158,7 +158,11 @@ export default function CompetitorDetailPage() {
 							<tbody>
 								{history.map((result) => (
 									<tr key={result.result_id}>
-										<td>{result.tournament_name}</td>
+										<td>
+										<Link to={`/admin/tournaments/${result.tournament_id}`}>
+											{result.tournament_name}
+										</Link>
+									</td>
 										<td>{result.tournament_date}</td>
 										<td className="score-cell">
 											{result.knockdowns_earned ?? '—'}

@@ -100,8 +100,8 @@ export default function UploadPage() {
 			setStep('success');
 		} catch (err) {
 			const d = err.response?.data;
-			if (err.response?.status === 409 && d?.tournament_id) {
-				setConflictTournamentId(d.tournament_id);
+			if (err.response?.status === 409 && d?.details?.tournament_id) {
+				setConflictTournamentId(d.details.tournament_id);
 			} else {
 				setError(d?.error || 'Save failed — the data was not changed. You can try again.');
 			}

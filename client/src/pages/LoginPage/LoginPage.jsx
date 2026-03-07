@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import './LoginPage.css';
 
 export default function LoginPage() {
-	const { login } = useAuth();
+	const { login, user } = useAuth();
 	const navigate = useNavigate();
 	const [username, setUsername] = useState('');
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
+
+	useEffect(() => {
+		if (user) navigate('/admin', { replace: true });
+	}, [user, navigate]);
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
