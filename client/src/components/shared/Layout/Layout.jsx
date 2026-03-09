@@ -14,12 +14,13 @@ export default function Layout() {
 	return (
 		<div className="layout">
 			<nav className="navbar">
-				<div className="navbar-brand">🏆 Sport Rankings</div>
+				<div className="navbar-brand">🏆 NSL Rankings</div>
 				<div className="navbar-links">
 					{isAdmin && (
 						<>
 							<NavLink
 								to="/admin"
+								end
 								className={({ isActive }) =>
 									isActive ? 'nav-link active' : 'nav-link'
 								}
@@ -44,24 +45,24 @@ export default function Layout() {
 							</NavLink>
 
 							<NavLink
-								to="/upload"
+								to="/admin/upload"
 								className={({ isActive }) =>
 									isActive ? 'nav-link active' : 'nav-link'
 								}
 							>
-								Upload CSV
+								Upload
+							</NavLink>
+							<NavLink
+								to="/"
+								end
+								className={({ isActive }) =>
+									isActive ? 'nav-link active' : 'nav-link'
+								}
+							>
+								Rankings
 							</NavLink>
 						</>
 					)}
-					<NavLink
-						to="/"
-						end
-						className={({ isActive }) =>
-							isActive ? 'nav-link active' : 'nav-link'
-						}
-					>
-						Rankings
-					</NavLink>
 				</div>
 				<div className="navbar-user">
 					{user ? (

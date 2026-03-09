@@ -128,7 +128,7 @@ function parseCSV(csvText, tournamentSettings) {
 	for (const event of activeEvents) {
 		if (colMap[event] === undefined) {
 			warnings.push(
-				`Event "${event}" is marked active but no matching column was found in the CSV. All competitors will receive a score of 0 for this event.`,
+				`Event "${event}" is marked active but no matching column was found in the CSV. This event will be treated as not held (excluded from scoring).`,
 			);
 		}
 	}
@@ -175,8 +175,8 @@ function parseCSV(csvText, tournamentSettings) {
 			}
 
 			if (colMap[event] === undefined) {
-				// Column missing for active event → treat as 0
-				competitor[`${event}_earned`] = 0;
+				// Column missing for active event → treat as not held (null)
+				competitor[`${event}_earned`] = null;
 				continue;
 			}
 

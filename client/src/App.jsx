@@ -51,7 +51,7 @@ export default function App() {
 							}
 						/>
 						<Route
-							path="upload"
+							path="admin/upload"
 							element={
 								<RequireAdmin>
 									<UploadPage />

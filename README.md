@@ -1,4 +1,4 @@
-# Sport Rankings App
+# NSL Rankings App
 
 A national rankings tracker for a four-event sport. Admins upload tournament CSVs or enter results manually; everyone can view sortable rankings and competitor history.
 

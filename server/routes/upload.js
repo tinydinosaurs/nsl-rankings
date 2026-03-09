@@ -1,8 +1,17 @@
 const express = require('express');
 const multer = require('multer');
+const XLSX = require('xlsx');
 const { requireAdmin } = require('../middleware/auth');
 const { parseCSV } = require('../db/csvParser');
 const { EVENTS } = require('../constants/events');
+
+const XLSX_EXTENSIONS = ['.xlsx', '.xls', '.ods'];
+
+function xlsxToCsv(buffer) {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_csv(sheet);
+}
 const { 
   ValidationError, 
   ConflictError, 
@@ -25,10 +34,14 @@ router.post('/preview',
   upload.single('csv'), 
   asyncHandler((req, res) => {
     if (!req.file) {
-      throw new ValidationError('No CSV file uploaded');
+      throw new ValidationError('No file uploaded');
     }
 
-    const csvText = req.file.buffer.toString('utf-8');
+    const ext = require('path').extname(req.file.originalname).toLowerCase();
+    const isSpreadsheet = XLSX_EXTENSIONS.includes(ext);
+    const csvText = isSpreadsheet
+      ? xlsxToCsv(req.file.buffer)
+      : req.file.buffer.toString('utf-8');
 
     // Parse tournament settings from form fields
     const activeEvents = [];
@@ -75,7 +88,36 @@ router.post('/preview',
       };
     });
 
-    res.json({ competitors: enriched, warnings, errors: [] });
+    // Suppress placeholder-email warnings for competitors who matched an existing record with a real email
+    const emailsWithRealMatch = new Set(
+      enriched
+        .filter(c => c.existing_email && !c.existing_email.endsWith('.nsl@placeholder.local'))
+        .map(c => c.email?.toLowerCase())
+    );
+    const filteredWarnings = warnings.filter(w => {
+      // The placeholder warning lists names; check if any suppressed competitor is mentioned
+      if (!w.includes('placeholder emails were generated')) return true;
+      // Rebuild the warning excluding names that already have a real email on record
+      return false; // handled below
+    });
+
+    // Rebuild the placeholder warning without names that matched real emails
+    const suppressedEmails = emailsWithRealMatch;
+    const placeholderWarning = warnings.find(w => w.includes('placeholder emails were generated'));
+    if (placeholderWarning) {
+      const remaining = enriched
+        .filter(c => c.email?.endsWith('.nsl@placeholder.local') && !suppressedEmails.has(c.email?.toLowerCase()))
+        // only those that are truly new or matched another placeholder
+        .filter(c => !c.existing_email || c.existing_email.endsWith('.nsl@placeholder.local'))
+        .map(c => c.name);
+      if (remaining.length > 0) {
+        filteredWarnings.push(
+          `The following competitors had no email address — placeholder emails were generated. Update these in the admin panel: [${remaining.join(', ')}]`
+        );
+      }
+    }
+
+    res.json({ competitors: enriched, warnings: filteredWarnings, errors: [] });
   })
 );
 

@@ -19,6 +19,7 @@ export default function UploadPage() {
 	const [error, setError] = useState('');
 	const [conflictTournamentId, setConflictTournamentId] = useState(null);
 	const [successInfo, setSuccessInfo] = useState(null);
+	const [selectedFile, setSelectedFile] = useState(null);
 	const fileRef = useRef();
 
 	const toggleEvent = (event) => {
@@ -40,9 +41,9 @@ export default function UploadPage() {
 	const handlePreview = async (e) => {
 		e.preventDefault();
 		setError('');
-		const file = fileRef.current?.files[0];
+		const file = selectedFile || fileRef.current?.files[0];
 		if (!file) {
-			setError('Please select a CSV file');
+			setError('Please select a file');
 			return;
 		}
 		if (!settings.tournamentDate) {
@@ -117,6 +118,7 @@ export default function UploadPage() {
 		setError('');
 		setConflictTournamentId(null);
 		setSuccessInfo(null);
+		setSelectedFile(null);
 		if (fileRef.current) fileRef.current.value = '';
 	};
 
@@ -195,24 +197,24 @@ export default function UploadPage() {
 											tournamentDate: e.target.value,
 										}))
 									}
-									required
 								/>
 							</div>
 						</div>
 					</div>
 					<div className="card">
-						<h2>CSV File</h2>
+						<h2>Results File</h2>
 						<p className="hint">
-							The parser is flexible — columns can be in any order
-							and various spellings are recognized. Blank cells in
-							active events will be treated as 0. Missing columns
-							will be flagged.
+							Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv)
+							files. Columns can be in any order and various
+							spellings are recognized. Blank cells in active events
+							will be treated as 0. Missing columns will be flagged.
 						</p>
 						<input
 							type="file"
-							accept=".csv,.tsv,.txt"
+							accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
 							ref={fileRef}
 							style={{ marginTop: 8 }}
+							onChange={(e) => setSelectedFile(e.target.files[0] || null)}
 						/>
 					</div>
 					<div className="card">
@@ -277,7 +279,7 @@ export default function UploadPage() {
 					<div className="button-row">
 						<button
 							type="submit"
-							className="btn-primary"
+							className="btn btn-primary"
 							disabled={loading}
 						>
 							{loading ? 'Parsing…' : 'Preview Import'}
@@ -329,7 +331,7 @@ export default function UploadPage() {
 								</p>
 							</div>
 							<button
-								className="btn-ghost"
+								className="btn btn-ghost"
 								onClick={() => setStep('configure')}
 							>
 								← Edit
@@ -377,7 +379,7 @@ export default function UploadPage() {
 
 					<div className="button-row">
 						<button
-							className="btn-primary"
+							className="btn btn-primary"
 							onClick={handleCommit}
 							disabled={loading}
 						>
@@ -385,7 +387,7 @@ export default function UploadPage() {
 								? 'Saving…'
 								: `Confirm & Save ${preview.competitors.length} Results`}
 						</button>
-						<button className="btn-ghost" onClick={handleReset}>
+						<button className="btn btn-ghost" onClick={handleReset}>
 							Cancel
 						</button>
 					</div>

@@ -35,7 +35,7 @@ describe('Layout', () => {
 	describe('branding', () => {
 		it('renders the app brand name', () => {
 			renderLayout(publicAuth);
-			expect(screen.getByText('🏆 Sport Rankings')).toBeInTheDocument();
+			expect(screen.getByText('🏆 NSL Rankings')).toBeInTheDocument();
 		});
 	});
 
@@ -49,9 +49,7 @@ describe('Layout', () => {
 
 		it('shows Login link when not logged in', () => {
 			renderLayout(publicAuth);
-			expect(
-				screen.getByRole('link', { name: 'Login' }),
-			).toBeInTheDocument();
+			expect(screen.getByRole('link', { name: 'Login' })).toBeInTheDocument();
 		});
 
 		it('does not show admin links when not logged in', () => {

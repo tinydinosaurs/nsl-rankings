@@ -41,8 +41,8 @@ export default function CompetitorDetailPage() {
 			setCompetitor(res.data.competitor);
 			setHistory(res.data.results ?? []);
 			setScores(res.data.scores ?? null);
-		} catch {
-			setError('Failed to load competitor');
+		} catch (err) {
+			setError(err.response?.status === 404 ? 'Competitor not found.' : 'Failed to load competitor');
 		} finally {
 			setLoading(false);
 		}

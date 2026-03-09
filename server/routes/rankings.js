@@ -131,6 +131,7 @@ function createRankingsRouter(db) {
 					.prepare(
 						`SELECT
                         tr.id as result_id,
+                        t.id as tournament_id,
                         t.name as tournament_name,
                         t.date as tournament_date,
                         tr.knockdowns_earned,
@@ -200,16 +201,11 @@ function createRankingsRouter(db) {
 		}),
 	);
 
-	// PUT /api/rankings/competitors/:id — admin edits competitor
+	// PUT /api/rankings/competitors/:id — admin edits competitor (partial update)
 	router.put(
 		'/competitors/:id',
 		requireAdmin,
 		asyncHandler((req, res) => {
-			const { name, email } = req.body;
-			if (!name?.trim()) {
-				throw new ValidationError('Name is required');
-			}
-
 			const competitor = db
 				.prepare('SELECT id, name, email FROM competitors WHERE id = ?')
 				.get(req.params.id);
@@ -217,10 +213,13 @@ function createRankingsRouter(db) {
 				throw new NotFoundError('Competitor');
 			}
 
-			const trimmedName = name.trim();
-			const trimmedEmail = email?.trim() || null;
+			// Partial update — fall back to existing value for any field not sent
+			const trimmedName = req.body.name?.trim() || competitor.name;
+			const trimmedEmail = 'email' in req.body
+				? (req.body.email?.trim() || null)
+				: competitor.email;
 
-			// Check for duplicate email (if provided and different from current)
+			// Check for duplicate email (if changing)
 			if (
 				trimmedEmail &&
 				trimmedEmail.toLowerCase() !== competitor.email?.toLowerCase()
@@ -238,7 +237,7 @@ function createRankingsRouter(db) {
 				}
 			}
 
-			// Check for duplicate name (if different from current)
+			// Check for duplicate name (if changing)
 			if (trimmedName.toLowerCase() !== competitor.name.toLowerCase()) {
 				const existingName = db
 					.prepare(

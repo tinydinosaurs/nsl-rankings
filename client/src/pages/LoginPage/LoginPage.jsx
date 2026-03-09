@@ -17,7 +17,6 @@ export default function LoginPage() {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		setError('');
 		setLoading(true);
 		try {
 			const user = await login(username, password);
@@ -37,7 +36,7 @@ export default function LoginPage() {
 	return (
 		<div className="login-page">
 			<div className="login-card card">
-				<h1>🏆 Sport Rankings</h1>
+				<h1>🏆 NSL Rankings</h1>
 				<p className="login-subtitle">Sign in to continue</p>
 
 				{error && <div className="alert alert-error">{error}</div>}

@@ -174,7 +174,7 @@ function randomScore(maxPoints, competitorSkill = 0.7) {
 	const baseScore = maxPoints * competitorSkill;
 	const variance = maxPoints * 0.15; // 15% variance
 	const score = baseScore + (Math.random() - 0.5) * variance * 2;
-	return Math.max(0, Math.min(maxPoints, Math.round(score * 100) / 100));
+	return Math.max(0, Math.min(maxPoints, Math.round(score)));
 }
 
 // Assign skill levels to competitors (some are consistently better)
