@@ -83,7 +83,7 @@
 }
 
 .competitors-table th.sortable:hover {
-	color: var(--text);
+	color: var(--brand-primary);
 }
 
 .competitors-table td {
@@ -130,20 +130,45 @@
 	color: var(--text-muted);
 }
 
-.btn-small {
-	padding: 4px 8px;
-	font-size: 12px;
+.pagination-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 16px;
 }
 
-.btn-secondary {
-	background: transparent;
+.pagination-info {
+	font-size: 13px;
 	color: var(--text-muted);
-	border: 1px solid var(--border);
 }
 
-.btn-secondary:hover:not(:disabled) {
+.pagination-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.pagination-page {
+	font-size: 13px;
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.pagination-size {
+	padding: 4px 8px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	font-size: 13px;
+	background: var(--surface);
+	color: var(--text);
+	cursor: pointer;
+}
+
+.pagination-size:focus {
+	outline: none;
 	border-color: var(--accent);
-	color: var(--accent);
 }
 
 .form-group {

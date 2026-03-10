@@ -1,16 +1,8 @@
 import { useState } from 'react';
 import api from '../../../utils/api.js';
+import { EVENT_LABELS, EVENTS as ALL_EVENTS } from '../../../constants/events.js';
 import Modal from '../Modal/Modal.jsx';
 import './EditResultModal.css';
-
-const EVENT_LABELS = {
-	knockdowns: 'Knockdowns',
-	distance: 'Distance',
-	speed: 'Speed',
-	woods: 'Woods',
-};
-
-const ALL_EVENTS = ['knockdowns', 'distance', 'speed', 'woods'];
 
 /**
  * EditResultModal — shared modal for editing a competitor's earned scores

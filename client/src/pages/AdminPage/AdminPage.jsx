@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import '../../styles/podium.css';
 import './AdminPage.css';
 
 // ── Stat Card ──────────────────────────────────────────────────────────────
 
-function StatCard({ label, value, sub, to, accent }) {
+function StatCard({ label, value, sub, to, variant }) {
 	const inner = (
-		<div className={`stat-card${accent ? ' stat-card--accent' : ''}`}>
+		<div className={`stat-card${variant ? ` stat-card--${variant}` : ''}`}>
 			<div className="stat-value">{value ?? '—'}</div>
 			<div className="stat-label">{label}</div>
 			{sub && <div className="stat-sub">{sub}</div>}
@@ -36,7 +37,8 @@ export default function AdminPage() {
 		api.get('/rankings/public').then((r) => setRankings(r.data.rankings));
 	}, []);
 
-	const placeholderCount = competitors?.filter((c) => c.has_placeholder_email).length ?? null;
+	const placeholderCount =
+		competitors?.filter((c) => c.has_placeholder_email).length ?? null;
 
 	const recentTournaments = tournaments
 		? [...tournaments]
@@ -49,7 +51,7 @@ export default function AdminPage() {
 
 	return (
 		<div className="admin-page">
-			<h1 className="dashboard-title">Dashboard</h1>
+			<h1 className="dashboard-title">Admin Dashboard</h1>
 
 			{/* ── Stat Cards ── */}
 			<div className="stat-grid">
@@ -57,11 +59,13 @@ export default function AdminPage() {
 					label="Competitors"
 					value={competitors?.length ?? '—'}
 					to="/admin/competitors"
+					variant="blue"
 				/>
 				<StatCard
 					label="Tournaments"
 					value={tournaments?.length ?? '—'}
 					to="/admin/tournaments"
+					variant="indigo"
 				/>
 				<StatCard
 					label="Need real email"
@@ -73,7 +77,7 @@ export default function AdminPage() {
 								? 'Placeholder addresses'
 								: null
 					}
-					accent={placeholderCount > 0}
+					variant="amber"
 					to="/admin/competitors?filter=placeholder"
 				/>
 				<StatCard
@@ -83,6 +87,7 @@ export default function AdminPage() {
 						leader?.total != null ? `Score: ${leader.total.toFixed(1)}` : null
 					}
 					to={leader ? `/admin/competitors/${leader.id}` : null}
+					variant="green"
 				/>
 			</div>
 
@@ -163,6 +168,7 @@ export default function AdminPage() {
 								key={c.id}
 								to={`/admin/competitors/${c.id}`}
 								className="panel-row"
+								data-rank={c.rank <= 3 ? c.rank : undefined}
 							>
 								<span className="top-rank">#{c.rank}</span>
 								<span className="top-name">{c.name}</span>

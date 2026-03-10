@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../utils/api';
 import { EVENTS, EVENT_LABELS } from '../../constants/events';
+import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import './UploadPage.css';
 
 const defaultSettings = () => ({
@@ -63,9 +64,7 @@ export default function UploadPage() {
 		formData.append('csv', file);
 		formData.append('tournament_name', settings.tournamentName);
 		formData.append('tournament_date', settings.tournamentDate);
-		settings.activeEvents.forEach((e) =>
-			formData.append(`has_${e}`, 'true'),
-		);
+		settings.activeEvents.forEach((e) => formData.append(`has_${e}`, 'true'));
 		EVENTS.forEach((e) =>
 			formData.append(`total_points_${e}`, settings.totalPoints[e]),
 		);
@@ -104,7 +103,10 @@ export default function UploadPage() {
 			if (err.response?.status === 409 && d?.details?.tournament_id) {
 				setConflictTournamentId(d.details.tournament_id);
 			} else {
-				setError(d?.error || 'Save failed — the data was not changed. You can try again.');
+				setError(
+					d?.error ||
+						'Save failed — the data was not changed. You can try again.',
+				);
 			}
 		} finally {
 			setLoading(false);
@@ -125,14 +127,17 @@ export default function UploadPage() {
 	if (step === 'success')
 		return (
 			<div className="upload-page">
-				<h1>Upload Complete</h1>
+			<PageHeader title="Upload Complete" />
 				<div className="alert alert-success">
 					Tournament saved successfully.
 					{successInfo?.new_competitors?.length > 0 && (
 						<> {successInfo.new_competitors.length} new competitor(s) added.</>
 					)}
 					{successInfo?.updated_competitors?.length > 0 && (
-						<> {successInfo.updated_competitors.length} competitor(s) updated.</>
+						<>
+							{' '}
+							{successInfo.updated_competitors.length} competitor(s) updated.
+						</>
 					)}
 				</div>
 				<div className="button-row">
@@ -156,7 +161,7 @@ export default function UploadPage() {
 
 	return (
 		<div className="upload-page">
-			<h1>Upload Tournament Results</h1>
+			<PageHeader title="Upload Tournament Results" />
 
 			{step === 'configure' && (
 				<form onSubmit={handlePreview} className="upload-form">
@@ -168,9 +173,7 @@ export default function UploadPage() {
 							<div className="form-group">
 								<label>
 									Tournament Name{' '}
-									<span className="optional">
-										(recommended)
-									</span>
+									<span className="optional">(recommended)</span>
 								</label>
 								<input
 									type="text"
@@ -204,24 +207,41 @@ export default function UploadPage() {
 					<div className="card">
 						<h2>Results File</h2>
 						<p className="hint">
-							Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv)
-							files. Columns can be in any order and various
-							spellings are recognized. Blank cells in active events
-							will be treated as 0. Missing columns will be flagged.
+							Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv) files. Columns
+							can be in any order and various spellings are recognized. Blank
+							cells in active events will be treated as 0. Missing columns will
+							be flagged.
 						</p>
-						<input
-							type="file"
-							accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
-							ref={fileRef}
-							style={{ marginTop: 8 }}
-							onChange={(e) => setSelectedFile(e.target.files[0] || null)}
-						/>
+						{!selectedFile && (
+							<input
+								type="file"
+								accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
+								ref={fileRef}
+								style={{ marginTop: 8 }}
+								onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+							/>
+						)}
+						{selectedFile && (
+							<p className="hint selected-file-name">
+								Selected File: <strong>{selectedFile.name}</strong>{' '}
+								<button
+									type="button"
+									className="clear-file-btn"
+									onClick={() => {
+										setSelectedFile(null);
+										if (fileRef.current) fileRef.current.value = '';
+									}}
+								>
+									✕
+								</button>
+							</p>
+						)}
 					</div>
 					<div className="card">
 						<h2>Events</h2>
 						<p className="hint">
-							Select which events were included in this tournament
-							and set the total possible points for each.
+							Select which events were included in this tournament and set the
+							total possible points for each.
 						</p>
 						<div className="events-grid">
 							{EVENTS.map((event) => (
@@ -232,9 +252,7 @@ export default function UploadPage() {
 									<label className="checkbox-label">
 										<input
 											type="checkbox"
-											checked={settings.activeEvents.includes(
-												event,
-											)}
+											checked={settings.activeEvents.includes(event)}
 											onChange={() => toggleEvent(event)}
 											style={{
 												width: 'auto',
@@ -256,18 +274,9 @@ export default function UploadPage() {
 											min="1"
 											value={settings.totalPoints[event]}
 											onChange={(e) =>
-												setTotalPoints(
-													event,
-													parseFloat(
-														e.target.value,
-													) || 120,
-												)
+												setTotalPoints(event, parseFloat(e.target.value) || 120)
 											}
-											disabled={
-												!settings.activeEvents.includes(
-													event,
-												)
-											}
+											disabled={!settings.activeEvents.includes(event)}
 											placeholder="Total pts"
 										/>
 									</div>
@@ -303,9 +312,7 @@ export default function UploadPage() {
 
 					{preview.warnings?.length > 0 && (
 						<div className="alert alert-warn">
-							<strong>
-								Warnings ({preview.warnings.length})
-							</strong>
+							<strong>Warnings ({preview.warnings.length})</strong>
 							<ul style={{ marginTop: 8, paddingLeft: 16 }}>
 								{preview.warnings.map((w, i) => (
 									<li key={i}>{w}</li>
@@ -317,18 +324,7 @@ export default function UploadPage() {
 					<div className="card">
 						<div className="preview-header">
 							<div>
-								<h2>
-									Preview: {preview.competitors.length}{' '}
-									competitors found
-								</h2>
-								<p className="hint">
-									{settings.tournamentName ||
-										settings.tournamentDate}{' '}
-									•{' '}
-									{settings.activeEvents
-										.map((e) => EVENT_LABELS[e])
-										.join(', ')}
-								</p>
+								<h2>Preview: {preview.competitors.length} competitors found</h2>
 							</div>
 							<button
 								className="btn btn-ghost"
@@ -338,10 +334,31 @@ export default function UploadPage() {
 							</button>
 						</div>
 
-						<div
-							className="table-wrapper"
-							style={{ marginTop: 16 }}
-						>
+						<div className="preview-meta">
+							{settings.tournamentName && (
+								<div className="preview-meta-row">
+									<span className="preview-meta-label">Name</span>
+									<span>{settings.tournamentName}</span>
+								</div>
+							)}
+							<div className="preview-meta-row">
+								<span className="preview-meta-label">Date</span>
+								<span>{settings.tournamentDate}</span>
+							</div>
+							<div className="preview-meta-row">
+								<span className="preview-meta-label">Events</span>
+								<span>
+									{settings.activeEvents
+										.map(
+											(e) =>
+												`${EVENT_LABELS[e]} (${settings.totalPoints[e]} pts)`,
+										)
+										.join(' • ')}
+								</span>
+							</div>
+						</div>
+
+						<div className="table-wrapper" style={{ marginTop: 16 }}>
 							<table className="preview-table">
 								<thead>
 									<tr>
@@ -359,16 +376,12 @@ export default function UploadPage() {
 												<span
 													className={`badge ${c.is_new ? 'badge-new' : 'badge-update'}`}
 												>
-													{c.is_new
-														? 'New'
-														: 'Update'}
+													{c.is_new ? 'New' : 'Update'}
 												</span>
 											</td>
 											<td>{c.name}</td>
 											{settings.activeEvents.map((e) => (
-												<td key={e}>
-													{c[`${e}_earned`] ?? '—'}
-												</td>
+												<td key={e}>{c[`${e}_earned`] ?? '—'}</td>
 											))}
 										</tr>
 									))}

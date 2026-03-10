@@ -28,28 +28,80 @@
 	align-items: center;
 	gap: 0.35rem;
 	padding: 1rem;
-	background: var(--color-bg);
+	background: var(--surface2);
 	border-radius: var(--radius);
-	border: 1px solid var(--color-border);
+	border: 1px solid var(--border);
 }
 
 .score-card__label {
 	font-size: 0.75rem;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
-	color: var(--color-text-muted);
+	color: var(--text-muted);
 	font-weight: 600;
 }
 
 .score-card__value {
 	font-size: 1.75rem;
 	font-weight: 700;
-	color: var(--color-primary);
+	color: var(--accent);
+}
+
+/* Score card tint variants */
+.score-card--blue {
+	background: var(--tint-blue-bg);
+	border-color: var(--tint-blue-border);
+}
+.score-card--blue .score-card__value {
+	color: var(--tint-blue-fg);
+}
+
+.score-card--teal {
+	background: var(--tint-teal-bg);
+	border-color: var(--tint-teal-border);
+}
+.score-card--teal .score-card__value {
+	color: var(--tint-teal-fg);
+}
+
+.score-card--indigo {
+	background: var(--tint-indigo-bg);
+	border-color: var(--tint-indigo-border);
+}
+.score-card--indigo .score-card__value {
+	color: var(--tint-indigo-fg);
+}
+
+.score-card--green {
+	background: var(--tint-green-bg);
+	border-color: var(--tint-green-border);
+}
+.score-card--green .score-card__value {
+	color: var(--tint-green-fg);
+}
+
+.score-card--amber {
+	background: var(--tint-amber-bg);
+	border-color: var(--tint-amber-border);
+}
+.score-card--amber .score-card__value {
+	color: var(--tint-amber-fg);
 }
 
 /* History table */
 .competitor-detail__history .table-wrapper {
 	overflow-x: auto;
+}
+
+.section-title-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 1rem;
+}
+
+.section-title-row .section-title {
+	margin-bottom: 0;
 }
 
 .score-cell {

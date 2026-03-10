@@ -6,16 +6,16 @@ import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
+import AddResultModal from '../../components/shared/AddResultModal/AddResultModal.jsx';
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
+import { formatScore } from '../../utils/formatScore.js';
 import './CompetitorDetailPage.css';
 
-function ScoreCard({ label, score }) {
+function ScoreCard({ label, score, variant }) {
 	return (
-		<div className="score-card">
+		<div className={`score-card${variant ? ` score-card--${variant}` : ''}`}>
 			<span className="score-card__label">{label}</span>
-			<span className="score-card__value">
-				{score != null ? (Math.round(score * 10) / 10).toFixed(1) : '—'}
-			</span>
+			<span className="score-card__value">{formatScore(score)}</span>
 		</div>
 	);
 }
@@ -32,6 +32,7 @@ export default function CompetitorDetailPage() {
 	const [deleteResultTarget, setDeleteResultTarget] = useState(null);
 	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteCompetitorOpen, setDeleteCompetitorOpen] = useState(false);
+	const [addResultOpen, setAddResultOpen] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -59,6 +60,9 @@ export default function CompetitorDetailPage() {
 	};
 
 	const handleSaveEmail = async (email) => {
+		if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			throw new Error('Please enter a valid email address');
+		}
 		await api.put(`/rankings/competitors/${id}`, { email: email || null });
 		setCompetitor((c) => ({ ...c, email: email || null }));
 	};
@@ -127,18 +131,26 @@ export default function CompetitorDetailPage() {
 				<section className="card competitor-detail__scores">
 					<h2 className="section-title">Career Scores</h2>
 					<div className="score-cards">
-						<ScoreCard label="Knockdowns" score={scores.knockdowns} />
-						<ScoreCard label="Distance" score={scores.distance} />
-						<ScoreCard label="Speed" score={scores.speed} />
-						<ScoreCard label="Woods" score={scores.woods} />
-						<ScoreCard label="Total" score={scores.total} />
+						<ScoreCard label="Knockdowns" score={scores.knockdowns} variant="blue" />
+						<ScoreCard label="Distance" score={scores.distance} variant="teal" />
+						<ScoreCard label="Speed" score={scores.speed} variant="indigo" />
+						<ScoreCard label="Woods" score={scores.woods} variant="green" />
+						<ScoreCard label="Total" score={scores.total} variant="amber" />
 					</div>
 				</section>
 			)}
 
 			{/* Tournament History */}
 			<section className="card competitor-detail__history">
-				<h2 className="section-title">Tournament History</h2>
+				<div className="section-title-row">
+					<h2 className="section-title">Tournament History</h2>
+					<button
+						className="btn btn-sm btn-secondary"
+						onClick={() => setAddResultOpen(true)}
+					>
+						Add Result
+					</button>
+				</div>
 				{history.length === 0 ? (
 					<EmptyState message="No tournament results yet." />
 				) : (
@@ -199,6 +211,14 @@ export default function CompetitorDetailPage() {
 					result={editResultTarget}
 					title={`Edit Result — ${editResultTarget.tournament_name}`}
 					onClose={() => setEditResultTarget(null)}
+					onSaved={load}
+				/>
+			)}
+			{addResultOpen && (
+				<AddResultModal
+					competitorId={id}
+					existingTournamentIds={history.map((r) => r.tournament_id)}
+					onClose={() => setAddResultOpen(false)}
 					onSaved={load}
 				/>
 			)}

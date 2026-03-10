@@ -78,6 +78,29 @@
 	background: var(--surface2);
 }
 
+/* Podium row hover overrides — higher specificity than generic tbody tr:hover */
+.rankings-table tbody tr[data-rank='1']:hover {
+	background: var(--tint-amber-bg);
+}
+.rankings-table tbody tr[data-rank='2']:hover {
+	background: var(--gray-100);
+}
+.rankings-table tbody tr[data-rank='3']:hover {
+	background: var(--tint-bronze-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+	.rankings-table tbody tr[data-rank='1']:hover {
+		background: var(--tint-amber-bg);
+	}
+	.rankings-table tbody tr[data-rank='2']:hover {
+		background: var(--dark-surface2);
+	}
+	.rankings-table tbody tr[data-rank='3']:hover {
+		background: var(--tint-bronze-bg);
+	}
+}
+
 .rank-num {
 	font-weight: 700;
 	color: var(--text-muted);

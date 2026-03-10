@@ -7,15 +7,17 @@ import {
 	createColumnHelper,
 } from '@tanstack/react-table';
 import api from '../../utils/api';
+import { formatScore } from '../../utils/formatScore.js';
+import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
+import '../../styles/podium.css';
 import './RankingsPage.css';
 
 const columnHelper = createColumnHelper();
 
 function ScoreCell({ value }) {
-	if (value === null || value === undefined)
-		return <span className="score-null">—</span>;
-	const pct = Math.round(value * 10) / 10;
-	return <span className="score-cell">{pct.toFixed(1)}</span>;
+	const formatted = formatScore(value);
+	if (formatted === '—') return <span className="score-null">—</span>;
+	return <span className="score-cell">{formatted}</span>;
 }
 
 export default function RankingsPage() {
@@ -109,12 +111,7 @@ export default function RankingsPage() {
 			</div>
 
 			{data.length === 0 ? (
-				<div className="card empty-state">
-					<p>
-						No rankings yet. Results will appear here once an admin uploads
-						tournament data.
-					</p>
-				</div>
+				<EmptyState message="No rankings yet. Results will appear here once an admin uploads tournament data." />
 			) : (
 				<div className="table-wrapper card">
 					<table className="rankings-table">
@@ -146,7 +143,10 @@ export default function RankingsPage() {
 						</thead>
 						<tbody>
 							{table.getRowModel().rows.map((row) => (
-								<tr key={row.id}>
+							<tr
+								key={row.id}
+								data-rank={row.original.rank <= 3 ? row.original.rank : undefined}
+							>
 									{row.getVisibleCells().map((cell) => (
 										<td key={cell.id}>
 											{flexRender(

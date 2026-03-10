@@ -13,11 +13,11 @@ export default function ConfirmDialog({
 		<Modal isOpen={isOpen} onClose={onCancel} title={title}>
 			<p>{message}</p>
 			<div className="modal-actions">
-				<button className="btn-secondary" onClick={onCancel}>
+				<button className="btn btn-secondary" onClick={onCancel}>
 					Cancel
 				</button>
 				<button
-					className={`btn-${variant}`}
+					className={`btn btn-${variant}`}
 					onClick={onConfirm}
 				>
 					{confirmLabel}

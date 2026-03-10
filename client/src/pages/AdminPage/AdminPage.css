@@ -1,4 +1,6 @@
-.admin-page { max-width: 960px; }
+.admin-page {
+	max-width: 960px;
+}
 
 .dashboard-title {
 	font-size: 24px;
@@ -18,7 +20,7 @@
 .stat-card-link {
 	text-decoration: none;
 	color: inherit;
-	display: block;
+	display: flex;
 }
 
 .stat-card {
@@ -27,19 +29,63 @@
 	border-radius: var(--radius);
 	padding: 18px 20px;
 	transition: border-color 0.15s;
+	flex: 1;
+	text-align: center;
 }
 
 .stat-card-link:hover .stat-card {
 	border-color: var(--accent);
 }
 
-.stat-card--accent {
-	border-color: var(--warning, #e9a03b);
-	background: color-mix(in srgb, var(--warning, #e9a03b) 8%, var(--surface));
+/* ── Stat card color variants ───────────────────────────────────────────── */
+
+.stat-card--blue {
+	background: var(--tint-blue-bg);
+	border-color: var(--tint-blue-border);
+}
+.stat-card--blue .stat-value {
+	color: var(--tint-blue-fg);
+}
+.stat-card-link:hover .stat-card--blue {
+	border-color: var(--tint-blue-fg);
+}
+
+.stat-card--indigo {
+	background: var(--tint-indigo-bg);
+	border-color: var(--tint-indigo-border);
+}
+.stat-card--indigo .stat-value {
+	color: var(--tint-indigo-fg);
+}
+.stat-card-link:hover .stat-card--indigo {
+	border-color: var(--tint-indigo-fg);
+}
+
+.stat-card--amber {
+	background: var(--tint-amber-bg);
+	border-color: var(--tint-amber-border);
+}
+.stat-card--amber .stat-value {
+	color: var(--tint-amber-fg);
+}
+
+.stat-card-link:hover .stat-card--amber {
+	border-color: var(--tint-amber-fg);
+}
+
+.stat-card--green {
+	background: var(--tint-green-bg);
+	border-color: var(--tint-green-border);
+}
+.stat-card--green .stat-value {
+	color: var(--tint-green-fg);
+}
+.stat-card-link:hover .stat-card--green {
+	border-color: var(--tint-green-fg);
 }
 
 .stat-value {
-	font-size: 22px;
+	font-size: 36px;
 	font-weight: 700;
 	color: var(--text);
 	line-height: 1.1;
@@ -73,10 +119,10 @@
 }
 
 .section-heading {
-	font-size: 14px;
+	font-size: 18px;
 	font-weight: 600;
 	color: var(--text);
-	margin: 0;
+	margin: 0 0 12px;
 }
 
 .section-row {
@@ -111,15 +157,21 @@
 	padding: 14px 12px;
 	text-align: center;
 	cursor: pointer;
-	transition: border-color 0.15s, background 0.15s;
+	transition:
+		border-color 0.15s,
+		background 0.15s;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 }
 
 .action-card:hover {
-	border-color: var(--accent);
-	background: color-mix(in srgb, var(--accent) 6%, var(--surface2));
+	border-color: var(--brand-primary);
+	background: var(--tint-blue-bg);
+}
+
+.action-card:hover .action-label {
+	color: var(--brand-primary);
 }
 
 .action-label {
@@ -165,6 +217,43 @@
 	background: var(--surface2);
 }
 
+/* Top 3 row hover — scoped to .panel-row so specificity beats generic hover */
+.panel-row[data-rank='1']:hover {
+	background: var(--tint-amber-bg);
+}
+.panel-row[data-rank='2']:hover {
+	background: var(--gray-100);
+}
+.panel-row[data-rank='3']:hover {
+	background: var(--tint-bronze-bg);
+}
+
+@media (prefers-color-scheme: dark) {
+	.panel-row[data-rank='1']:hover {
+		background: var(--tint-amber-bg);
+	}
+	.panel-row[data-rank='2']:hover {
+		background: var(--dark-surface2);
+	}
+	.panel-row[data-rank='3']:hover {
+		background: var(--tint-bronze-bg);
+	}
+}
+
+/* Top 5 row */
+
+.top-rank {
+	font-size: 12px;
+	font-weight: 700;
+	color: var(--text-muted);
+	width: 28px;
+	flex-shrink: 0;
+	text-align: center;
+	border-radius: 4px;
+	padding: 1px 4px;
+}
+
+
 .panel-name {
 	flex: 1;
 	font-size: 13px;
@@ -186,30 +275,12 @@
 	color: var(--text-muted);
 }
 
-/* Top 5 row */
-
-.top-rank {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--text-muted);
-	width: 28px;
-	flex-shrink: 0;
-}
-
-.top-name {
-	flex: 1;
-	font-size: 13px;
-	font-weight: 500;
-	white-space: nowrap;
-	overflow: hidden;
-	text-overflow: ellipsis;
-}
-
 .top-score {
 	font-size: 13px;
 	font-weight: 600;
 	color: var(--accent);
 	flex-shrink: 0;
+	margin-left: auto;
 }
 
 /* ── Empty state ────────────────────────────────────────────────────────── */
@@ -232,8 +303,13 @@
 /* ── Responsive ─────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-	.stat-grid { grid-template-columns: repeat(2, 1fr); }
-	.action-grid { grid-template-columns: repeat(2, 1fr); }
-	.dashboard-columns { grid-template-columns: 1fr; }
+	.stat-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.action-grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+	.dashboard-columns {
+		grid-template-columns: 1fr;
+	}
 }
-

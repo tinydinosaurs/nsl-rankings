@@ -127,13 +127,17 @@ function createRankingsRouter(db) {
 				if (!competitor)
 					return res.status(404).json({ error: 'Competitor not found' });
 
-				const results = db
+				const rawResults = db
 					.prepare(
 						`SELECT
                         tr.id as result_id,
                         t.id as tournament_id,
                         t.name as tournament_name,
                         t.date as tournament_date,
+                        t.has_knockdowns,
+                        t.has_distance,
+                        t.has_speed,
+                        t.has_woods,
                         tr.knockdowns_earned,
                         tr.distance_earned,
                         tr.speed_earned,
@@ -144,6 +148,18 @@ function createRankingsRouter(db) {
                     ORDER BY t.date DESC`,
 					)
 					.all(req.params.id);
+
+				// Suppress earned values for events disabled on that tournament,
+				// so disabled events render as null (shown as '—') on the frontend.
+				const results = rawResults.map(
+					({ has_knockdowns, has_distance, has_speed, has_woods, ...r }) => ({
+						...r,
+						knockdowns_earned: has_knockdowns ? r.knockdowns_earned : null,
+						distance_earned: has_distance ? r.distance_earned : null,
+						speed_earned: has_speed ? r.speed_earned : null,
+						woods_earned: has_woods ? r.woods_earned : null,
+					}),
+				);
 
 				const scores = computeCompetitorScores(req.params.id, db);
 
@@ -215,9 +231,8 @@ function createRankingsRouter(db) {
 
 			// Partial update — fall back to existing value for any field not sent
 			const trimmedName = req.body.name?.trim() || competitor.name;
-			const trimmedEmail = 'email' in req.body
-				? (req.body.email?.trim() || null)
-				: competitor.email;
+			const trimmedEmail =
+				'email' in req.body ? req.body.email?.trim() || null : competitor.email;
 
 			// Check for duplicate email (if changing)
 			if (

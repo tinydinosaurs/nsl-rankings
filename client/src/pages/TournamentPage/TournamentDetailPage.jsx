@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
@@ -7,19 +7,9 @@ import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
+import { EVENT_LIST as EVENTS } from '../../constants/events.js';
+import { formatScore as fmt } from '../../utils/formatScore.js';
 import './TournamentDetailPage.css';
-
-const EVENTS = [
-	{ key: 'knockdowns', label: 'Knockdowns' },
-	{ key: 'distance', label: 'Distance' },
-	{ key: 'speed', label: 'Speed' },
-	{ key: 'woods', label: 'Woods' },
-];
-
-function fmt(val) {
-	if (val === null || val === undefined) return '—';
-	return (Math.round(val * 10) / 10).toFixed(1);
-}
 
 export default function TournamentDetailPage() {
 	const { id } = useParams();
@@ -32,8 +22,14 @@ export default function TournamentDetailPage() {
 	const [deleteResultTarget, setDeleteResultTarget] = useState(null);
 	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteTournamentOpen, setDeleteTournamentOpen] = useState(false);
+	const [editingEvents, setEditingEvents] = useState(false);
+	const [eventDraft, setEventDraft] = useState(null);
+	const [eventSaving, setEventSaving] = useState(false);
+	const [eventError, setEventError] = useState('');
+	const [sortKey, setSortKey] = useState('competitor_name');
+	const [sortDir, setSortDir] = useState('asc');
 
-	const load = async () => {
+	const load = useCallback(async () => {
 		setLoading(true);
 		setError('');
 		try {
@@ -45,11 +41,11 @@ export default function TournamentDetailPage() {
 		} finally {
 			setLoading(false);
 		}
-	};
+	}, [id]);
 
 	useEffect(() => {
 		load();
-	}, [id]);
+	}, [load]);
 
 	const handleDeleteResult = async () => {
 		try {
@@ -82,9 +78,82 @@ export default function TournamentDetailPage() {
 		setTournament((t) => ({ ...t, date: newDate }));
 	};
 
+	const handleEditEvents = () => {
+		setEventDraft({
+			knockdowns: { enabled: Boolean(tournament.has_knockdowns), total: tournament.total_points_knockdowns },
+			distance: { enabled: Boolean(tournament.has_distance), total: tournament.total_points_distance },
+			speed: { enabled: Boolean(tournament.has_speed), total: tournament.total_points_speed },
+			woods: { enabled: Boolean(tournament.has_woods), total: tournament.total_points_woods },
+		});
+		setEventError('');
+		setEditingEvents(true);
+	};
+
+	const handleCancelEvents = () => {
+		setEditingEvents(false);
+		setEventDraft(null);
+		setEventError('');
+	};
+
+	const handleSaveEvents = async () => {
+		const enabledCount = EVENTS.filter((e) => eventDraft[e.key].enabled).length;
+		if (enabledCount === 0) {
+			setEventError('At least one event must be enabled');
+			return;
+		}
+		for (const { key, label } of EVENTS) {
+			if (eventDraft[key].enabled) {
+				const total = Number(eventDraft[key].total);
+				if (!total || total <= 0) {
+					setEventError(`${label} total points must be greater than 0`);
+					return;
+				}
+			}
+		}
+		setEventSaving(true);
+		setEventError('');
+		try {
+			const payload = {};
+			for (const { key } of EVENTS) {
+				payload[`has_${key}`] = eventDraft[key].enabled ? 1 : 0;
+				payload[`total_points_${key}`] = Number(eventDraft[key].total);
+			}
+			const res = await api.put(`/rankings/tournaments/${id}`, payload);
+			setTournament((t) => ({ ...t, ...res.data }));
+			setEditingEvents(false);
+			setEventDraft(null);
+		} catch (err) {
+			setEventError(err.response?.data?.error || 'Failed to save events');
+		} finally {
+			setEventSaving(false);
+		}
+	};
+
 	const activeEvents = tournament
 		? EVENTS.filter((e) => tournament[`has_${e.key}`])
 		: [];
+
+	const handleSort = (key) => {
+		if (key === sortKey) {
+			setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+		} else {
+			setSortKey(key);
+			setSortDir(key === 'competitor_name' ? 'asc' : 'desc');
+		}
+	};
+
+	const sortedParticipants = [...participants].sort((a, b) => {
+		const aVal = a[sortKey];
+		const bVal = b[sortKey];
+		// nulls always sort to the bottom regardless of direction
+		if (aVal === null && bVal === null) return 0;
+		if (aVal === null) return 1;
+		if (bVal === null) return -1;
+		const cmp = typeof aVal === 'string'
+			? aVal.localeCompare(bVal)
+			: aVal - bVal;
+		return sortDir === 'asc' ? cmp : -cmp;
+	});
 
 	if (loading) return <div className="page-loading">Loading tournament…</div>;
 	if (error) return <div className="alert alert-error">{error}</div>;
@@ -119,22 +188,92 @@ export default function TournamentDetailPage() {
 					onSave={handleSaveDate}
 					type="date"
 				/>
-				<div className="meta-row">
-					<span className="meta-label">Events</span>
-					<div className="meta-value event-badges">
-						{activeEvents.map(({ key, label }) => (
-							<Badge key={key} text={label} variant="info" />
+				{editingEvents && eventDraft ? (
+					<>
+						<div className="meta-row">
+							<span className="meta-label">Events</span>
+							<div className="events-edit-actions">
+								<button
+									className="btn btn-sm btn-primary"
+									onClick={handleSaveEvents}
+									disabled={eventSaving}
+								>
+									{eventSaving ? 'Saving…' : 'Save'}
+								</button>
+								<button
+									className="btn btn-sm btn-secondary"
+									onClick={handleCancelEvents}
+									disabled={eventSaving}
+								>
+									Cancel
+								</button>
+							</div>
+						</div>
+						{EVENTS.map(({ key, label }) => (
+							<div key={key} className="event-edit-row">
+								<label className="event-edit-toggle">
+									<input
+										type="checkbox"
+										checked={eventDraft[key].enabled}
+										onChange={(e) =>
+											setEventDraft((d) => ({
+												...d,
+												[key]: { ...d[key], enabled: e.target.checked },
+											}))
+										}
+									/>
+									<span>{label}</span>
+								</label>
+								{eventDraft[key].enabled && (
+									<label className="event-edit-points">
+										<span>Total points</span>
+										<input
+											type="number"
+											min="1"
+											className="event-points-input"
+											value={eventDraft[key].total}
+											onChange={(e) =>
+												setEventDraft((d) => ({
+													...d,
+													[key]: { ...d[key], total: e.target.value },
+												}))
+											}
+										/>
+									</label>
+								)}
+							</div>
 						))}
-					</div>
-				</div>
-				{activeEvents.map(({ key, label }) => (
-					<div key={key} className="meta-row">
-						<span className="meta-label">{label} — Total Points</span>
-						<span className="meta-value">
-							{tournament[`total_points_${key}`]}
-						</span>
-					</div>
-				))}
+						{eventError && <p className="events-edit-error">{eventError}</p>}
+					</>
+				) : (
+					<>
+						<div className="meta-row">
+							<span className="meta-label">Events</span>
+							<div className="meta-value event-badges">
+								{activeEvents.map(({ key, label }) => (
+									<Badge key={key} text={label} variant="info" />
+								))}
+								{activeEvents.length === 0 && (
+									<em className="muted">No events configured</em>
+								)}
+							</div>
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={handleEditEvents}
+							>
+								Edit Events
+							</button>
+						</div>
+						{activeEvents.map(({ key, label }) => (
+							<div key={key} className="meta-row">
+								<span className="meta-label">{label} — Total Points</span>
+								<span className="meta-value">
+									{tournament[`total_points_${key}`]}
+								</span>
+							</div>
+						))}
+					</>
+				)}
 			</section>
 
 			{/* Participants */}
@@ -150,15 +289,32 @@ export default function TournamentDetailPage() {
 						<table className="data-table">
 							<thead>
 								<tr>
-									<th>Competitor</th>
-									{activeEvents.map(({ label }) => (
-										<th key={label}>{label}</th>
+									<th
+										className="sortable-th"
+										onClick={() => handleSort('competitor_name')}
+									>
+										Competitor
+										{sortKey === 'competitor_name' && (
+											<span className="sort-indicator">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>
+										)}
+									</th>
+									{activeEvents.map(({ key, label }) => (
+										<th
+											key={label}
+											className="sortable-th"
+											onClick={() => handleSort(`${key}_earned`)}
+										>
+											{label}
+											{sortKey === `${key}_earned` && (
+												<span className="sort-indicator">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>
+											)}
+										</th>
 									))}
 									<th></th>
 								</tr>
 							</thead>
 							<tbody>
-								{participants.map((p) => (
+								{sortedParticipants.map((p) => (
 									<tr key={p.result_id}>
 										<td>
 											<button

@@ -5,15 +5,16 @@ import {
 	getCoreRowModel,
 	getSortedRowModel,
 	getFilteredRowModel,
+	getPaginationRowModel,
 	flexRender,
 	createColumnHelper,
 } from '@tanstack/react-table';
 import api from '../../utils/api.js';
 import Badge from '../../components/shared/Badge/Badge.jsx';
-import Modal from '../../components/shared/Modal/Modal.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
+import AddCompetitorModal from '../../components/shared/AddCompetitorModal/AddCompetitorModal.jsx';
 import './CompetitorsListPage.css';
 
 const columnHelper = createColumnHelper();
@@ -26,82 +27,6 @@ function EmailStatusBadge({ competitor }) {
 	);
 }
 
-function AddCompetitorModal({ isOpen, onClose, onAdd }) {
-	const [name, setName] = useState('');
-	const [email, setEmail] = useState('');
-	const [error, setError] = useState('');
-	const [isSubmitting, setIsSubmitting] = useState(false);
-
-	const handleSubmit = async (e) => {
-		e.preventDefault();
-		if (!name.trim()) {
-			setError('Name is required');
-			return;
-		}
-
-		setIsSubmitting(true);
-		setError('');
-
-		try {
-			await api.post('/rankings/competitors', {
-				name: name.trim(),
-				email: email.trim() || undefined,
-			});
-			onAdd();
-			setName('');
-			setEmail('');
-			onClose();
-		} catch (err) {
-			setError(err.response?.data?.error || 'Failed to add competitor');
-		} finally {
-			setIsSubmitting(false);
-		}
-	};
-
-	return (
-		<Modal isOpen={isOpen} onClose={onClose} title="Add Competitor">
-			<form onSubmit={handleSubmit}>
-				{error && <div className="alert alert-error">{error}</div>}
-
-				<div className="form-group">
-					<label htmlFor="competitor-name">Name *</label>
-					<input
-						id="competitor-name"
-						type="text"
-						value={name}
-						onChange={(e) => setName(e.target.value)}
-						placeholder="Enter competitor's full name"
-						required
-					/>
-				</div>
-
-				<div className="form-group">
-					<label htmlFor="competitor-email">Email</label>
-					<input
-						id="competitor-email"
-						type="email"
-						value={email}
-						onChange={(e) => setEmail(e.target.value)}
-						placeholder="competitor@example.com (optional)"
-					/>
-					<small className="form-help">
-						If empty, a placeholder email will be generated
-					</small>
-				</div>
-
-				<div className="modal-actions">
-					<button type="button" className="btn-secondary" onClick={onClose}>
-						Cancel
-					</button>
-					<button type="submit" className="btn-primary" disabled={isSubmitting}>
-						{isSubmitting ? 'Adding...' : 'Add Competitor'}
-					</button>
-				</div>
-			</form>
-		</Modal>
-	);
-}
-
 export default function CompetitorsListPage() {
 	const [data, setData] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -111,6 +36,7 @@ export default function CompetitorsListPage() {
 	const [showPlaceholdersOnly, setShowPlaceholdersOnly] = useState(false);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [confirmTarget, setConfirmTarget] = useState(null);
+	const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
 	const navigate = useNavigate();
 
 	const loadCompetitors = async () => {
@@ -190,7 +116,7 @@ export default function CompetitorsListPage() {
 				header: 'Actions',
 				cell: (info) => (
 					<button
-						className="btn-danger btn-small"
+						className="btn-sm btn-danger"
 						onClick={() => handleDelete(info.row.original)}
 					>
 						Delete
@@ -208,12 +134,15 @@ export default function CompetitorsListPage() {
 		state: {
 			sorting,
 			globalFilter: filtering,
+			pagination,
 		},
 		onSortingChange: setSorting,
 		onGlobalFilterChange: setFiltering,
+		onPaginationChange: setPagination,
 		getCoreRowModel: getCoreRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		getFilteredRowModel: getFilteredRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
 	});
 
 	if (loading) return <div className="page-loading">Loading competitors…</div>;
@@ -224,7 +153,7 @@ export default function CompetitorsListPage() {
 				title="Competitors"
 				subtitle={`${data.length} competitors`}
 				action={
-					<button className="btn-primary" onClick={() => setShowAddModal(true)}>
+				<button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
 						Add Competitor
 					</button>
 				}
@@ -266,6 +195,7 @@ export default function CompetitorsListPage() {
 					}
 				/>
 			) : (
+				<>
 				<div className="table-wrapper card">
 					<table className="competitors-table">
 						<thead>
@@ -304,6 +234,52 @@ export default function CompetitorsListPage() {
 						</tbody>
 					</table>
 				</div>
+
+				{table.getPageCount() > 1 && (
+					<div className="pagination-bar">
+						<span className="pagination-info">
+							Showing{' '}
+							{pagination.pageIndex * pagination.pageSize + 1}–{Math.min(
+								(pagination.pageIndex + 1) * pagination.pageSize,
+								table.getFilteredRowModel().rows.length,
+							)}{' '}
+							of {table.getFilteredRowModel().rows.length}
+						</span>
+
+						<div className="pagination-controls">
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() => table.previousPage()}
+								disabled={!table.getCanPreviousPage()}
+							>
+								← Prev
+							</button>
+							<span className="pagination-page">
+								Page {pagination.pageIndex + 1} of {table.getPageCount()}
+							</span>
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() => table.nextPage()}
+								disabled={!table.getCanNextPage()}
+							>
+								Next →
+							</button>
+						</div>
+
+						<select
+							className="pagination-size"
+							value={pagination.pageSize}
+							onChange={(e) => table.setPageSize(Number(e.target.value))}
+						>
+							{[10, 20, 50].map((size) => (
+								<option key={size} value={size}>
+									{size} per page
+								</option>
+							))}
+						</select>
+					</div>
+				)}
+				</>
 			)}
 
 			<AddCompetitorModal
