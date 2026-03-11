@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
-import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import { formatScore as fmt } from '../../utils/formatScore.js';
+import '../../styles/podium.css';
 import './TournamentDetailPage.css';
 
 export default function TournamentDetailPage() {
@@ -80,10 +80,22 @@ export default function TournamentDetailPage() {
 
 	const handleEditEvents = () => {
 		setEventDraft({
-			knockdowns: { enabled: Boolean(tournament.has_knockdowns), total: tournament.total_points_knockdowns },
-			distance: { enabled: Boolean(tournament.has_distance), total: tournament.total_points_distance },
-			speed: { enabled: Boolean(tournament.has_speed), total: tournament.total_points_speed },
-			woods: { enabled: Boolean(tournament.has_woods), total: tournament.total_points_woods },
+			knockdowns: {
+				enabled: Boolean(tournament.has_knockdowns),
+				total: tournament.total_points_knockdowns,
+			},
+			distance: {
+				enabled: Boolean(tournament.has_distance),
+				total: tournament.total_points_distance,
+			},
+			speed: {
+				enabled: Boolean(tournament.has_speed),
+				total: tournament.total_points_speed,
+			},
+			woods: {
+				enabled: Boolean(tournament.has_woods),
+				total: tournament.total_points_woods,
+			},
 		});
 		setEventError('');
 		setEditingEvents(true);
@@ -142,22 +154,39 @@ export default function TournamentDetailPage() {
 		}
 	};
 
-	const sortedParticipants = [...participants].sort((a, b) => {
-		const aVal = a[sortKey];
-		const bVal = b[sortKey];
-		// nulls always sort to the bottom regardless of direction
-		if (aVal === null && bVal === null) return 0;
-		if (aVal === null) return 1;
-		if (bVal === null) return -1;
-		const cmp = typeof aVal === 'string'
-			? aVal.localeCompare(bVal)
-			: aVal - bVal;
-		return sortDir === 'asc' ? cmp : -cmp;
-	});
-
 	if (loading) return <div className="page-loading">Loading tournament…</div>;
 	if (error) return <div className="alert alert-error">{error}</div>;
 	if (!tournament) return <EmptyState message="Tournament not found." />;
+
+	const EVENT_VARIANTS = {
+		knockdowns: 'blue',
+		distance: 'teal',
+		speed: 'indigo',
+		woods: 'green',
+	};
+
+	const participantsWithTotal = participants.map((p) => ({
+		...p,
+		totalEarned: activeEvents.reduce(
+			(sum, { key }) => sum + (p[`${key}_earned`] ?? 0),
+			0,
+		),
+	}));
+
+	const topFinishers = [...participantsWithTotal]
+		.sort((a, b) => b.totalEarned - a.totalEarned)
+		.slice(0, 3);
+
+	const sortedParticipants = [...participantsWithTotal].sort((a, b) => {
+		const aVal = a[sortKey];
+		const bVal = b[sortKey];
+		if (aVal === null && bVal === null) return 0;
+		if (aVal === null) return 1;
+		if (bVal === null) return -1;
+		const cmp =
+			typeof aVal === 'string' ? aVal.localeCompare(bVal) : aVal - bVal;
+		return sortDir === 'asc' ? cmp : -cmp;
+	});
 
 	return (
 		<div className="tournament-detail-page">
@@ -174,7 +203,7 @@ export default function TournamentDetailPage() {
 				}
 			/>
 
-			{/* Metadata */}
+			{/* Details */}
 			<section className="card tournament-detail__meta">
 				<h2 className="section-title">Details</h2>
 				<EditableField
@@ -188,26 +217,38 @@ export default function TournamentDetailPage() {
 					onSave={handleSaveDate}
 					type="date"
 				/>
+			</section>
+
+			{/* Events */}
+			<section className="card tournament-detail__events">
+				<div className="section-title-row">
+					<h2 className="section-title">Events</h2>
+					{!editingEvents && (
+						<button
+							className="btn btn-sm btn-secondary"
+							onClick={handleEditEvents}
+						>
+							Edit Events
+						</button>
+					)}
+				</div>
 				{editingEvents && eventDraft ? (
 					<>
-						<div className="meta-row">
-							<span className="meta-label">Events</span>
-							<div className="events-edit-actions">
-								<button
-									className="btn btn-sm btn-primary"
-									onClick={handleSaveEvents}
-									disabled={eventSaving}
-								>
-									{eventSaving ? 'Saving…' : 'Save'}
-								</button>
-								<button
-									className="btn btn-sm btn-secondary"
-									onClick={handleCancelEvents}
-									disabled={eventSaving}
-								>
-									Cancel
-								</button>
-							</div>
+						<div className="events-edit-actions">
+							<button
+								className="btn btn-sm btn-primary"
+								onClick={handleSaveEvents}
+								disabled={eventSaving}
+							>
+								{eventSaving ? 'Saving…' : 'Save'}
+							</button>
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={handleCancelEvents}
+								disabled={eventSaving}
+							>
+								Cancel
+							</button>
 						</div>
 						{EVENTS.map(({ key, label }) => (
 							<div key={key} className="event-edit-row">
@@ -245,84 +286,55 @@ export default function TournamentDetailPage() {
 						))}
 						{eventError && <p className="events-edit-error">{eventError}</p>}
 					</>
+				) : activeEvents.length === 0 ? (
+					<em className="muted">No events configured</em>
 				) : (
-					<>
-						<div className="meta-row">
-							<span className="meta-label">Events</span>
-							<div className="meta-value event-badges">
-								{activeEvents.map(({ key, label }) => (
-									<Badge key={key} text={label} variant="info" />
-								))}
-								{activeEvents.length === 0 && (
-									<em className="muted">No events configured</em>
-								)}
-							</div>
-							<button
-								className="btn btn-sm btn-secondary"
-								onClick={handleEditEvents}
-							>
-								Edit Events
-							</button>
-						</div>
+					<div className="score-cards">
 						{activeEvents.map(({ key, label }) => (
-							<div key={key} className="meta-row">
-								<span className="meta-label">{label} — Total Points</span>
-								<span className="meta-value">
+							<div
+								key={key}
+								className={`score-card score-card--${EVENT_VARIANTS[key] ?? 'blue'}`}
+							>
+								<span className="score-card__label">{label}</span>
+								<span className="score-card__value">
 									{tournament[`total_points_${key}`]}
 								</span>
+								<span className="score-card__sublabel">pts available</span>
 							</div>
 						))}
-					</>
+					</div>
 				)}
 			</section>
 
-			{/* Participants */}
-			<section className="card tournament-detail__participants">
-				<h2 className="section-title">
-					Results{' '}
-					<span className="section-count">({participants.length})</span>
-				</h2>
-				{participants.length === 0 ? (
-					<EmptyState message="No results recorded for this tournament." />
-				) : (
-					<div className="table-wrapper">
-						<table className="data-table">
-							<thead>
-								<tr>
-									<th
-										className="sortable-th"
-										onClick={() => handleSort('competitor_name')}
+			{/* Top Finishers */}
+			{topFinishers.length > 0 && (
+				<section className="card tournament-detail__podium">
+					<h2 className="section-title">Top Finishers</h2>
+					<table className="data-table">
+						<thead>
+							<tr>
+								<th>#</th>
+								<th>Competitor</th>
+								{activeEvents.map(({ key, label }) => (
+									<th key={key}>{label}</th>
+								))}
+								<th>Total</th>
+							</tr>
+						</thead>
+						<tbody>
+							{topFinishers.map((p, i) => {
+								const rank = i + 1;
+								return (
+									<tr
+										key={p.result_id}
+										data-rank={rank <= 3 ? rank : undefined}
 									>
-										Competitor
-										{sortKey === 'competitor_name' && (
-											<span className="sort-indicator">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>
-										)}
-									</th>
-									{activeEvents.map(({ key, label }) => (
-										<th
-											key={label}
-											className="sortable-th"
-											onClick={() => handleSort(`${key}_earned`)}
-										>
-											{label}
-											{sortKey === `${key}_earned` && (
-												<span className="sort-indicator">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>
-											)}
-										</th>
-									))}
-									<th></th>
-								</tr>
-							</thead>
-							<tbody>
-								{sortedParticipants.map((p) => (
-									<tr key={p.result_id}>
+										<td className="rank-num">{rank}</td>
 										<td>
 											<button
 												className="competitor-link"
 												onClick={() =>
-													navigate(
-														`/admin/competitors/${p.competitor_id}`,
-													)
+													navigate(`/admin/competitors/${p.competitor_id}`)
 												}
 											>
 												{p.competitor_name}
@@ -340,6 +352,92 @@ export default function TournamentDetailPage() {
 												{fmt(p[`${key}_earned`])}
 											</td>
 										))}
+										<td className="score-cell total-earned">{p.totalEarned}</td>
+									</tr>
+								);
+							})}
+						</tbody>
+					</table>
+				</section>
+			)}
+
+			{/* Participants */}
+			<section className="card tournament-detail__participants">
+				<h2 className="section-title">
+					Results <span className="section-count">({participants.length})</span>
+				</h2>
+				{participants.length === 0 ? (
+					<EmptyState message="No results recorded for this tournament." />
+				) : (
+					<div className="table-wrapper">
+						<table className="data-table">
+							<thead>
+								<tr>
+									<th
+										className="sortable-th"
+										onClick={() => handleSort('competitor_name')}
+									>
+										Competitor
+										{sortKey === 'competitor_name' && (
+											<span className="sort-indicator">
+												{sortDir === 'asc' ? ' ▲' : ' ▼'}
+											</span>
+										)}
+									</th>
+									{activeEvents.map(({ key, label }) => (
+										<th
+											key={label}
+											className="sortable-th"
+											onClick={() => handleSort(`${key}_earned`)}
+										>
+											{label}
+											{sortKey === `${key}_earned` && (
+												<span className="sort-indicator">
+													{sortDir === 'asc' ? ' ▲' : ' ▼'}
+												</span>
+											)}
+										</th>
+									))}
+									<th
+										className="sortable-th"
+										onClick={() => handleSort('totalEarned')}
+									>
+										Total
+										{sortKey === 'totalEarned' && (
+											<span className="sort-indicator">
+												{sortDir === 'asc' ? ' ▲' : ' ▼'}
+											</span>
+										)}
+									</th>
+									<th></th>
+								</tr>
+							</thead>
+							<tbody>
+								{sortedParticipants.map((p) => (
+									<tr key={p.result_id}>
+										<td>
+											<button
+												className="competitor-link"
+												onClick={() =>
+													navigate(`/admin/competitors/${p.competitor_id}`)
+												}
+											>
+												{p.competitor_name}
+											</button>
+										</td>
+										{activeEvents.map(({ key }) => (
+											<td
+												key={key}
+												className={
+													p[`${key}_earned`] === null
+														? 'score-cell null-score'
+														: 'score-cell'
+												}
+											>
+												{fmt(p[`${key}_earned`])}
+											</td>
+										))}
+										<td className="score-cell total-earned">{p.totalEarned}</td>
 										<td className="row-actions">
 											<button
 												className="btn btn-sm btn-secondary"
@@ -361,15 +459,15 @@ export default function TournamentDetailPage() {
 					</div>
 				)}
 			</section>
-		{editResultTarget && (
-			<EditResultModal
-				key={editResultTarget.result_id}
-				result={editResultTarget}
-				title={`Edit Result — ${editResultTarget.competitor_name}`}
-				onClose={() => setEditResultTarget(null)}
-				onSaved={load}
-			/>
-		)}
+			{editResultTarget && (
+				<EditResultModal
+					key={editResultTarget.result_id}
+					result={editResultTarget}
+					title={`Edit Result — ${editResultTarget.competitor_name}`}
+					onClose={() => setEditResultTarget(null)}
+					onSaved={load}
+				/>
+			)}
 			<ConfirmDialog
 				isOpen={!!deleteResultTarget}
 				title="Delete Result"

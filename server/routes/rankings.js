@@ -141,7 +141,23 @@ function createRankingsRouter(db) {
                         tr.knockdowns_earned,
                         tr.distance_earned,
                         tr.speed_earned,
-                        tr.woods_earned
+                        tr.woods_earned,
+                        (SELECT COUNT(*) + 1
+                         FROM tournament_results tr2
+                         WHERE tr2.tournament_id = tr.tournament_id
+                           AND tr2.competitor_id != tr.competitor_id
+                           AND (
+                             COALESCE(CASE WHEN t.has_knockdowns THEN tr2.knockdowns_earned ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_distance   THEN tr2.distance_earned   ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_speed      THEN tr2.speed_earned      ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_woods      THEN tr2.woods_earned      ELSE 0 END, 0)
+                           ) > (
+                             COALESCE(CASE WHEN t.has_knockdowns THEN tr.knockdowns_earned ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_distance   THEN tr.distance_earned   ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_speed      THEN tr.speed_earned      ELSE 0 END, 0) +
+                             COALESCE(CASE WHEN t.has_woods      THEN tr.woods_earned      ELSE 0 END, 0)
+                           )
+                        ) AS tournament_rank
                     FROM tournament_results tr
                     JOIN tournaments t ON t.id = tr.tournament_id
                     WHERE tr.competitor_id = ?
@@ -151,6 +167,7 @@ function createRankingsRouter(db) {
 
 				// Suppress earned values for events disabled on that tournament,
 				// so disabled events render as null (shown as '—') on the frontend.
+				// tournament_rank passes through via ...r spread.
 				const results = rawResults.map(
 					({ has_knockdowns, has_distance, has_speed, has_woods, ...r }) => ({
 						...r,
@@ -163,7 +180,13 @@ function createRankingsRouter(db) {
 
 				const scores = computeCompetitorScores(req.params.id, db);
 
-				return res.json({ competitor, results, scores });
+				const allRankings = computeRankings(db);
+				const competitorRanking = allRankings.find(
+					(r) => r.id === Number(req.params.id),
+				);
+				const overallRank = competitorRanking ? competitorRanking.rank : null;
+
+				return res.json({ competitor, results, scores, overallRank });
 			} catch (err) {
 				return next(err);
 			}

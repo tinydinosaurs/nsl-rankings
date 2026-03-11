@@ -1,110 +1,147 @@
-.layout { display: flex; flex-direction: column; min-height: 100vh; }
+.layout {
+	display: flex;
+	flex-direction: column;
+	min-height: 100vh;
+}
 
 .navbar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 0 32px;
-  height: 56px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
+	display: flex;
+	align-items: center;
+	gap: 24px;
+	padding: 0 32px;
+	height: 56px;
+	background: var(--surface);
+	border-bottom: 1px solid var(--border);
+	position: sticky;
+	top: 0;
+	z-index: 100;
 }
 
-.navbar-brand { font-weight: 700; font-size: 16px; color: var(--text); margin-right: 8px; }
+.navbar-brand {
+	font-weight: 700;
+	font-size: 16px;
+	color: var(--text);
+	margin-right: 8px;
+}
 
-.navbar-links { display: flex; gap: 4px; flex: 1; }
+.navbar-links {
+	display: flex;
+	gap: 4px;
+	flex: 1;
+}
 
 .nav-link {
-  padding: 6px 14px;
-  border-radius: var(--radius);
-  color: var(--text-muted);
-  font-size: 14px;
-  transition: color 0.15s, background 0.15s;
+	padding: 6px 14px;
+	border-radius: var(--radius);
+	color: var(--text-muted);
+	font-size: 14px;
+	transition:
+		color 0.15s,
+		background 0.15s;
 }
 
-.nav-link:hover { color: var(--text); background: var(--surface2); }
-.nav-link.active { color: var(--accent); background: var(--surface2); }
+.nav-link:hover {
+	color: var(--text);
+	background: var(--surface2);
+}
+.nav-link.active {
+	color: var(--tint-blue-fg);
+	background: var(--surface2);
+}
 
-.navbar-user { display: flex; align-items: center; gap: 10px; margin-left: auto; }
-.username { font-size: 13px; color: var(--text-muted); }
+.navbar-user {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-left: auto;
+}
+.username {
+	font-size: 13px;
+	color: var(--text-muted);
+}
 
-.main-content { flex: 1; padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
+.main-content {
+	flex: 1;
+	padding: 32px;
+	max-width: 1200px;
+	margin: 0 auto;
+	width: 100%;
+}
 
 /* Hamburger button — hidden on desktop */
 .navbar-menu-toggle {
-  display: none;
-  flex-direction: column;
-  justify-content: center;
-  gap: 5px;
-  width: 36px;
-  height: 36px;
-  padding: 6px;
-  margin-left: auto;
-  background: none;
-  border: none;
-  cursor: pointer;
-  border-radius: var(--radius);
+	display: none;
+	flex-direction: column;
+	justify-content: center;
+	gap: 5px;
+	width: 36px;
+	height: 36px;
+	padding: 6px;
+	margin-left: auto;
+	background: none;
+	border: none;
+	cursor: pointer;
+	border-radius: var(--radius);
 }
-.navbar-menu-toggle:hover { background: var(--surface2); }
+.navbar-menu-toggle:hover {
+	background: var(--surface2);
+}
 .navbar-menu-toggle span {
-  display: block;
-  width: 100%;
-  height: 2px;
-  background: var(--text);
-  border-radius: 2px;
+	display: block;
+	width: 100%;
+	height: 2px;
+	background: var(--text);
+	border-radius: 2px;
 }
 
 /* Mobile menu panel — hidden on desktop */
 .mobile-menu {
-  display: none;
+	display: none;
 }
 
 @media (max-width: 768px) {
-  .navbar {
-    padding: 0 16px;
-    gap: 0;
-  }
+	.navbar {
+		padding: 0 16px;
+		gap: 0;
+	}
 
-  .navbar-links,
-  .navbar-user {
-    display: none;
-  }
+	.navbar-links,
+	.navbar-user {
+		display: none;
+	}
 
-  .navbar-menu-toggle {
-    display: flex;
-  }
+	.navbar-menu-toggle {
+		display: flex;
+	}
 
-  .mobile-menu {
-    display: flex;
-    flex-direction: column;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 8px 16px 16px;
-    position: sticky;
-    top: 56px;
-    z-index: 99;
-    gap: 2px;
-  }
+	.mobile-menu {
+		display: flex;
+		flex-direction: column;
+		background: var(--surface);
+		border-bottom: 1px solid var(--border);
+		padding: 8px 16px 16px;
+		position: sticky;
+		top: 56px;
+		z-index: 99;
+		gap: 2px;
+	}
 
-  .mobile-menu .nav-link {
-    padding: 10px 14px;
-    font-size: 15px;
-  }
+	.mobile-menu .nav-link {
+		padding: 10px 14px;
+		font-size: 15px;
+	}
 
-  .mobile-menu__user {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 8px;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-  }
+	.mobile-menu__user {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		margin-top: 8px;
+		padding-top: 12px;
+		border-top: 1px solid var(--border);
+	}
 
-  .main-content {
-    padding: 16px;
-  }
+	.main-content {
+		padding: 16px;
+	}
 }

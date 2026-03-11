@@ -153,7 +153,10 @@ export default function CompetitorsListPage() {
 				title="Competitors"
 				subtitle={`${data.length} competitors`}
 				action={
-				<button className="btn btn-primary" onClick={() => setShowAddModal(true)}>
+					<button
+						className="btn btn-primary"
+						onClick={() => setShowAddModal(true)}
+					>
 						Add Competitor
 					</button>
 				}
@@ -196,89 +199,93 @@ export default function CompetitorsListPage() {
 				/>
 			) : (
 				<>
-				<div className="table-wrapper card">
-					<table className="competitors-table">
-						<thead>
-							{table.getHeaderGroups().map((hg) => (
-								<tr key={hg.id}>
-									{hg.headers.map((header) => (
-										<th
-											key={header.id}
-											onClick={header.column.getToggleSortingHandler()}
-											className={header.column.getCanSort() ? 'sortable' : ''}
-										>
-											{flexRender(
-												header.column.columnDef.header,
-												header.getContext(),
-											)}
-											{header.column.getIsSorted() === 'asc' && ' ↑'}
-											{header.column.getIsSorted() === 'desc' && ' ↓'}
-										</th>
-									))}
-								</tr>
-							))}
-						</thead>
-						<tbody>
-							{table.getRowModel().rows.map((row) => (
-								<tr key={row.id}>
-									{row.getVisibleCells().map((cell) => (
-										<td key={cell.id}>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
-										</td>
-									))}
-								</tr>
-							))}
-						</tbody>
-					</table>
-				</div>
-
-				{table.getPageCount() > 1 && (
-					<div className="pagination-bar">
-						<span className="pagination-info">
-							Showing{' '}
-							{pagination.pageIndex * pagination.pageSize + 1}–{Math.min(
-								(pagination.pageIndex + 1) * pagination.pageSize,
-								table.getFilteredRowModel().rows.length,
-							)}{' '}
-							of {table.getFilteredRowModel().rows.length}
-						</span>
-
-						<div className="pagination-controls">
-							<button
-								className="btn btn-sm btn-secondary"
-								onClick={() => table.previousPage()}
-								disabled={!table.getCanPreviousPage()}
-							>
-								← Prev
-							</button>
-							<span className="pagination-page">
-								Page {pagination.pageIndex + 1} of {table.getPageCount()}
-							</span>
-							<button
-								className="btn btn-sm btn-secondary"
-								onClick={() => table.nextPage()}
-								disabled={!table.getCanNextPage()}
-							>
-								Next →
-							</button>
-						</div>
-
-						<select
-							className="pagination-size"
-							value={pagination.pageSize}
-							onChange={(e) => table.setPageSize(Number(e.target.value))}
-						>
-							{[10, 20, 50].map((size) => (
-								<option key={size} value={size}>
-									{size} per page
-								</option>
-							))}
-						</select>
+					<div className="table-wrapper card">
+						<table className="competitors-table">
+							<thead>
+								{table.getHeaderGroups().map((hg) => (
+									<tr key={hg.id}>
+										{hg.headers.map((header) => (
+											<th
+												key={header.id}
+												onClick={header.column.getToggleSortingHandler()}
+												className={header.column.getCanSort() ? 'sortable' : ''}
+											>
+												{flexRender(
+													header.column.columnDef.header,
+													header.getContext(),
+												)}
+												{header.column.getIsSorted() === 'asc' && ' ↑'}
+												{header.column.getIsSorted() === 'desc' && ' ↓'}
+											</th>
+										))}
+									</tr>
+								))}
+							</thead>
+							<tbody>
+								{table.getRowModel().rows.map((row) => (
+									<tr key={row.id}>
+										{row.getVisibleCells().map((cell) => (
+											<td key={cell.id}>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)}
+											</td>
+										))}
+									</tr>
+								))}
+							</tbody>
+						</table>
 					</div>
-				)}
+
+					{table.getFilteredRowModel().rows.length > 0 && (
+						<div className="pagination-bar">
+							<span className="pagination-info">
+								Showing {pagination.pageIndex * pagination.pageSize + 1}–
+								{Math.min(
+									(pagination.pageIndex + 1) * pagination.pageSize,
+									table.getFilteredRowModel().rows.length,
+								)}{' '}
+								of {table.getFilteredRowModel().rows.length}
+							</span>
+
+							<div className="pagination-controls">
+								<select
+									className="pagination-size"
+									aria-label="Rows per page"
+									value={pagination.pageSize}
+									onChange={(e) => table.setPageSize(Number(e.target.value))}
+								>
+									{[10, 20, 50].map((size) => (
+										<option key={size} value={size}>
+											{size} per page
+										</option>
+									))}
+								</select>
+								{table.getPageCount() > 1 && (
+									<>
+										<button
+											className="btn btn-sm btn-secondary"
+											onClick={() => table.previousPage()}
+											disabled={!table.getCanPreviousPage()}
+										>
+											← Prev
+										</button>
+										<span className="pagination-page">
+											Page {pagination.pageIndex + 1} of {table.getPageCount()}
+										</span>
+										<button
+											className="btn btn-sm btn-secondary"
+											onClick={() => table.nextPage()}
+											disabled={!table.getCanNextPage()}
+										>
+											Next →
+										</button>
+									</>
+								)}
+							</div>
+						</div>
+					)}
 				</>
 			)}
 

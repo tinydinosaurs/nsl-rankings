@@ -127,7 +127,7 @@ export default function UploadPage() {
 	if (step === 'success')
 		return (
 			<div className="upload-page">
-			<PageHeader title="Upload Complete" />
+				<PageHeader title="Upload Complete" />
 				<div className="alert alert-success">
 					Tournament saved successfully.
 					{successInfo?.new_competitors?.length > 0 && (
@@ -188,10 +188,11 @@ export default function UploadPage() {
 								/>
 							</div>
 							<div className="form-group">
-								<label>
+								<label htmlFor="tournament-date">
 									Date <span className="required">*</span>
 								</label>
 								<input
+									id="tournament-date"
 									type="date"
 									value={settings.tournamentDate}
 									onChange={(e) =>
@@ -213,13 +214,19 @@ export default function UploadPage() {
 							be flagged.
 						</p>
 						{!selectedFile && (
-							<input
-								type="file"
-								accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
-								ref={fileRef}
-								style={{ marginTop: 8 }}
-								onChange={(e) => setSelectedFile(e.target.files[0] || null)}
-							/>
+							<>
+								<label htmlFor="results-file" className="visually-hidden">
+									Results file
+								</label>
+								<input
+									id="results-file"
+									type="file"
+									accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
+									ref={fileRef}
+									style={{ marginTop: 8 }}
+									onChange={(e) => setSelectedFile(e.target.files[0] || null)}
+								/>
+							</>
 						)}
 						{selectedFile && (
 							<p className="hint selected-file-name">

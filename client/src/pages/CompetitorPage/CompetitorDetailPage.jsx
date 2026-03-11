@@ -11,11 +11,13 @@ import EditableField from '../../components/shared/EditableField/EditableField.j
 import { formatScore } from '../../utils/formatScore.js';
 import './CompetitorDetailPage.css';
 
-function ScoreCard({ label, score, variant }) {
+function ScoreCard({ label, score, rawValue, variant }) {
 	return (
 		<div className={`score-card${variant ? ` score-card--${variant}` : ''}`}>
 			<span className="score-card__label">{label}</span>
-			<span className="score-card__value">{formatScore(score)}</span>
+			<span className="score-card__value">
+				{rawValue !== undefined ? rawValue : formatScore(score)}
+			</span>
 		</div>
 	);
 }
@@ -27,6 +29,7 @@ export default function CompetitorDetailPage() {
 	const [competitor, setCompetitor] = useState(null);
 	const [history, setHistory] = useState([]);
 	const [scores, setScores] = useState(null);
+	const [overallRank, setOverallRank] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 	const [deleteResultTarget, setDeleteResultTarget] = useState(null);
@@ -42,8 +45,13 @@ export default function CompetitorDetailPage() {
 			setCompetitor(res.data.competitor);
 			setHistory(res.data.results ?? []);
 			setScores(res.data.scores ?? null);
+			setOverallRank(res.data.overallRank ?? null);
 		} catch (err) {
-			setError(err.response?.status === 404 ? 'Competitor not found.' : 'Failed to load competitor');
+			setError(
+				err.response?.status === 404
+					? 'Competitor not found.'
+					: 'Failed to load competitor',
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -131,11 +139,28 @@ export default function CompetitorDetailPage() {
 				<section className="card competitor-detail__scores">
 					<h2 className="section-title">Career Scores</h2>
 					<div className="score-cards">
-						<ScoreCard label="Knockdowns" score={scores.knockdowns} variant="blue" />
-						<ScoreCard label="Distance" score={scores.distance} variant="teal" />
+						<ScoreCard
+							label="Knockdowns"
+							score={scores.knockdowns}
+							variant="blue"
+						/>
+						<ScoreCard
+							label="Distance"
+							score={scores.distance}
+							variant="teal"
+						/>
 						<ScoreCard label="Speed" score={scores.speed} variant="indigo" />
 						<ScoreCard label="Woods" score={scores.woods} variant="green" />
-						<ScoreCard label="Total" score={scores.total} variant="amber" />
+						<ScoreCard
+							label="Total"
+							score={scores.total}
+							variant="amber"
+						/>{' '}
+						<ScoreCard
+							label="Overall Rank"
+							rawValue={overallRank ? `#${overallRank}` : '—'}
+							variant="bronze"
+						/>{' '}
 					</div>
 				</section>
 			)}
@@ -171,10 +196,13 @@ export default function CompetitorDetailPage() {
 								{history.map((result) => (
 									<tr key={result.result_id}>
 										<td>
-										<Link to={`/admin/tournaments/${result.tournament_id}`}>
-											{result.tournament_name}
-										</Link>
-									</td>
+											<Link to={`/admin/tournaments/${result.tournament_id}`}>
+												{result.tournament_rank === 1 && '🥇 '}
+												{result.tournament_rank === 2 && '🥈 '}
+												{result.tournament_rank === 3 && '🥉 '}
+												{result.tournament_name}
+											</Link>
+										</td>
 										<td>{result.tournament_date}</td>
 										<td className="score-cell">
 											{result.knockdowns_earned ?? '—'}
