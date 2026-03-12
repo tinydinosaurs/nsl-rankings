@@ -72,8 +72,14 @@ const existingOwner = db
 	.prepare('SELECT id FROM users WHERE role = ?')
 	.get('owner');
 if (!existingOwner) {
-	const username = process.env.OWNER_USERNAME || 'owner';
-	const password = process.env.OWNER_PASSWORD || 'owner123';
+	if (!process.env.OWNER_USERNAME || !process.env.OWNER_PASSWORD) {
+		console.error(
+			'FATAL: OWNER_USERNAME and OWNER_PASSWORD must be set in environment variables.',
+		);
+		process.exit(1);
+	}
+	const username = process.env.OWNER_USERNAME;
+	const password = process.env.OWNER_PASSWORD;
 	const hash = bcrypt.hashSync(password, 10);
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',

@@ -12,6 +12,7 @@ if (process.env.NODE_ENV === 'production') {
 	}
 }
 
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -35,6 +36,14 @@ app.use('/api/rankings', createRankingsRoutes(db));
 app.use('/api/upload', createUploadRoutes(db));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Serve React frontend in production
+if (process.env.NODE_ENV === 'production') {
+	app.use(express.static(path.join(__dirname, '../client/dist')));
+	app.get('*', (req, res) => {
+		res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+	});
+}
 
 // Handle 404 for unknown routes
 app.use('*', notFoundHandler);
