@@ -57,8 +57,13 @@ export default function Layout() {
 							</NavLink>
 							<NavLink to="/admin/upload" className={navLinkClass}>
 								Upload
+						</NavLink>
+						{user?.role === 'owner' && (
+							<NavLink to="/admin/users" className={navLinkClass}>
+								Users
 							</NavLink>
-							<NavLink to="/" end className={navLinkClass}>
+						)}
+						<NavLink to="/" end className={navLinkClass}>
 								Rankings
 							</NavLink>
 						</>
@@ -124,6 +129,15 @@ export default function Layout() {
 							>
 								Upload
 							</NavLink>
+							{user?.role === 'owner' && (
+								<NavLink
+									to="/admin/users"
+									className={navLinkClass}
+									onClick={closeMenu}
+								>
+									Users
+								</NavLink>
+							)}
 							<NavLink to="/" end className={navLinkClass} onClick={closeMenu}>
 								Rankings
 							</NavLink>

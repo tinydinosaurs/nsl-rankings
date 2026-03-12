@@ -5,8 +5,9 @@ const { signToken, requireOwner } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validation');
 const {
 	AuthenticationError,
+	AuthorizationError,
 	ConflictError,
-	ValidationError,
+	NotFoundError,
 	asyncHandler,
 } = require('../middleware/errors');
 
@@ -86,6 +87,48 @@ function createAuthRouter(db) {
 		res.json(users);
 	});
 
+	// PUT /api/auth/users/:id — owner updates an existing user
+	router.put(
+		'/users/:id',
+		requireOwner,
+		asyncHandler((req, res) => {
+			const { id } = req.params;
+			const { username, password, role } = req.body;
+
+			const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(id);
+			if (!user) throw new NotFoundError('User');
+
+			if (role !== undefined && parseInt(id) === req.user.id) {
+				throw new AuthorizationError('Cannot change your own role');
+			}
+
+			if (role !== undefined && !['admin', 'owner'].includes(role)) {
+				throw new AuthorizationError('Role must be admin or owner');
+			}
+
+			if (username !== undefined) {
+				const conflict = db
+					.prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+					.get(username, id);
+				if (conflict) throw new ConflictError('Username already exists');
+			}
+
+			const newUsername = username ?? user.username;
+			const newRole = role ?? user.role;
+			const newHash = password ? bcrypt.hashSync(password, 10) : null;
+
+			if (newHash) {
+				db.prepare('UPDATE users SET username = ?, role = ?, password_hash = ? WHERE id = ?')
+					.run(newUsername, newRole, newHash, id);
+			} else {
+				db.prepare('UPDATE users SET username = ?, role = ? WHERE id = ?')
+					.run(newUsername, newRole, id);
+			}
+
+			res.json({ id: parseInt(id), username: newUsername, role: newRole });
+		}),
+	);
+
 	// DELETE /api/auth/users/:id — owner deletes a user
 	router.delete(
 		'/users/:id',
@@ -93,8 +136,10 @@ function createAuthRouter(db) {
 		asyncHandler((req, res) => {
 			const { id } = req.params;
 			if (parseInt(id) === req.user.id) {
-				throw new ValidationError('Cannot delete your own account');
+				throw new AuthorizationError('Cannot delete your own account');
 			}
+			const user = db.prepare('SELECT id FROM users WHERE id = ?').get(id);
+			if (!user) throw new NotFoundError('User');
 			db.prepare('DELETE FROM users WHERE id = ?').run(id);
 			res.json({ success: true });
 		}),

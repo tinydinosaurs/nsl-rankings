@@ -8,6 +8,7 @@ import TournamentListPage from './pages/TournamentPage/TournamentListPage.jsx';
 import TournamentDetailPage from './pages/TournamentPage/TournamentDetailPage.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
 import UploadPage from './pages/UploadPage/UploadPage.jsx';
+import AdminUsersPage from './pages/AdminUsersPage/AdminUsersPage.jsx';
 import Layout from './components/shared/Layout/Layout.jsx';
 
 function RequireAuth({ children }) {
@@ -20,6 +21,13 @@ function RequireAdmin({ children }) {
 	if (!user) return <Navigate to="/login" replace />;
 	if (!['admin', 'owner'].includes(user.role))
 		return <Navigate to="/" replace />;
+	return children;
+}
+
+function RequireOwner({ children }) {
+	const { user } = useAuth();
+	if (!user) return <Navigate to="/login" replace />;
+	if (user.role !== 'owner') return <Navigate to="/admin" replace />;
 	return children;
 }
 
@@ -84,6 +92,14 @@ export default function App() {
 								<RequireAdmin>
 									<TournamentListPage />
 								</RequireAdmin>
+							}
+						/>
+						<Route
+							path="/admin/users"
+							element={
+								<RequireOwner>
+									<AdminUsersPage />
+								</RequireOwner>
 							}
 						/>
 					</Route>

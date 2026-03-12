@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { EyeIcon, EyeOffIcon } from '../../components/shared/EyeIcons/EyeIcons.jsx';
 import './LoginPage.css';
 
 export default function LoginPage() {
@@ -10,6 +11,7 @@ export default function LoginPage() {
 	const [password, setPassword] = useState('');
 	const [error, setError] = useState('');
 	const [loading, setLoading] = useState(false);
+	const [showPassword, setShowPassword] = useState(false);
 
 	useEffect(() => {
 		if (user) navigate('/admin', { replace: true });
@@ -53,13 +55,24 @@ export default function LoginPage() {
 						/>
 					</div>
 					<div className="form-group">
-						<label>Password</label>
-						<input
-							type="password"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							required
-						/>
+						<label htmlFor="login-password">Password</label>
+						<div className="password-field">
+							<input
+								id="login-password"
+								type={showPassword ? 'text' : 'password'}
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								required
+							/>
+							<button
+								type="button"
+								className="password-toggle"
+								onClick={() => setShowPassword((v) => !v)}
+								aria-label={showPassword ? 'Hide password' : 'Show password'}
+							>
+								{showPassword ? <EyeOffIcon /> : <EyeIcon />}
+							</button>
+						</div>
 					</div>
 					<button
 						type="submit"
