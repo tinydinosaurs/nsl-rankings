@@ -37,13 +37,14 @@ app.use('/api/upload', createUploadRoutes(db));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Serve React frontend in production
-if (process.env.NODE_ENV === 'production') {
-	app.use(express.static(path.join(__dirname, '../client/dist')));
-	app.get('*', (req, res) => {
-		res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+// Serve React frontend (no-op in dev if client/dist doesn't exist)
+app.use(express.static(path.join(__dirname, '../client/dist')));
+app.get('*', (req, res, next) => {
+	const distIndex = path.join(__dirname, '../client/dist/index.html');
+	res.sendFile(distIndex, (err) => {
+		if (err) next(); // fall through to 404 handler in dev
 	});
-}
+});
 
 // Handle 404 for unknown routes
 app.use('*', notFoundHandler);
