@@ -93,6 +93,12 @@ const existingAdmin = db
 	.prepare('SELECT id FROM users WHERE role = ?')
 	.get('admin');
 if (!existingAdmin && process.env.ADMIN_USERNAME) {
+	if (!process.env.ADMIN_PASSWORD) {
+		console.error(
+			'FATAL: ADMIN_PASSWORD must be set when ADMIN_USERNAME is provided.',
+		);
+		process.exit(1);
+	}
 	const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
 	db.prepare(
 		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',

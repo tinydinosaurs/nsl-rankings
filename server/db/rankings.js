@@ -1,3 +1,4 @@
+// === server/db/rankings.js ===
 const db = require('./database');
 const { EVENTS } = require('../constants/events');
 
@@ -7,6 +8,7 @@ const { EVENTS } = require('../constants/events');
  * where that event was present (has_<event> = 1 AND earned is not null).
  */
 function computeEventScore(competitorId, event, dbInstance = db) {
+	if (!EVENTS.includes(event)) throw new Error(`Invalid event: ${event}`);
 	const rows = dbInstance
 		.prepare(
 			`
@@ -24,7 +26,10 @@ function computeEventScore(competitorId, event, dbInstance = db) {
 
 	if (rows.length === 0) return null;
 
-	const scores = rows.map((r) => (r.earned / r.total) * 100);
+	const scores = rows
+		.filter((r) => r.total > 0)
+		.map((r) => (r.earned / r.total) * 100);
+	if (scores.length === 0) return null;
 	return scores.reduce((a, b) => a + b, 0) / scores.length;
 }
 

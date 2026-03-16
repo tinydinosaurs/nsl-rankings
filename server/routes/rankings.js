@@ -196,6 +196,7 @@ function createRankingsRouter(db) {
 	// POST /api/rankings/competitors — admin adds a competitor
 	router.post(
 		'/competitors',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const { name, email } = req.body;
@@ -243,6 +244,7 @@ function createRankingsRouter(db) {
 	// PUT /api/rankings/competitors/:id — admin edits competitor (partial update)
 	router.put(
 		'/competitors/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const competitor = db
@@ -306,6 +308,7 @@ function createRankingsRouter(db) {
 	// DELETE /api/rankings/competitors/:id — admin deletes competitor and all results
 	router.delete(
 		'/competitors/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const competitor = db
@@ -427,6 +430,7 @@ function createRankingsRouter(db) {
 	// POST /api/rankings/tournaments — admin creates tournament manually
 	router.post(
 		'/tournaments',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const {
@@ -493,6 +497,7 @@ function createRankingsRouter(db) {
 	// DELETE /api/rankings/tournaments/:id — admin deletes tournament and all its results
 	router.delete(
 		'/tournaments/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const t = db
@@ -509,6 +514,7 @@ function createRankingsRouter(db) {
 	// PUT /api/rankings/tournaments/:id — admin edits tournament metadata
 	router.put(
 		'/tournaments/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const tournament = db
@@ -616,6 +622,7 @@ function createRankingsRouter(db) {
 	// POST /api/rankings/results — admin adds/updates a single result manually
 	router.post(
 		'/results',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const {
@@ -681,6 +688,7 @@ function createRankingsRouter(db) {
 	// PUT /api/rankings/results/:id — admin edits an individual result
 	router.put(
 		'/results/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const { knockdowns_earned, distance_earned, speed_earned, woods_earned } =
@@ -754,6 +762,7 @@ function createRankingsRouter(db) {
 	// DELETE /api/rankings/results/:id — admin deletes an individual result
 	router.delete(
 		'/results/:id',
+		authenticate,
 		requireAdmin,
 		asyncHandler((req, res) => {
 			// Get the result info before deleting for response context

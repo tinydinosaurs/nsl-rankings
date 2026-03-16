@@ -1,3 +1,4 @@
+// === server/db/csvParser.js ===
 const Papa = require('papaparse');
 
 const { EVENTS } = require('../constants/events');
@@ -37,6 +38,9 @@ const COLUMN_ALIASES = {
 	email: ['email', 'e-mail', 'email address', 'emailaddress', 'e_mail'],
 };
 
+// Known non-score designations — treated as null (not scored/not penalized), not 0
+const NON_SCORE_VALUES = new Set(['dns', 'dq', 'dnf', 'scratch', 'n/a', '-', 'wd', 'disqualified']);
+
 function normalizeHeader(h) {
 	return h.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -65,7 +69,7 @@ function parseCSV(csvText, tournamentSettings) {
 	// Parse with PapaParse — try to detect headers automatically
 	const result = Papa.parse(csvText.trim(), {
 		skipEmptyLines: true,
-		dynamicTyping: false,
+		dynamicTyping: false, // keep all values as strings — we parse numbers explicitly below
 	});
 
 	if (result.errors.length > 0) {
@@ -187,6 +191,12 @@ function parseCSV(csvText, tournamentSettings) {
 				competitor[`${event}_earned`] = 0;
 				warnings.push(
 					`Row ${lineNum} (${rawName}): Blank "${event}" value treated as 0.`,
+				);
+			} else if (NON_SCORE_VALUES.has(raw.toLowerCase())) {
+				// Known non-score designation → null (excluded from average, not penalized)
+				competitor[`${event}_earned`] = null;
+				warnings.push(
+					`Row ${lineNum} (${rawName}): "${raw}" in "${event}" treated as not scored (excluded from average).`,
 				);
 			} else {
 				const val = parseFloat(raw);

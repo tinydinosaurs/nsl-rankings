@@ -1,7 +1,7 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcryptjs');
-const { signToken, requireOwner } = require('../middleware/auth');
+const { signToken, authenticate, requireOwner } = require('../middleware/auth');
 const { validateBody } = require('../middleware/validation');
 const {
 	AuthenticationError,
@@ -49,6 +49,7 @@ function createAuthRouter(db) {
 	// POST /api/auth/users — owner creates new users
 	router.post(
 		'/users',
+		authenticate,
 		requireOwner,
 		validateBody({
 			username: ['required', 'string', 'username'],
@@ -80,7 +81,7 @@ function createAuthRouter(db) {
 	);
 
 	// GET /api/auth/users — owner lists all users
-	router.get('/users', requireOwner, (req, res) => {
+	router.get('/users', authenticate, requireOwner, (req, res) => {
 		const users = db
 			.prepare('SELECT id, username, role, created_at FROM users')
 			.all();
@@ -90,6 +91,7 @@ function createAuthRouter(db) {
 	// PUT /api/auth/users/:id — owner updates an existing user
 	router.put(
 		'/users/:id',
+		authenticate,
 		requireOwner,
 		asyncHandler((req, res) => {
 			const { id } = req.params;
@@ -132,6 +134,7 @@ function createAuthRouter(db) {
 	// DELETE /api/auth/users/:id — owner deletes a user
 	router.delete(
 		'/users/:id',
+		authenticate,
 		requireOwner,
 		asyncHandler((req, res) => {
 			const { id } = req.params;
