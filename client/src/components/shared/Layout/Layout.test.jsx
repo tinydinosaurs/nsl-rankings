@@ -61,7 +61,7 @@ describe('Layout', () => {
 				screen.queryByRole('link', { name: 'Competitors' }),
 			).not.toBeInTheDocument();
 			expect(
-				screen.queryByRole('link', { name: 'Upload CSV' }),
+				screen.queryByRole('link', { name: 'Upload' }),
 			).not.toBeInTheDocument();
 		});
 	});
@@ -81,10 +81,10 @@ describe('Layout', () => {
 			).toBeInTheDocument();
 		});
 
-		it('shows Upload CSV link when logged in as admin', () => {
+		it('shows Upload link when logged in as admin', () => {
 			renderLayout(adminAuth);
 			expect(
-				screen.getByRole('link', { name: 'Upload CSV' }),
+				screen.getByRole('link', { name: 'Upload' }),
 			).toBeInTheDocument();
 		});
 

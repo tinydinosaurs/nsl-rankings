@@ -63,11 +63,11 @@ export default function Layout() {
 								Users
 							</NavLink>
 						)}
-						<NavLink to="/" end className={navLinkClass}>
-								Rankings
-							</NavLink>
 						</>
 					)}
+					<NavLink to="/" end className={navLinkClass}>
+						Rankings
+					</NavLink>
 				</div>
 				<div className="navbar-user">
 					{user ? (
@@ -138,11 +138,11 @@ export default function Layout() {
 									Users
 								</NavLink>
 							)}
-							<NavLink to="/" end className={navLinkClass} onClick={closeMenu}>
-								Rankings
-							</NavLink>
 						</>
 					)}
+					<NavLink to="/" end className={navLinkClass} onClick={closeMenu}>
+						Rankings
+					</NavLink>
 					<div className="mobile-menu__user">
 						{user ? (
 							<>
