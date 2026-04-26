@@ -6,6 +6,7 @@ const { validateBody } = require('../middleware/validation');
 const {
 	AuthenticationError,
 	AuthorizationError,
+	ValidationError,
 	ConflictError,
 	NotFoundError,
 	asyncHandler,
@@ -81,12 +82,12 @@ function createAuthRouter(db) {
 	);
 
 	// GET /api/auth/users — owner lists all users
-	router.get('/users', authenticate, requireOwner, (req, res) => {
+	router.get('/users', authenticate, requireOwner, asyncHandler((req, res) => {
 		const users = db
 			.prepare('SELECT id, username, role, created_at FROM users')
 			.all();
 		res.json(users);
-	});
+	}));
 
 	// PUT /api/auth/users/:id — owner updates an existing user
 	router.put(
@@ -105,7 +106,7 @@ function createAuthRouter(db) {
 			}
 
 			if (role !== undefined && !['admin', 'owner'].includes(role)) {
-				throw new AuthorizationError('Role must be admin or owner');
+				throw new ValidationError('Role must be admin or owner');
 			}
 
 			if (username !== undefined) {

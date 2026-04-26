@@ -79,6 +79,8 @@ class ConflictError extends ApiError {
 
 /**
  * Rate limit errors (429)
+ * Reserved for future use — express-rate-limit uses its own message handler in auth.js.
+ * Wire up by setting the rate limiter's `handler` option to throw this error.
  */
 class RateLimitError extends ApiError {
 	constructor(message = 'Rate limit exceeded', details = null) {
@@ -88,6 +90,8 @@ class RateLimitError extends ApiError {
 
 /**
  * Database errors (500)
+ * Reserved for explicit DB error wrapping — not yet wired up.
+ * Unexpected SQLite errors currently fall through to the generic 500 handler in errorHandler.
  */
 class DatabaseError extends ApiError {
 	constructor(message = 'Database operation failed', details = null) {
@@ -144,10 +148,11 @@ function errorHandler(err, req, res, _next) {
 		// Handle other SQLite constraint violations
 		error = new ValidationError('Data constraint violation');
 	} else if (err.name === 'JsonWebTokenError') {
-		// Handle JWT errors
+		// Safety net: auth.js normally catches JWT errors before they reach here,
+		// but kept as a fallback in case jwt.verify() is ever called outside authenticate().
 		error = new AuthenticationError('Invalid token');
 	} else if (err.name === 'TokenExpiredError') {
-		// Handle expired JWT
+		// Safety net: see above.
 		error = new AuthenticationError('Token expired');
 	} else if (!(err instanceof ApiError)) {
 		// Handle unexpected errors

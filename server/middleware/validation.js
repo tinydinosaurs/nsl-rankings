@@ -107,6 +107,8 @@ const validators = {
 
 	// Role validation
 	role: (value, field) => {
+		// 'user' role is scaffolded but not yet exposed in the UI — reserved for post-MVP.
+		// Retain here so existing DB records with role='user' remain valid.
 		const validRoles = ['owner', 'admin', 'user'];
 		if (!validRoles.includes(value)) {
 			throw new FieldValidationError(
@@ -209,10 +211,15 @@ const validators = {
 
 	csvFile: (value, field) => {
 		validators.file(value, field);
-		if (!value.originalname?.toLowerCase().endsWith('.csv')) {
+		// Accepts CSV and spreadsheet formats — kept in sync with upload.js XLSX_EXTENSIONS.
+		// Note: this validator is not currently wired to the upload route (multer handles
+		// format/size validation there directly). Update both places if formats change.
+		const allowed = ['.csv', '.xlsx', '.xls', '.ods'];
+		const ext = value.originalname?.toLowerCase().match(/\.[^.]+$/)?.[0];
+		if (!allowed.includes(ext)) {
 			throw new FieldValidationError(
 				field,
-				'File must be a CSV file',
+				`File must be one of: ${allowed.join(', ')}`,
 				value.originalname,
 			);
 		}
@@ -278,7 +285,9 @@ function validateBody(schema) {
 			return next(validationError);
 		}
 
-		// Replace req.body with sanitized values
+		// req.body is replaced with only the validated/sanitized fields from the schema.
+		// Any field not listed in the schema is silently stripped (allowlist approach).
+		// If a route handler needs a field, it must be present in the schema passed to validateBody().
 		req.body = sanitized;
 		next();
 	};
@@ -339,10 +348,10 @@ function validateQuery(schema) {
 			}
 		}
 
-			if (errors.length > 0) {
-				const validationError = new ValidationError('Query validation failed', errors);
-				return next(validationError);
-			}
+		if (errors.length > 0) {
+			const validationError = new ValidationError('Query validation failed', errors);
+			return next(validationError);
+		}
 
 		// Add sanitized values to req.query
 		Object.assign(req.query, sanitized);

@@ -35,7 +35,7 @@ function createRankingsRouter(db) {
 	});
 
 	// GET /api/rankings/competitors — enhanced list with scores, counts, and filtering
-	router.get('/competitors', authenticate, (req, res) => {
+	router.get('/competitors', authenticate, asyncHandler((req, res) => {
 		const { filter } = req.query; // 'placeholder-emails' for filtering
 
 		// Get all competitors with email status
@@ -94,38 +94,31 @@ function createRankingsRouter(db) {
 		}
 
 		res.json(filteredCompetitors);
-	});
+	}));
 
 	// GET /api/rankings/competitors/:id — competitor detail with history
 	router.get(
 		'/competitors/:id',
 		authenticate,
 		requireAdmin,
-		(req, res, next) => {
-			try {
-				const competitor = db
-					.prepare('SELECT * FROM competitors WHERE id = ?')
-					.get(req.params.id);
-				if (!competitor)
-					return res.status(404).json({ error: 'Competitor not found' });
-				return res.json(competitor);
-			} catch (err) {
-				return next(err);
-			}
-		},
+		asyncHandler((req, res) => {
+			const competitor = db
+				.prepare('SELECT * FROM competitors WHERE id = ?')
+				.get(req.params.id);
+			if (!competitor) throw new NotFoundError('Competitor');
+			res.json(competitor);
+		}),
 	);
 
 	router.get(
 		'/competitors/:id/history',
 		authenticate,
 		requireAdmin,
-		(req, res, next) => {
-			try {
-				const competitor = db
-					.prepare('SELECT * FROM competitors WHERE id = ?')
-					.get(req.params.id);
-				if (!competitor)
-					return res.status(404).json({ error: 'Competitor not found' });
+		asyncHandler((req, res) => {
+			const competitor = db
+				.prepare('SELECT * FROM competitors WHERE id = ?')
+				.get(req.params.id);
+			if (!competitor) throw new NotFoundError('Competitor');
 
 				const rawResults = db
 					.prepare(
@@ -186,11 +179,8 @@ function createRankingsRouter(db) {
 				);
 				const overallRank = competitorRanking ? competitorRanking.rank : null;
 
-				return res.json({ competitor, results, scores, overallRank });
-			} catch (err) {
-				return next(err);
-			}
-		},
+			res.json({ competitor, results, scores, overallRank });
+		}),
 	);
 
 	// POST /api/rankings/competitors — admin adds a competitor
@@ -324,7 +314,7 @@ function createRankingsRouter(db) {
 	);
 
 	// GET /api/rankings/tournaments — enhanced list with participant counts and event info
-	router.get('/tournaments', authenticate, (req, res) => {
+	router.get('/tournaments', authenticate, asyncHandler((req, res) => {
 		const tournaments = db
 			.prepare('SELECT * FROM tournaments ORDER BY date DESC')
 			.all();
@@ -355,7 +345,7 @@ function createRankingsRouter(db) {
 		});
 
 		res.json(enhancedTournaments);
-	});
+	}));
 
 	// GET /api/rankings/tournaments/:id — tournament detail with participant roster
 	router.get(
@@ -449,13 +439,21 @@ function createRankingsRouter(db) {
 			if (!date) {
 				throw new ValidationError('Date is required');
 			}
-			if (name !== undefined && name !== null && !date) {
-				throw new ValidationError(
-					'A tournament with a name must also have a date',
-				);
+
+			// Validate total_points_* — must be finite positive numbers
+			for (const [field, val] of Object.entries({
+				total_points_knockdowns,
+				total_points_distance,
+				total_points_speed,
+				total_points_woods,
+			})) {
+				const num = parseFloat(val);
+				if (!isFinite(num) || num <= 0) {
+					throw new ValidationError(`${field} must be a positive number`);
+				}
 			}
 
-			// Warn if duplicate name+date
+			// Check for duplicate name+date
 			const duplicate = db
 				.prepare(
 					'SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))',
@@ -542,14 +540,29 @@ function createRankingsRouter(db) {
 				throw new ValidationError('Date cannot be null or empty');
 			}
 
+			// Validate total_points_* — must be finite positive numbers if provided
+			for (const [field, val] of Object.entries({
+				total_points_knockdowns,
+				total_points_distance,
+				total_points_speed,
+				total_points_woods,
+			})) {
+				if (val !== undefined) {
+					const num = parseFloat(val);
+					if (!isFinite(num) || num <= 0) {
+						throw new ValidationError(`${field} must be a positive number`);
+					}
+				}
+			}
+
 			// Always check for duplicates using current values as fallback for unchanged fields
 			const checkName = name !== undefined ? name || null : tournament.name;
 			const checkDate = date !== undefined ? date : tournament.date;
 			const duplicate = db
 				.prepare(
-					'SELECT id FROM tournaments WHERE date = ? AND name = ? AND id != ?',
+					'SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL)) AND id != ?',
 				)
-				.get(checkDate, checkName, req.params.id);
+				.get(checkDate, checkName, checkName, req.params.id);
 			if (duplicate) {
 				throw new ConflictError(
 					'Another tournament with this name and date already exists',
@@ -654,6 +667,21 @@ function createRankingsRouter(db) {
 				throw new NotFoundError('Tournament');
 			}
 
+			// Validate earned values — must be finite non-negative numbers or null
+			for (const [field, val] of Object.entries({
+				knockdowns_earned,
+				distance_earned,
+				speed_earned,
+				woods_earned,
+			})) {
+				if (val !== undefined && val !== null) {
+					const num = parseFloat(val);
+					if (!isFinite(num) || num < 0) {
+						throw new ValidationError(`${field} must be a non-negative number`);
+					}
+				}
+			}
+
 			db.prepare(
 				`
       INSERT INTO tournament_results
@@ -708,6 +736,21 @@ function createRankingsRouter(db) {
 				.get(result.tournament_id);
 			if (!tournament) {
 				throw new NotFoundError('Tournament');
+			}
+
+			// Validate any provided earned values — must be finite non-negative numbers or null
+			for (const [field, val] of Object.entries({
+				knockdowns_earned,
+				distance_earned,
+				speed_earned,
+				woods_earned,
+			})) {
+				if (val !== undefined && val !== null) {
+					const num = parseFloat(val);
+					if (!isFinite(num) || num < 0) {
+						throw new ValidationError(`${field} must be a non-negative number`);
+					}
+				}
 			}
 
 			// Update the result with new scores

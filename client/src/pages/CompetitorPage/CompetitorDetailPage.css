@@ -32,6 +32,6 @@
 }
 
 .score-cell {
-	text-align: center;
+	text-align: left;
 	font-variant-numeric: tabular-nums;
 }

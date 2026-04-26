@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../../utils/api';
 import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
+import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
 import './UploadPage.css';
 
 const defaultSettings = () => ({
@@ -14,14 +14,9 @@ const defaultSettings = () => ({
 
 export default function UploadPage() {
 	const [settings, setSettings] = useState(defaultSettings());
-	const [preview, setPreview] = useState(null);
-	const [step, setStep] = useState('configure'); // configure | preview | success
-	const [loading, setLoading] = useState(false);
+	const [step, setStep] = useState('configure'); // 'configure' | 'upload' | 'success'
 	const [error, setError] = useState('');
-	const [conflictTournamentId, setConflictTournamentId] = useState(null);
 	const [successInfo, setSuccessInfo] = useState(null);
-	const [selectedFile, setSelectedFile] = useState(null);
-	const fileRef = useRef();
 
 	const toggleEvent = (event) => {
 		setSettings((s) => ({
@@ -39,89 +34,30 @@ export default function UploadPage() {
 		}));
 	};
 
-	const handlePreview = async (e) => {
+	const handleConfigureSubmit = (e) => {
 		e.preventDefault();
 		setError('');
-		const file = selectedFile || fileRef.current?.files[0];
-		if (!file) {
-			setError('Please select a file');
-			return;
-		}
 		if (!settings.tournamentDate) {
 			setError('Tournament date is required');
-			return;
-		}
-		if (settings.tournamentName && !settings.tournamentDate) {
-			setError('A named tournament must also have a date');
 			return;
 		}
 		if (settings.activeEvents.length === 0) {
 			setError('Select at least one event');
 			return;
 		}
-
-		const formData = new FormData();
-		formData.append('csv', file);
-		formData.append('tournament_name', settings.tournamentName);
-		formData.append('tournament_date', settings.tournamentDate);
-		settings.activeEvents.forEach((e) => formData.append(`has_${e}`, 'true'));
-		EVENTS.forEach((e) =>
-			formData.append(`total_points_${e}`, settings.totalPoints[e]),
-		);
-
-		setLoading(true);
-		try {
-			const { data } = await api.post('/upload/preview', formData, {
-				headers: { 'Content-Type': 'multipart/form-data' },
-			});
-			setPreview(data);
-			setStep('preview');
-		} catch (err) {
-			const d = err.response?.data;
-			setError(d?.errors?.join(' • ') || 'Preview failed');
-		} finally {
-			setLoading(false);
-		}
+		setStep('upload');
 	};
 
-	const handleCommit = async () => {
-		setError('');
-		setConflictTournamentId(null);
-		setLoading(true);
-		try {
-			const { data } = await api.post('/upload/commit', {
-				tournament_name: settings.tournamentName || null,
-				tournament_date: settings.tournamentDate,
-				activeEvents: settings.activeEvents,
-				totalPoints: settings.totalPoints,
-				competitors: preview.competitors,
-			});
-			setSuccessInfo(data);
-			setStep('success');
-		} catch (err) {
-			const d = err.response?.data;
-			if (err.response?.status === 409 && d?.details?.tournament_id) {
-				setConflictTournamentId(d.details.tournament_id);
-			} else {
-				setError(
-					d?.error ||
-						'Save failed — the data was not changed. You can try again.',
-				);
-			}
-		} finally {
-			setLoading(false);
-		}
+	const handleSuccess = (data) => {
+		setSuccessInfo(data);
+		setStep('success');
 	};
 
 	const handleReset = () => {
 		setStep('configure');
 		setSettings(defaultSettings());
-		setPreview(null);
 		setError('');
-		setConflictTournamentId(null);
 		setSuccessInfo(null);
-		setSelectedFile(null);
-		if (fileRef.current) fileRef.current.value = '';
 	};
 
 	if (step === 'success')
@@ -164,7 +100,7 @@ export default function UploadPage() {
 			<PageHeader title="Upload Tournament Results" />
 
 			{step === 'configure' && (
-				<form onSubmit={handlePreview} className="upload-form">
+				<form onSubmit={handleConfigureSubmit} className="upload-form">
 					{error && <div className="alert alert-error">{error}</div>}
 
 					<div className="card">
@@ -205,45 +141,7 @@ export default function UploadPage() {
 							</div>
 						</div>
 					</div>
-					<div className="card">
-						<h2>Results File</h2>
-						<p className="hint">
-							Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv) files. Columns
-							can be in any order and various spellings are recognized. Blank
-							cells in active events will be treated as 0. Missing columns will
-							be flagged.
-						</p>
-						{!selectedFile && (
-							<>
-								<label htmlFor="results-file" className="visually-hidden">
-									Results file
-								</label>
-								<input
-									id="results-file"
-									type="file"
-									accept=".csv,.tsv,.txt,.xlsx,.xls,.ods"
-									ref={fileRef}
-									style={{ marginTop: 8 }}
-									onChange={(e) => setSelectedFile(e.target.files[0] || null)}
-								/>
-							</>
-						)}
-						{selectedFile && (
-							<p className="hint selected-file-name">
-								Selected File: <strong>{selectedFile.name}</strong>{' '}
-								<button
-									type="button"
-									className="clear-file-btn"
-									onClick={() => {
-										setSelectedFile(null);
-										if (fileRef.current) fileRef.current.value = '';
-									}}
-								>
-									✕
-								</button>
-							</p>
-						)}
-					</div>
+
 					<div className="card">
 						<h2>Events</h2>
 						<p className="hint">
@@ -293,123 +191,26 @@ export default function UploadPage() {
 					</div>
 
 					<div className="button-row">
-						<button
-							type="submit"
-							className="btn btn-primary"
-							disabled={loading}
-						>
-							{loading ? 'Parsing…' : 'Preview Import'}
+						<button type="submit" className="btn btn-primary">
+							Next: Select File
 						</button>
 					</div>
 				</form>
 			)}
 
-			{step === 'preview' && preview && (
-				<div className="preview-section">
-					{error && <div className="alert alert-error">{error}</div>}
-					{conflictTournamentId && (
-						<div className="alert alert-error">
-							A tournament with this name and date already exists.{' '}
-							<Link to={`/admin/tournaments/${conflictTournamentId}`}>
-								View existing tournament
-							</Link>{' '}
-							or go back and change the name or date.
-						</div>
-					)}
-
-					{preview.warnings?.length > 0 && (
-						<div className="alert alert-warn">
-							<strong>Warnings ({preview.warnings.length})</strong>
-							<ul style={{ marginTop: 8, paddingLeft: 16 }}>
-								{preview.warnings.map((w, i) => (
-									<li key={i}>{w}</li>
-								))}
-							</ul>
-						</div>
-					)}
-
+			{step === 'upload' && (
+				<div className="upload-form">
 					<div className="card">
-						<div className="preview-header">
-							<div>
-								<h2>Preview: {preview.competitors.length} competitors found</h2>
-							</div>
-							<button
-								className="btn btn-ghost"
-								onClick={() => setStep('configure')}
-							>
-								← Edit
-							</button>
-						</div>
-
-						<div className="preview-meta">
-							{settings.tournamentName && (
-								<div className="preview-meta-row">
-									<span className="preview-meta-label">Name</span>
-									<span>{settings.tournamentName}</span>
-								</div>
-							)}
-							<div className="preview-meta-row">
-								<span className="preview-meta-label">Date</span>
-								<span>{settings.tournamentDate}</span>
-							</div>
-							<div className="preview-meta-row">
-								<span className="preview-meta-label">Events</span>
-								<span>
-									{settings.activeEvents
-										.map(
-											(e) =>
-												`${EVENT_LABELS[e]} (${settings.totalPoints[e]} pts)`,
-										)
-										.join(' • ')}
-								</span>
-							</div>
-						</div>
-
-						<div className="table-wrapper" style={{ marginTop: 16 }}>
-							<table className="preview-table">
-								<thead>
-									<tr>
-										<th>Status</th>
-										<th>Name</th>
-										{settings.activeEvents.map((e) => (
-											<th key={e}>{EVENT_LABELS[e]}</th>
-										))}
-									</tr>
-								</thead>
-								<tbody>
-									{preview.competitors.map((c, i) => (
-										<tr key={i}>
-											<td>
-												<span
-													className={`badge ${c.is_new ? 'badge-new' : 'badge-update'}`}
-												>
-													{c.is_new ? 'New' : 'Update'}
-												</span>
-											</td>
-											<td>{c.name}</td>
-											{settings.activeEvents.map((e) => (
-												<td key={e}>{c[`${e}_earned`] ?? '—'}</td>
-											))}
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-					</div>
-
-					<div className="button-row">
-						<button
-							className="btn btn-primary"
-							onClick={handleCommit}
-							disabled={loading}
-						>
-							{loading
-								? 'Saving…'
-								: `Confirm & Save ${preview.competitors.length} Results`}
-						</button>
-						<button className="btn btn-ghost" onClick={handleReset}>
-							Cancel
-						</button>
+						<h2>Results File</h2>
+						<ResultsUploadForm
+							activeEvents={settings.activeEvents}
+							totalPoints={settings.totalPoints}
+							tournamentId={null}
+							tournamentName={settings.tournamentName}
+							tournamentDate={settings.tournamentDate}
+							onSuccess={handleSuccess}
+							onBack={() => setStep('configure')}
+						/>
 					</div>
 				</div>
 			)}

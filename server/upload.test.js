@@ -490,5 +490,154 @@ describe('Upload Route', () => {
 				.get(inserted.lastInsertRowid);
 			expect(updated.name).toBe('New Name');
 		});
+
+		describe('tournament_id — attach to existing tournament', () => {
+			it('commits results to an existing tournament without creating a new one', async () => {
+				const { lastInsertRowid: existingId } = db
+					.prepare(
+						`INSERT INTO tournaments (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+						total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+						VALUES ('Existing Cup', '2025-07-01', 1, 1, 1, 1, 120, 120, 120, 120)`,
+					)
+					.run();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						competitors: [
+							{
+								name: 'Bob Smith',
+								email: 'bob@example.com',
+								existing_competitor_id: null,
+								knockdowns_earned: 80,
+								distance_earned: 70,
+								speed_earned: 90,
+								woods_earned: 60,
+							},
+						],
+					});
+
+				expect(res.status).toBe(201);
+				expect(res.body.tournament_id).toBe(existingId);
+				expect(res.body.new_competitors).toContain('Bob Smith');
+
+				// No extra tournament row should have been created
+				const count = db.prepare('SELECT COUNT(*) as n FROM tournaments').get();
+				expect(count.n).toBe(1);
+			});
+
+			it('returns 404 when tournament_id refers to a non-existent tournament', async () => {
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: 9999,
+						activeEvents: ['knockdowns'],
+						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						competitors: [
+							{
+								name: 'Alice Nguyen',
+								email: 'alice@example.com',
+								existing_competitor_id: null,
+								knockdowns_earned: 100,
+								distance_earned: null,
+								speed_earned: null,
+								woods_earned: null,
+							},
+						],
+					});
+
+				expect(res.status).toBe(404);
+			});
+
+			it('skips the duplicate-tournament check when tournament_id is provided', async () => {
+				// Create two tournaments with the same name+date — commit should not 409
+				const { lastInsertRowid: id1 } = db
+					.prepare(
+						`INSERT INTO tournaments (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+						total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+						VALUES ('Same Name', '2025-08-01', 1, 1, 1, 1, 120, 120, 120, 120)`,
+					)
+					.run();
+				db.prepare(
+					`INSERT INTO tournaments (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+					total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+					VALUES ('Same Name', '2025-08-01', 1, 1, 1, 1, 120, 120, 120, 120)`,
+				).run();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: id1,
+						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						competitors: [
+							{
+								name: 'Alice Nguyen',
+								email: 'alice@example.com',
+								existing_competitor_id: null,
+								knockdowns_earned: 100,
+								distance_earned: 90,
+								speed_earned: 110,
+								woods_earned: 80,
+							},
+						],
+					});
+
+				expect(res.status).toBe(201);
+			});
+
+			it('upserts results when competitor already has a result for the tournament', async () => {
+				const { lastInsertRowid: compId } = db
+					.prepare('INSERT INTO competitors (name, email) VALUES (?, ?)')
+					.run('Alice Nguyen', 'alice@example.com');
+				const { lastInsertRowid: tournId } = db
+					.prepare(
+						`INSERT INTO tournaments (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+						total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+						VALUES ('Cup', '2025-09-01', 1, 1, 1, 1, 120, 120, 120, 120)`,
+					)
+					.run();
+				db.prepare(
+					`INSERT INTO tournament_results
+					(competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned)
+					VALUES (?, ?, 50, 50, 50, 50)`,
+				).run(compId, tournId);
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: tournId,
+						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						competitors: [
+							{
+								name: 'Alice Nguyen',
+								email: 'alice@example.com',
+								existing_competitor_id: compId,
+								existing_name: 'Alice Nguyen',
+								knockdowns_earned: 100,
+								distance_earned: 90,
+								speed_earned: 110,
+								woods_earned: 80,
+							},
+						],
+					});
+
+				expect(res.status).toBe(201);
+				const result = db
+					.prepare(
+						'SELECT * FROM tournament_results WHERE competitor_id = ? AND tournament_id = ?',
+					)
+					.get(compId, tournId);
+				expect(result.knockdowns_earned).toBe(100);
+			});
+		});
 	});
 });

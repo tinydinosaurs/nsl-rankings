@@ -17,10 +17,9 @@ function RequireAuth({ children }) {
 }
 
 function RequireAdmin({ children }) {
-	const { user } = useAuth();
+	const { user, isAdmin } = useAuth();
 	if (!user) return <Navigate to="/login" replace />;
-	if (!['admin', 'owner'].includes(user.role))
-		return <Navigate to="/" replace />;
+	if (!isAdmin) return <Navigate to="/" replace />;
 	return children;
 }
 
@@ -76,7 +75,11 @@ export default function App() {
 						/>
 						<Route
 							path="admin/competitors/:id"
-							element={<CompetitorDetailPage />}
+							element={
+								<RequireAdmin>
+									<CompetitorDetailPage />
+								</RequireAdmin>
+							}
 						/>
 						<Route
 							path="/admin/tournaments/:id"

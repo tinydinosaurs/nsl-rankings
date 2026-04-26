@@ -29,6 +29,12 @@
 	margin-bottom: 0;
 }
 
+.section-empty-hint {
+	color: var(--text-muted);
+	font-size: 13px;
+	margin-bottom: 16px;
+}
+
 .score-card__sublabel {
 	font-size: 0.7rem;
 	color: var(--text-muted);
@@ -123,7 +129,7 @@
 
 /* Table cells */
 .score-cell {
-	text-align: right;
+	text-align: left;
 	font-variant-numeric: tabular-nums;
 }
 

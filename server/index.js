@@ -26,8 +26,14 @@ const { errorHandler, notFoundHandler } = require('./middleware/errors');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+const clientUrl = process.env.CLIENT_URL;
+if (!clientUrl && process.env.NODE_ENV === 'production') {
+	console.error('FATAL: CLIENT_URL must be set in production');
+	process.exit(1);
+}
+
 app.use(helmet());
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
+app.use(cors({ origin: clientUrl || 'http://localhost:5173' }));
 app.use(express.json());
 
 // Create route instances with database dependency injection
@@ -36,6 +42,9 @@ app.use('/api/rankings', createRankingsRoutes(db));
 app.use('/api/upload', createUploadRoutes(db));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Return 404 for unmatched API routes before falling through to SPA
+app.use('/api', notFoundHandler);
 
 // Serve React frontend (no-op in dev if client/dist doesn't exist)
 app.use(express.static(path.join(__dirname, '../client/dist')));

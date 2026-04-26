@@ -17,6 +17,7 @@ function xlsxToCsv(buffer) {
 const {
 	ValidationError,
 	ConflictError,
+	NotFoundError,
 	FileProcessingError,
 	asyncHandler,
 } = require('../middleware/errors');
@@ -164,23 +165,32 @@ function createUploadRouter(db) {
 				competitors,
 			} = req.body;
 
-			if (!tournament_date) {
+			// Optional: if provided, attach results to this existing tournament instead of creating one
+			const tournamentId =
+				req.body.tournament_id != null
+					? parseInt(req.body.tournament_id, 10)
+					: null;
+			const isExisting = tournamentId !== null && !isNaN(tournamentId);
+
+			if (!isExisting && !tournament_date) {
 				throw new ValidationError('Tournament date is required');
 			}
 			if (!competitors?.length) {
 				throw new ValidationError('No competitors provided');
 			}
 
-			// Validate totalPoints — must be finite positive numbers to prevent division-by-zero in scoring
+			// Validate totalPoints — only needed when creating a new tournament
 			const validatedPoints = {};
-			for (const event of EVENTS) {
-				const val = parseFloat(totalPoints?.[event]);
-				if (!isFinite(val) || val <= 0) {
-					throw new ValidationError(
-						`total_points_${event} must be a positive number`,
-					);
+			if (!isExisting) {
+				for (const event of EVENTS) {
+					const val = parseFloat(totalPoints?.[event]);
+					if (!isFinite(val) || val <= 0) {
+						throw new ValidationError(
+							`total_points_${event} must be a positive number`,
+						);
+					}
+					validatedPoints[event] = val;
 				}
-				validatedPoints[event] = val;
 			}
 
 			// Validate each competitor field before writing
@@ -200,45 +210,58 @@ function createUploadRouter(db) {
 				}
 			}
 
-			// Check for duplicate tournament
-			const duplicate = db
-				.prepare(
-					`SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))`,
-				)
-				.get(tournament_date, tournament_name || null, tournament_name || null);
-
-			if (duplicate) {
-				throw new ConflictError(
-					'A tournament with this name and date already exists. Delete it first or use a different date.',
-					{ tournament_id: duplicate.id },
-				);
-			}
-
 			const commitAll = db.transaction(() => {
-				// Create tournament
-				const tResult = db
-					.prepare(
-						`
+				let finalTournamentId;
+
+				if (isExisting) {
+					// Verify the tournament exists
+					const existing = db
+						.prepare('SELECT id FROM tournaments WHERE id = ?')
+						.get(tournamentId);
+					if (!existing) {
+						throw new NotFoundError(`Tournament ${tournamentId}`);
+					}
+					finalTournamentId = tournamentId;
+				} else {
+					// Check for duplicate tournament
+					const duplicate = db
+						.prepare(
+							`SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))`,
+						)
+						.get(tournament_date, tournament_name || null, tournament_name || null);
+
+					if (duplicate) {
+						throw new ConflictError(
+							'A tournament with this name and date already exists. Delete it first or use a different date.',
+							{ tournament_id: duplicate.id },
+						);
+					}
+
+					// Create tournament
+					const tResult = db
+						.prepare(
+							`
         INSERT INTO tournaments
           (name, date, has_knockdowns, has_distance, has_speed, has_woods,
            total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-					)
-					.run(
-						tournament_name || null,
-						tournament_date,
-						activeEvents.includes('knockdowns') ? 1 : 0,
-						activeEvents.includes('distance') ? 1 : 0,
-						activeEvents.includes('speed') ? 1 : 0,
-						activeEvents.includes('woods') ? 1 : 0,
-						validatedPoints.knockdowns,
-						validatedPoints.distance,
-						validatedPoints.speed,
-						validatedPoints.woods,
-					);
+						)
+						.run(
+							tournament_name || null,
+							tournament_date,
+							activeEvents.includes('knockdowns') ? 1 : 0,
+							activeEvents.includes('distance') ? 1 : 0,
+							activeEvents.includes('speed') ? 1 : 0,
+							activeEvents.includes('woods') ? 1 : 0,
+							validatedPoints.knockdowns,
+							validatedPoints.distance,
+							validatedPoints.speed,
+							validatedPoints.woods,
+						);
+					finalTournamentId = tResult.lastInsertRowid;
+				}
 
-				const tournamentId = tResult.lastInsertRowid;
 				const inserted = [];
 				const updated = [];
 
@@ -264,16 +287,21 @@ function createUploadRouter(db) {
 						updated.push(comp.name);
 					}
 
-					// Insert result (null for inactive events)
+					// Insert or update result (upsert handles re-uploads to the same tournament)
 					db.prepare(
 						`
           INSERT INTO tournament_results
             (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned)
           VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(competitor_id, tournament_id) DO UPDATE SET
+            knockdowns_earned = excluded.knockdowns_earned,
+            distance_earned = excluded.distance_earned,
+            speed_earned = excluded.speed_earned,
+            woods_earned = excluded.woods_earned
         `,
 					).run(
 						competitorId,
-						tournamentId,
+						finalTournamentId,
 						activeEvents.includes('knockdowns')
 							? (comp.knockdowns_earned ?? null)
 							: null,
@@ -285,7 +313,7 @@ function createUploadRouter(db) {
 					);
 				}
 
-				return { tournamentId, inserted, updated };
+				return { tournamentId: finalTournamentId, inserted, updated };
 			});
 
 			const result = commitAll();
