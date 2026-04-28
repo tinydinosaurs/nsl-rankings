@@ -25,27 +25,22 @@ The POC is functionally complete and has been demoed to stakeholders. It include
 
 The path from POC to MVP — everything needed before handing the app to a real user for real data entry.
 
-### 1. Production Deployment (Fly.io)
+### 1. Production Deployment (Render)
 
-Fly.io is the chosen host. Free tier supports persistent volumes for SQLite and multiple apps under one account.
+Render is the chosen host. Genuine free tier with a persistent disk for SQLite. Cold-start delay (~30s after 15min idle) is acceptable for this app's usage pattern — the WordPress embed will keep it warm during business hours, and admin use is intermittent.
 
-**Steps:**
+Detailed step-by-step migration plan lives in [notes/RENDER_MIGRATION_PLAN.md](notes/RENDER_MIGRATION_PLAN.md). High-level summary:
 
-1. Install `flyctl` and run `fly launch` from the project root
-2. Configure `fly.toml`:
-   - Single-region deploy (start with one near board members)
-   - Mount a persistent volume at `/app/server/data` for the SQLite file
-   - Set `internal_port = 3001`
-3. Add a root `start` script in `package.json`: `"start": "node server/index.js"`
-4. Add static file serving in `server/index.js` for production (already partially in place — verify)
-5. Set secrets via `fly secrets set`:
-   - `OWNER_USERNAME`, `OWNER_PASSWORD` (required for first-boot seeding)
-   - `JWT_SECRET` (generate with `openssl rand -base64 32`)
-   - `NODE_ENV=production`
-6. Deploy with `fly deploy`
-7. Verify owner account creation in logs, log in, create admin accounts via UI
+1. Make the DB path environment-aware (`/data/rankings.db` in production, local path in dev)
+2. Create a Render web service connected to the GitHub repo
+3. Add a 1GB persistent disk mounted at `/data`
+4. Set env vars: `NODE_ENV`, `JWT_SECRET`, `CLIENT_URL`, `OWNER_USERNAME`, `OWNER_PASSWORD`
+5. Build command: `npm run install:all && npm run build` — Start command: `npm start`
+6. Deploy, verify owner account seeding in logs, log in, create admin accounts via UI
 
-**Persistent volume note:** SQLite must live on the mounted volume. Without it, the database is wiped on every deploy. Verify the volume is mounted before the first commit creates data.
+**Persistent disk note:** SQLite must live on the mounted disk (`/data/rankings.db`). Without it, the database is wiped on every deploy.
+
+**Upgrade path:** $7/mo per service eliminates cold starts; managed Postgres ($7/mo) is available if scale ever justifies leaving SQLite.
 
 ### 2. WordPress Embed (Public Leaderboard)
 
@@ -61,7 +56,7 @@ The non-profit's WordPress site needs to display the leaderboard. The app alread
 - Add a Custom HTML block (or a snippet in the theme's `functions.php`) on the leaderboard page
 - The snippet:
   - Inserts a `<div id="nsl-leaderboard">Loading…</div>` placeholder
-  - Fetches the JSON from the Fly.io URL on page load
+  - Fetches the JSON from the Render URL on page load
   - Renders a styled HTML table into the placeholder
   - Handles error state (server unreachable → fallback message)
 
@@ -93,7 +88,7 @@ From the integration test review (CODE_REVIEW.md, items not yet applied):
 
 Before declaring MVP, run through the full demo script in production:
 
-1. Open the Fly.io URL in incognito → public leaderboard renders
+1. Open the Render URL in incognito → public leaderboard renders
 2. Open the WordPress page → embedded leaderboard renders, matches the app
 3. Log in as owner → create an admin account
 4. Log in as that admin in another browser → upload a real CSV from a past tournament
@@ -107,7 +102,7 @@ Before declaring MVP, run through the full demo script in production:
 
 The MVP is complete when:
 
-1. The app is deployed to Fly.io with persistent storage and survives a redeploy without losing data
+1. The app is deployed to Render with persistent storage and survives a redeploy without losing data
 2. The public leaderboard is embedded on the WordPress site and renders correctly on desktop and mobile
 3. A board member can log in as admin, upload a tournament CSV, and view updated rankings — without help
 4. The mobile leaderboard view is usable (competitor name and total score always visible)

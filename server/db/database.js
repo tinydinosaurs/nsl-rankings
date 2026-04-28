@@ -5,14 +5,21 @@ const bcrypt = require('bcryptjs');
 // Load environment variables
 require('dotenv').config();
 
-// Support test database path for integration testing
+// Support test database path for integration testing.
+// In production (Render), the DB lives on the mounted persistent disk at /data.
+// In dev, it lives at server/data/rankings.db (created automatically below).
 const DB_PATH =
 	process.env.TEST_DATABASE_PATH ||
-	path.join(__dirname, '..', 'data', 'rankings.db');
+	(process.env.NODE_ENV === 'production'
+		? '/data/rankings.db'
+		: path.join(__dirname, '..', 'data', 'rankings.db'));
 
-// Ensure data directory exists (for production database)
+// Ensure data directory exists (dev only — in production, /data is the mount point and is provisioned by Render)
 const fs = require('fs');
-if (!process.env.TEST_DATABASE_PATH) {
+if (
+	!process.env.TEST_DATABASE_PATH &&
+	process.env.NODE_ENV !== 'production'
+) {
 	const dataDir = path.join(__dirname, '..', 'data');
 	if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 }

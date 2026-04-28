@@ -7,11 +7,11 @@ _Copyable snapshot for cross-project conversations (hosting, architecture, etc.)
 
 - **Stack:** React 18 + Vite (frontend), Node.js + Express (backend), SQLite via `better-sqlite3`
 - **Auth:** JWT (24hr), three roles: `owner`, `admin`, `user`. Public leaderboard requires no auth.
-- **Deployment target:** Railway — single service, Express serves both API and built React app
+- **Deployment target:** Render — single web service, Express serves both API and built React app; SQLite lives on a mounted persistent disk
 - **Scale:** Small internal tool, ~10–50 competitors, handful of admins. No concurrency requirements.
 - **SQLite constraint:** Single-server only — no horizontal scaling, no read replicas. Acceptable for this scale.
 - **Data sensitivity:** Low. Stores competitor names, emails (some auto-generated placeholders), and numeric scores. No payment data, no sensitive PII beyond contact info.
-- **External dependencies:** None. No third-party auth, no external APIs, no object storage.
+- **External services:** None. No third-party auth, no external APIs, no object storage. All processing happens in-process; the only runtime dependency is the SQLite file on local disk.
 - **Current state:** Working POC. Not yet deployed to production.
 
 ---
