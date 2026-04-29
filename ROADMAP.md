@@ -17,7 +17,13 @@ The POC is functionally complete and has been demoed to stakeholders. It include
 - 100+ server tests, 45+ client tests, all passing
 - Hardened seeding (no fallback credentials, fail-fast on missing env vars in production)
 
-**Not done:** Production deployment. The Railway free trial expired and a new host is needed (see Pre-MVP).
+---
+
+## Completed Milestones
+
+Running log of pre-MVP work that's done. Newest at the top.
+
+- **2026-04-29 — Production deployment live on Render.** Web service + 1 GB persistent disk at `/data`, owner account seeded from env vars, GitHub App connected for auto-deploy on push to `main`, `/api/health` green, full owner login → admin creation → CSV upload flow verified. App is live at `https://nsl-rankings.onrender.com`. Total cost: ~$7.25/month (Starter instance + 1 GB disk).
 
 ---
 
@@ -25,24 +31,7 @@ The POC is functionally complete and has been demoed to stakeholders. It include
 
 The path from POC to MVP — everything needed before handing the app to a real user for real data entry.
 
-### 1. Production Deployment (Render)
-
-Render is the chosen host. Genuine free tier with a persistent disk for SQLite. Cold-start delay (~30s after 15min idle) is acceptable for this app's usage pattern — the WordPress embed will keep it warm during business hours, and admin use is intermittent.
-
-Detailed step-by-step migration plan lives in [notes/RENDER_MIGRATION_PLAN.md](notes/RENDER_MIGRATION_PLAN.md). High-level summary:
-
-1. Make the DB path environment-aware (`/data/rankings.db` in production, local path in dev)
-2. Create a Render web service connected to the GitHub repo
-3. Add a 1GB persistent disk mounted at `/data`
-4. Set env vars: `NODE_ENV`, `JWT_SECRET`, `CLIENT_URL`, `OWNER_USERNAME`, `OWNER_PASSWORD`
-5. Build command: `npm run install:all && npm run build` — Start command: `npm start`
-6. Deploy, verify owner account seeding in logs, log in, create admin accounts via UI
-
-**Persistent disk note:** SQLite must live on the mounted disk (`/data/rankings.db`). Without it, the database is wiped on every deploy.
-
-**Upgrade path:** $7/mo per service eliminates cold starts; managed Postgres ($7/mo) is available if scale ever justifies leaving SQLite.
-
-### 2. WordPress Embed (Public Leaderboard)
+### 1. WordPress Embed (Public Leaderboard)
 
 The non-profit's WordPress site needs to display the leaderboard. The app already exposes `GET /api/rankings/public` — no new endpoint needed.
 
@@ -68,7 +57,7 @@ The non-profit's WordPress site needs to display the leaderboard. The app alread
 
 If traffic ever becomes a real concern, add a Cloudflare or similar edge cache in front of `/api/rankings/public` — no app changes required.
 
-### 3. Mobile-Readable Public Leaderboard
+### 2. Mobile-Readable Public Leaderboard
 
 The current rankings table is not optimized for small screens. The leaderboard URL will be shared on phones — this matters more than internal admin polish.
 
@@ -76,7 +65,45 @@ The current rankings table is not optimized for small screens. The leaderboard U
 - Small screens: collapse to a card layout, or horizontal scroll with sticky competitor name + total score columns
 - Event columns may scroll out of view on narrow screens — that's acceptable as long as name + total stay visible
 
-### 4. Outstanding Bugs / Cleanup
+### 3. Password Change UI
+
+Owner and admin accounts currently have no way to change their own password — passwords are set at creation by whoever created the account (the owner via env vars, admins via the user management UI). Before going live with real users this needs to exist so admins aren't dependent on the owner for password resets.
+
+**Scope:**
+- Add `PUT /api/auth/me/password` — accepts `{ currentPassword, newPassword }`, verifies current via bcrypt, updates `password_hash`
+- Add a "Profile" or "Account Settings" page (e.g. `/admin/account`) accessible from the nav when logged in
+- Form: current password, new password, confirm new password
+- Same password strength rules as account creation
+- Apply to all roles (`owner`, `admin`)
+
+No password reset flow (email-based "I forgot my password") for MVP — owner can reset an admin's password manually via `/admin/users`. Self-service reset is a post-MVP item if/when needed.
+
+### 4. Hide Login from Public Leaderboard
+
+The public leaderboard currently has a visible "Login" button in the nav. Most visitors can't create an account, so it's confusing. Need to make the login path discoverable to admins but not surfaced on the public page.
+
+**Approach:**
+- Remove the login link from the public nav
+- Keep `/login` as the route (or move to a slightly less obvious path like `/admin-login`)
+- Admins bookmark the URL
+- Optional: small "Staff" link in the footer if total invisibility feels too aggressive
+
+This is "security through obscurity" only at the URL level — actual security is the JWT auth. The point is UX, not access control.
+
+### 5. Custom Domain
+
+Move from `nsl-rankings.onrender.com` to a real domain (e.g. `rankings.nationalslingshotleague.org` or whatever the org chooses).
+
+**Scope:**
+- Buy domain (or use a subdomain of an existing org domain)
+- Render Settings → Custom Domains → add domain → add the CNAME record at the registrar
+- Render auto-provisions a free Let's Encrypt TLS cert
+- Update the `CLIENT_URL` env var in Render to the new domain (otherwise CORS will reject requests)
+- Update the WordPress embed snippet to point at the new domain
+
+The `.onrender.com` URL keeps working in parallel unless explicitly disabled — useful as a fallback during the cutover.
+
+### 6. Outstanding Bugs / Cleanup
 
 From the integration test review (CODE_REVIEW.md, items not yet applied):
 
@@ -84,7 +111,7 @@ From the integration test review (CODE_REVIEW.md, items not yet applied):
 - **Fix multi-tournament test assertions** — the test uses `expect(total).toBeGreaterThan(0)` instead of verifying the actual computed score values. This is the most important test in the file (proves averaging logic) and currently doesn't actually prove anything.
 - **Delete the "Integration Test Coverage Summary" block** — fake test that always passes regardless of actual results.
 
-### 5. Pre-Launch Smoke Test
+### 7. Pre-Launch Smoke Test
 
 Before declaring MVP, run through the full demo script in production:
 
