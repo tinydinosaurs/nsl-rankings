@@ -67,6 +67,7 @@ describe('NSL Rankings Integration Tests', () => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         email TEXT UNIQUE,
+        is_member INTEGER NOT NULL DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
 

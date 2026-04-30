@@ -20,7 +20,8 @@ const SCHEMA = `
   CREATE TABLE competitors (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
-    email TEXT UNIQUE
+    email TEXT UNIQUE,
+    is_member INTEGER NOT NULL DEFAULT 1
   );
   CREATE TABLE tournaments (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

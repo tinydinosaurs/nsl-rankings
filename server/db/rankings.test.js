@@ -11,7 +11,7 @@ describe('Rankings - Core Business Logic', () => {
 
 		// Create minimal schema
 		db.exec(`
-      CREATE TABLE competitors (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE competitors (id INTEGER PRIMARY KEY, name TEXT, is_member INTEGER NOT NULL DEFAULT 1);
       CREATE TABLE tournaments (
         id INTEGER PRIMARY KEY, name TEXT, date TEXT,
         total_points_knockdowns REAL DEFAULT 120,
@@ -190,7 +190,7 @@ describe('Rankings - Tie-Breaking Logic', () => {
 
 		// Create minimal schema
 		db.exec(`
-      CREATE TABLE competitors (id INTEGER PRIMARY KEY, name TEXT);
+      CREATE TABLE competitors (id INTEGER PRIMARY KEY, name TEXT, is_member INTEGER NOT NULL DEFAULT 1);
       CREATE TABLE tournaments (
         id INTEGER PRIMARY KEY, name TEXT, date TEXT,
         total_points_knockdowns REAL DEFAULT 120,
@@ -346,5 +346,84 @@ describe('Rankings - Tie-Breaking Logic', () => {
 		expect(rankings[1].name).toBe('Bob');
 		expect(rankings[1].rank).toBe(2);
 		expect(rankings[0].total).toBeGreaterThan(rankings[1].total);
+	});
+});
+
+describe('Rankings - Member Filtering', () => {
+	let db;
+
+	beforeEach(() => {
+		db = new Database(':memory:');
+		// Match production: is_member defaults to 0 here so we can be explicit per fixture.
+		db.exec(`
+      CREATE TABLE competitors (id INTEGER PRIMARY KEY, name TEXT, is_member INTEGER NOT NULL DEFAULT 0);
+      CREATE TABLE tournaments (
+        id INTEGER PRIMARY KEY, name TEXT, date TEXT,
+        total_points_knockdowns REAL DEFAULT 120,
+        total_points_distance REAL DEFAULT 120,
+        total_points_speed REAL DEFAULT 120,
+        total_points_woods REAL DEFAULT 120,
+        has_knockdowns INTEGER DEFAULT 1,
+        has_distance INTEGER DEFAULT 1,
+        has_speed INTEGER DEFAULT 1,
+        has_woods INTEGER DEFAULT 1
+      );
+      CREATE TABLE tournament_results (
+        competitor_id INTEGER, tournament_id INTEGER,
+        knockdowns_earned REAL, distance_earned REAL,
+        speed_earned REAL, woods_earned REAL
+      );
+    `);
+		db.prepare('INSERT INTO tournaments (name, date) VALUES (?, ?)').run(
+			'Test',
+			'2024-01-01',
+		);
+	});
+
+	it('excludes non-members from rankings even when they have results', () => {
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 1)').run('Member Alice');
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 0)').run('Non-Member Bob');
+		db.prepare(
+			'INSERT INTO tournament_results (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned) VALUES (1, 1, 100, 100, 100, 100), (2, 1, 120, 120, 120, 120)',
+		).run();
+
+		const rankings = computeRankings(db);
+
+		expect(rankings).toHaveLength(1);
+		expect(rankings[0].name).toBe('Member Alice');
+	});
+
+	it('returns empty rankings when there are no members', () => {
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 0), (?, 0)').run(
+			'Bob',
+			'Carol',
+		);
+		db.prepare(
+			'INSERT INTO tournament_results (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned) VALUES (1, 1, 100, 100, 100, 100), (2, 1, 90, 90, 90, 90)',
+		).run();
+
+		expect(computeRankings(db)).toHaveLength(0);
+	});
+
+	it('flipping a competitor to member adds them to rankings retroactively', () => {
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 1)').run('Alice');
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 0)').run('Bob');
+		db.prepare(
+			'INSERT INTO tournament_results (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned) VALUES (1, 1, 60, 60, 60, 60), (2, 1, 120, 120, 120, 120)',
+		).run();
+
+		// Bob is excluded
+		expect(computeRankings(db)).toHaveLength(1);
+
+		// Flip Bob to member; existing results count immediately
+		db.prepare('UPDATE competitors SET is_member = 1 WHERE name = ?').run('Bob');
+
+		const after = computeRankings(db);
+		expect(after).toHaveLength(2);
+		// Bob's higher score should put him at rank 1
+		expect(after[0].name).toBe('Bob');
+		expect(after[0].rank).toBe(1);
+		expect(after[1].name).toBe('Alice');
+		expect(after[1].rank).toBe(2);
 	});
 });

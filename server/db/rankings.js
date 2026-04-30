@@ -52,11 +52,13 @@ function computeCompetitorScores(competitorId, dbInstance = db) {
 }
 
 /**
- * Compute full rankings: all competitors with their scores, sorted by total desc.
+ * Compute full rankings: all members with their scores, sorted by total desc.
+ * Non-members are excluded entirely. Admins manage non-members through the
+ * competitor list, but they don't appear on any leaderboard.
  */
 function computeRankings(dbInstance = db) {
 	const competitors = dbInstance
-		.prepare('SELECT id, name FROM competitors ORDER BY name')
+		.prepare('SELECT id, name FROM competitors WHERE is_member = 1 ORDER BY name')
 		.all();
 
 	const rankings = competitors.map((c) => {
