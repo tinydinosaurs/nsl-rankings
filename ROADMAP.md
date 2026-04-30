@@ -29,9 +29,25 @@ Running log of pre-MVP work that's done. Newest at the top.
 
 ## Pre-MVP Work
 
-The path from POC to MVP — everything needed before handing the app to a real user for real data entry.
+The path from POC to MVP — everything needed before handing the app to a real user for real data entry. Listed in rough priority order: must-haves for a beta tournament first, operational/admin quality work next, polish and verification last.
 
-### 1. WordPress Embed (Public Leaderboard)
+### 1. Member-Only Rankings
+
+The CSV will gain a new column (header something like `member` or `NSL member`) containing a boolean. Only competitors marked `true` should appear in rankings. Non-members may compete in tournaments and have their results recorded, but they don't show up on the leaderboard.
+
+**Why this is #1:** it changes the meaning of the leaderboard. Doing the WordPress embed before this would mean re-doing it after.
+
+Detailed plan in the chat thread; high-level scope:
+
+- Add `competitors.is_member` (boolean, default false for new rows; true when backfilling existing rows so the current leaderboard isn't wiped)
+- CSV parser: recognize the new column with aliases (`member`, `nsl member`, `is_member`, `membership`); parse common truthy/falsy values; warn if the column is missing entirely (and treat all rows as members for backward compatibility)
+- Membership comes *from the CSV* — the latest upload for a competitor wins. Admins can also toggle it manually on the competitor edit page.
+- Upload preview shows a **"Membership changes" callout** at the top whenever the incoming CSV would flip any competitor's status (e.g. "3 membership changes: Bob Smith — non-member → member; Alice Jones — non-member → member; Carlos Diaz — member → non-member"). Admin reviews before committing.
+- `computeRankings()` filters to `WHERE is_member = 1`
+- All admin views still show non-members (with a clear "non-member" badge) so admins can manage them; public leaderboard shows members only
+- Add tests covering: ranked vs. unranked, non-member with results, member status change between tournaments
+
+### 2. WordPress Embed (Public Leaderboard)
 
 The non-profit's WordPress site needs to display the leaderboard. The app already exposes `GET /api/rankings/public` — no new endpoint needed.
 
@@ -57,15 +73,16 @@ The non-profit's WordPress site needs to display the leaderboard. The app alread
 
 If traffic ever becomes a real concern, add a Cloudflare or similar edge cache in front of `/api/rankings/public` — no app changes required.
 
-### 2. Mobile-Readable Public Leaderboard
+### 3. Mobile-Readable Public Leaderboard
 
 The current rankings table is not optimized for small screens. The leaderboard URL will be shared on phones — this matters more than internal admin polish.
 
 **Scope:**
 - Small screens: collapse to a card layout, or horizontal scroll with sticky competitor name + total score columns
 - Event columns may scroll out of view on narrow screens — that's acceptable as long as name + total stay visible
+- Empty states matter on day one: leaderboard with zero tournaments, zero competitors, or one tournament should all render gracefully (not a blank page or a broken table)
 
-### 3. Password Change UI
+### 4. Password Change UI
 
 Owner and admin accounts currently have no way to change their own password — passwords are set at creation by whoever created the account (the owner via env vars, admins via the user management UI). Before going live with real users this needs to exist so admins aren't dependent on the owner for password resets.
 
@@ -78,7 +95,7 @@ Owner and admin accounts currently have no way to change their own password — 
 
 No password reset flow (email-based "I forgot my password") for MVP — owner can reset an admin's password manually via `/admin/users`. Self-service reset is a post-MVP item if/when needed.
 
-### 4. Hide Login from Public Leaderboard
+### 5. Hide Login from Public Leaderboard
 
 The public leaderboard currently has a visible "Login" button in the nav. Most visitors can't create an account, so it's confusing. Need to make the login path discoverable to admins but not surfaced on the public page.
 
@@ -90,7 +107,68 @@ The public leaderboard currently has a visible "Login" button in the nav. Most v
 
 This is "security through obscurity" only at the URL level — actual security is the JWT auth. The point is UX, not access control.
 
-### 5. Custom Domain
+### 6. Upload Confirmation + Batch Delete
+
+After clicking "Commit" on the upload preview, the page should clearly confirm what happened — e.g. "27 results imported into Spring Open 2026" with a link to the tournament page. The current success state is too quiet to build trust on a first try.
+
+Paired with this: a **"Delete all results from this tournament"** button on the tournament detail page so a bad upload can be reverted in one click, instead of deleting results individually or nuking the whole tournament. Confirmation dialog required.
+
+Stretch: tag each upload as a batch (`upload_batch_id` on `tournament_results`) and offer an explicit "Undo last upload." The simpler delete-all-for-tournament covers ~90% of real cases.
+
+### 7. Backup Script
+
+Render's persistent disk survives redeploys but is not backed up. Data loss would end the project's credibility. Need at least a daily snapshot stored off-server.
+
+**Approach:**
+- Server-side cron (`node-cron`) running once per day
+- Use `better-sqlite3`'s `.backup()` API to produce a consistent snapshot file
+- Upload the snapshot to Backblaze B2 or AWS S3 (B2 is cheaper at this scale; both have free tiers)
+- Retain last 30 days, drop older snapshots
+- Document the restore process: download latest snapshot → replace `/data/rankings.db` → restart service
+
+Cost: pennies per month.
+
+### 8. Error Monitoring + Uptime Ping
+
+Right now the only way to know the app is broken is to check Render logs or have a user report it. Two free services close that loop:
+
+- **Sentry** (or equivalent) — server-side SDK captures unhandled exceptions and 5xx responses. Free tier easily covers this app's volume. ~30 min setup.
+- **UptimeRobot** (or Better Stack) — pings `/api/health` every 5 min, emails on downtime. Free tier sufficient.
+
+Together: the moment something breaks, you know.
+
+### 9. Footer with Version + "How Rankings Work" Page
+
+Two small polish items that materially reduce support requests:
+
+- Add a footer to every page with the build version (git short SHA, populated at build time via a Vite env var) and deploy timestamp. When someone says "it's broken," you can verify they're on the new code.
+- Add a static `/how-rankings-work` page (linked from the public leaderboard) explaining the scoring formula in plain English: per-event averages, total = sum/4, missing events excluded. Reduces "why is X ranked higher than me" arguments.
+
+### 10. CSV Export Per Tournament
+
+The reverse of upload. On the tournament detail page, an admin can click "Export CSV" and download the current state of the tournament's results in the same format the upload accepts. Useful for sharing, archiving, and producing a clean copy after manual edits.
+
+**Implementation:** new endpoint `GET /api/rankings/tournaments/:id/export` returning CSV with the canonical column names. Admin-only.
+
+### 11. Audit Log
+
+Append-only log of every mutating action (create/update/delete on competitors, tournaments, results, users). New `audit_log` table:
+
+- `id`, `user_id`, `username` (denormalized so it stays readable after a user is deleted), `action` (e.g. `result.delete`), `entity_type`, `entity_id`, `before_json`, `after_json`, `timestamp`
+
+Surfaced as an owner-only admin page. Becomes essential the moment two admins disagree about who changed what.
+
+### 12. Tournament Lock
+
+Add `tournaments.locked BOOLEAN DEFAULT 0` (idempotent `ALTER TABLE` migration). Once a tournament is finalized (e.g. at end of season), the owner can lock it — all mutating operations on its results return 403. Unlocking requires a confirmation. Protects historical data from accidental edits.
+
+### 13. Mobile-Readable Admin Pages
+
+Admins may need to add or fix a single result from their phone at the venue. The upload page, competitor list, and tournament detail page need basic responsive layout — not a full mobile redesign, just usable.
+
+**Scope:** same approach as the public leaderboard (sticky important columns, collapse non-essentials, larger tap targets on actions).
+
+### 14. Custom Domain
 
 Move from `nsl-rankings.onrender.com` to a real domain (e.g. `rankings.nationalslingshotleague.org` or whatever the org chooses).
 
@@ -103,7 +181,7 @@ Move from `nsl-rankings.onrender.com` to a real domain (e.g. `rankings.nationals
 
 The `.onrender.com` URL keeps working in parallel unless explicitly disabled — useful as a fallback during the cutover.
 
-### 6. Outstanding Bugs / Cleanup
+### 15. Outstanding Bugs / Cleanup
 
 From the integration test review (CODE_REVIEW.md, items not yet applied):
 
@@ -111,17 +189,21 @@ From the integration test review (CODE_REVIEW.md, items not yet applied):
 - **Fix multi-tournament test assertions** — the test uses `expect(total).toBeGreaterThan(0)` instead of verifying the actual computed score values. This is the most important test in the file (proves averaging logic) and currently doesn't actually prove anything.
 - **Delete the "Integration Test Coverage Summary" block** — fake test that always passes regardless of actual results.
 
-### 7. Pre-Launch Smoke Test
+### 16. Pre-Launch Smoke Test
 
 Before declaring MVP, run through the full demo script in production:
 
-1. Open the Render URL in incognito → public leaderboard renders
+1. Open the public URL in incognito → leaderboard renders, including empty/sparse states if applicable
 2. Open the WordPress page → embedded leaderboard renders, matches the app
-3. Log in as owner → create an admin account
+3. Log in as owner → create an admin account → change owner password
 4. Log in as that admin in another browser → upload a real CSV from a past tournament
-5. Edit a result → verify rankings update on both the app and the WordPress embed (after cache window)
-6. Delete a result → same verification
-7. Verify the owner can't be deleted, admins can't access `/admin/users`
+5. Verify the upload confirmation + the audit log entry both appear
+6. Edit a result → verify rankings update on both the app and the WordPress embed (after cache window)
+7. Delete a result → same verification, audit log captures it
+8. Lock the tournament → confirm further edits are rejected
+9. Verify the backup script ran in the last 24h (check the B2/S3 bucket)
+10. Verify Sentry receives a test error and UptimeRobot reports the service as up
+11. Verify the owner can't be deleted, admins can't access `/admin/users`
 
 ---
 
@@ -157,6 +239,19 @@ Beta = one real tournament cycle with one or two real admins (board members), us
 Prioritized features for after MVP launch. Reorder as real-world feedback arrives.
 
 ### 🔴 Highest Priority
+
+#### Tournament Detail Page on Public Leaderboard
+The public leaderboard shows overall rankings but not per-tournament breakdowns. Let visitors click a tournament name (e.g. in a "Recent Tournaments" sidebar) and see who participated and what they scored — read-only, no auth.
+
+Reuses much of the existing admin tournament detail logic; mostly UI/route work plus a public-safe endpoint.
+
+#### "Compare to Existing" Upload Preview
+During CSV preview, when a row matches an existing competitor, show side-by-side: "Bob Smith — currently 87.3 overall, will become 84.1 after this tournament." Builds confidence in the math before committing.
+
+Server-side: extend the preview endpoint to compute the projected overall score for each affected competitor. Client-side: show old/new in the preview table.
+
+#### Tournament-Level Total-Points Sanity Check
+Individual results that exceed `total_points` already produce a warning. Add a tournament-level check: "5 of 12 results exceed total points — did you mean to set total_points higher?" Catches the common mistake of leaving the default 120 when the event was actually scored out of 150.
 
 #### Annual Season Reset
 Rankings should operate on a per-season basis (e.g. 2026, 2027). The leaderboard should reflect only the current season; historical seasons should be browsable but separate.
@@ -225,7 +320,8 @@ Add a `division` column to `competitors` so different competitor classes (e.g. P
 - **Fix `useCallback` linting warnings** — goes away if React Query is adopted.
 - **Seasonal view toggle** — current season vs. all-time on the public leaderboard.
 - **Bulk actions** — bulk email updates, bulk competitor management.
-- **Password change UI** — self-service for all roles.
+- **Self-service password reset (email)** — "forgot password" link with email-based recovery. Requires an SMTP/transactional email provider (Resend, Postmark). Owner-driven manual reset covers MVP.
+- **Print-friendly leaderboard** — a `?print=1` view (or a well-tuned `@media print` stylesheet) so the leaderboard prints cleanly at the awards ceremony.
 - **Advanced reporting / data export** — CSV/PDF export of rankings or results.
 
 ### ⏸️ Out of Scope (For Now)

@@ -16,10 +16,7 @@ const DB_PATH =
 
 // Ensure data directory exists (dev only — in production, /data is the mount point and is provisioned by Render)
 const fs = require('fs');
-if (
-	!process.env.TEST_DATABASE_PATH &&
-	process.env.NODE_ENV !== 'production'
-) {
+if (!process.env.TEST_DATABASE_PATH && process.env.NODE_ENV !== 'production') {
 	const dataDir = path.join(__dirname, '..', 'data');
 	if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 }
