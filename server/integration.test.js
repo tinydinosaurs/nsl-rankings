@@ -435,7 +435,7 @@ describe('NSL Rankings Integration Tests', () => {
 			const competitorResponse = await request(app)
 				.post('/api/rankings/competitors')
 				.set('Authorization', `Bearer ${adminToken}`)
-				.send({ name: 'Manual Competitor' });
+				.send({ name: 'Manual Competitor', is_member: true });
 
 			const tournamentResponse = await request(app)
 				.post('/api/rankings/tournaments')
@@ -840,6 +840,90 @@ describe('NSL Rankings Integration Tests', () => {
 				expect(competitor).toHaveProperty('total_score');
 				expect(competitor).toHaveProperty('tournament_count');
 			}
+		});
+	});
+
+	describe('Competitor membership API', () => {
+		it('POST /competitors accepts is_member and defaults to false when omitted', async () => {
+			const memberRes = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Member Mary',
+					email: 'mary.member@example.com',
+					is_member: true,
+				});
+			expect(memberRes.status).toBe(201);
+			expect(memberRes.body.is_member).toBe(true);
+
+			const defaultRes = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Default Dan',
+					email: 'dan.default@example.com',
+				});
+			expect(defaultRes.status).toBe(201);
+			expect(defaultRes.body.is_member).toBe(false);
+		});
+
+		it('PUT /competitors/:id flips is_member', async () => {
+			const created = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Flip Felicity',
+					email: 'felicity.flip@example.com',
+					is_member: false,
+				});
+
+			const updated = await request(app)
+				.put(`/api/rankings/competitors/${created.body.id}`)
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({ is_member: true });
+
+			expect(updated.status).toBe(200);
+			expect(updated.body.is_member).toBe(true);
+			// Name and email preserved when only is_member sent
+			expect(updated.body.name).toBe('Flip Felicity');
+			expect(updated.body.email).toBe('felicity.flip@example.com');
+		});
+
+		it('GET /competitors?filter=members and ?filter=non-members partition the list', async () => {
+			await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Filter Member',
+					email: 'filter.member@example.com',
+					is_member: true,
+				});
+			await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					name: 'Filter Non',
+					email: 'filter.non@example.com',
+					is_member: false,
+				});
+
+			const members = await request(app)
+				.get('/api/rankings/competitors?filter=members')
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(members.status).toBe(200);
+			expect(members.body.every((c) => c.is_member === true)).toBe(true);
+			expect(members.body.some((c) => c.email === 'filter.member@example.com')).toBe(
+				true,
+			);
+
+			const nonMembers = await request(app)
+				.get('/api/rankings/competitors?filter=non-members')
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(nonMembers.status).toBe(200);
+			expect(nonMembers.body.every((c) => c.is_member === false)).toBe(true);
+			expect(
+				nonMembers.body.some((c) => c.email === 'filter.non@example.com'),
+			).toBe(true);
 		});
 	});
 });

@@ -36,7 +36,7 @@ function createRankingsRouter(db) {
 
 	// GET /api/rankings/competitors — enhanced list with scores, counts, and filtering
 	router.get('/competitors', authenticate, asyncHandler((req, res) => {
-		const { filter } = req.query; // 'placeholder-emails' for filtering
+		const { filter } = req.query; // 'placeholder-emails' | 'members' | 'non-members'
 
 		// Get all competitors with email status
 		const competitors = db
@@ -46,6 +46,7 @@ function createRankingsRouter(db) {
       id, 
       name, 
       email,
+      is_member,
       created_at,
       CASE 
         WHEN email IS NULL OR email LIKE '%.nsl@placeholder.local' THEN 1
@@ -78,6 +79,7 @@ function createRankingsRouter(db) {
 				id: competitor.id,
 				name: competitor.name,
 				email: competitor.email,
+				is_member: competitor.is_member === 1,
 				has_placeholder_email: Boolean(competitor.has_placeholder_email),
 				total_score: scores.total,
 				tournament_count: tournamentCount,
@@ -91,6 +93,10 @@ function createRankingsRouter(db) {
 			filteredCompetitors = enhancedCompetitors.filter(
 				(c) => c.has_placeholder_email,
 			);
+		} else if (filter === 'members') {
+			filteredCompetitors = enhancedCompetitors.filter((c) => c.is_member);
+		} else if (filter === 'non-members') {
+			filteredCompetitors = enhancedCompetitors.filter((c) => !c.is_member);
 		}
 
 		res.json(filteredCompetitors);
@@ -194,6 +200,13 @@ function createRankingsRouter(db) {
 				throw new ValidationError('Name is required');
 			}
 
+			// Optional is_member; default to false (matches production schema default).
+			// Admins can flip the badge later via PUT.
+			const isMemberFlag =
+				typeof req.body.is_member === 'boolean'
+					? req.body.is_member ? 1 : 0
+					: 0;
+
 			const trimmedName = name.trim();
 			const trimmedEmail =
 				email?.trim() || generatePlaceholderEmail(name.trim());
@@ -221,12 +234,15 @@ function createRankingsRouter(db) {
 			}
 
 			const result = db
-				.prepare('INSERT INTO competitors (name, email) VALUES (?, ?)')
-				.run(trimmedName, trimmedEmail);
+				.prepare(
+					'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, ?)',
+				)
+				.run(trimmedName, trimmedEmail, isMemberFlag);
 			res.status(201).json({
 				id: result.lastInsertRowid,
 				name: trimmedName,
 				email: trimmedEmail,
+				is_member: isMemberFlag === 1,
 			});
 		}),
 	);
@@ -238,7 +254,7 @@ function createRankingsRouter(db) {
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const competitor = db
-				.prepare('SELECT id, name, email FROM competitors WHERE id = ?')
+				.prepare('SELECT id, name, email, is_member FROM competitors WHERE id = ?')
 				.get(req.params.id);
 			if (!competitor) {
 				throw new NotFoundError('Competitor');
@@ -248,6 +264,10 @@ function createRankingsRouter(db) {
 			const trimmedName = req.body.name?.trim() || competitor.name;
 			const trimmedEmail =
 				'email' in req.body ? req.body.email?.trim() || null : competitor.email;
+			const isMemberFlag =
+				typeof req.body.is_member === 'boolean'
+					? req.body.is_member ? 1 : 0
+					: competitor.is_member;
 
 			// Check for duplicate email (if changing)
 			if (
@@ -282,15 +302,14 @@ function createRankingsRouter(db) {
 				}
 			}
 
-			db.prepare('UPDATE competitors SET name = ?, email = ? WHERE id = ?').run(
-				trimmedName,
-				trimmedEmail,
-				req.params.id,
-			);
+			db.prepare(
+				'UPDATE competitors SET name = ?, email = ?, is_member = ? WHERE id = ?',
+			).run(trimmedName, trimmedEmail, isMemberFlag, req.params.id);
 			res.json({
 				id: parseInt(req.params.id),
 				name: trimmedName,
 				email: trimmedEmail,
+				is_member: isMemberFlag === 1,
 			});
 		}),
 	);
