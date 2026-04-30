@@ -275,4 +275,101 @@ describe('csvParser', () => {
 			expect(warnings.some((w) => w.includes('Empty name'))).toBe(true);
 		});
 	});
+
+	describe('membership column', () => {
+		it('treats all rows as members and warns when the column is missing', () => {
+			const text = csv(
+				'name,email,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,100,90,110,80',
+				'Bob,bob@example.com,95,105,88,110',
+			);
+			const { competitors, warnings } = parseCSV(text, allEvents);
+			expect(competitors).toHaveLength(2);
+			expect(competitors.every((c) => c.is_member === true)).toBe(true);
+			expect(
+				warnings.some((w) => w.includes('No membership column found')),
+			).toBe(true);
+		});
+
+		it('parses true/false values from a "member" column', () => {
+			const text = csv(
+				'name,email,member,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,true,100,90,110,80',
+				'Bob,bob@example.com,false,95,105,88,110',
+			);
+			const { competitors, warnings } = parseCSV(text, allEvents);
+			expect(competitors).toHaveLength(2);
+			expect(competitors[0].is_member).toBe(true);
+			expect(competitors[1].is_member).toBe(false);
+			expect(
+				warnings.some((w) => w.includes('No membership column found')),
+			).toBe(false);
+		});
+
+		it('recognizes alternate truthy/falsy values', () => {
+			const text = csv(
+				'name,email,membership,knockdowns,distance,speed,woods',
+				'A,a@example.com,yes,100,90,110,80',
+				'B,b@example.com,Y,100,90,110,80',
+				'C,c@example.com,1,100,90,110,80',
+				'D,d@example.com,Member,100,90,110,80',
+				'E,e@example.com,no,100,90,110,80',
+				'F,f@example.com,N,100,90,110,80',
+				'G,g@example.com,0,100,90,110,80',
+				'H,h@example.com,non-member,100,90,110,80',
+			);
+			const { competitors } = parseCSV(text, allEvents);
+			expect(competitors.map((c) => c.is_member)).toEqual([
+				true,
+				true,
+				true,
+				true,
+				false,
+				false,
+				false,
+				false,
+			]);
+		});
+
+		it('matches the "NSL Member" alias header used in mock data', () => {
+			const text = csv(
+				'Competitor,Email Address,NSL Member,Knock Downs,Dist,Speed,Woods Course',
+				'Alice,alice@example.com,yes,100,90,110,80',
+				'Bob,bob@example.com,no,95,105,88,110',
+			);
+			const { competitors, warnings } = parseCSV(text, allEvents);
+			expect(competitors).toHaveLength(2);
+			expect(competitors[0].is_member).toBe(true);
+			expect(competitors[1].is_member).toBe(false);
+			expect(
+				warnings.some((w) => w.includes('No membership column found')),
+			).toBe(false);
+		});
+
+		it('warns and treats unknown values as non-member', () => {
+			const text = csv(
+				'name,email,member,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,maybe,100,90,110,80',
+			);
+			const { competitors, warnings } = parseCSV(text, allEvents);
+			expect(competitors[0].is_member).toBe(false);
+			expect(
+				warnings.some((w) =>
+					w.includes('Unrecognized membership value "maybe"'),
+				),
+			).toBe(true);
+		});
+
+		it('treats blank membership cells as non-member with a warning', () => {
+			const text = csv(
+				'name,email,member,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,,100,90,110,80',
+			);
+			const { competitors, warnings } = parseCSV(text, allEvents);
+			expect(competitors[0].is_member).toBe(false);
+			expect(
+				warnings.some((w) => w.includes('Unrecognized membership value')),
+			).toBe(true);
+		});
+	});
 });

@@ -36,10 +36,33 @@ const COLUMN_ALIASES = {
 		'full_name',
 	],
 	email: ['email', 'e-mail', 'email address', 'emailaddress', 'e_mail'],
+	is_member: [
+		'member',
+		'members',
+		'is_member',
+		'ismember',
+		'membership',
+		'nsl member',
+		'nsl_member',
+		'nslmember',
+	],
 };
 
 // Known non-score designations — treated as null (not scored/not penalized), not 0
 const NON_SCORE_VALUES = new Set(['dns', 'dq', 'dnf', 'scratch', 'n/a', '-', 'wd', 'disqualified']);
+
+// Boolean parsing for the membership column. Returns true, false, or null (unknown).
+const MEMBER_TRUTHY = new Set(['true', 't', 'yes', 'y', '1', 'member']);
+const MEMBER_FALSY = new Set(['false', 'f', 'no', 'n', '0', 'non-member', 'nonmember']);
+
+function parseMemberValue(raw) {
+	if (raw === undefined || raw === null) return null;
+	const v = String(raw).trim().toLowerCase();
+	if (v === '') return null;
+	if (MEMBER_TRUTHY.has(v)) return true;
+	if (MEMBER_FALSY.has(v)) return false;
+	return null;
+}
 
 function normalizeHeader(h) {
 	return h.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -116,7 +139,7 @@ function parseCSV(csvText, tournamentSettings) {
 	// Map column indices
 	const colMap = {};
 	headerRow.forEach((h, i) => {
-		for (const field of ['name', 'email', ...EVENTS]) {
+		for (const field of ['name', 'email', 'is_member', ...EVENTS]) {
 			if (!colMap[field] && detectColumn(h, field)) {
 				colMap[field] = i;
 			}
@@ -126,6 +149,14 @@ function parseCSV(csvText, tournamentSettings) {
 	if (colMap.name === undefined) {
 		errors.push('No name column found in header row.');
 		return { competitors: [], warnings, errors };
+	}
+
+	// Warn (once) if no membership column was found — all rows will default to member.
+	const memberColumnPresent = colMap.is_member !== undefined;
+	if (!memberColumnPresent) {
+		warnings.push(
+			'No membership column found (e.g. "member" or "NSL member"). All rows will be treated as members.',
+		);
 	}
 
 	// Warn about active events with no matching column
@@ -171,6 +202,23 @@ function parseCSV(csvText, tournamentSettings) {
 		seenEmails.add(rawEmail.toLowerCase());
 
 		const competitor = { name: rawName, email: rawEmail };
+
+		// Membership: default true when the column is absent (backward compat).
+		// When the column is present, parse each row; unrecognized values warn and fall back to false.
+		if (memberColumnPresent) {
+			const rawMember = row[colMap.is_member]?.toString();
+			const parsed = parseMemberValue(rawMember);
+			if (parsed === null) {
+				warnings.push(
+					`Row ${lineNum} (${rawName}): Unrecognized membership value "${rawMember ?? ''}" — treated as non-member.`,
+				);
+				competitor.is_member = false;
+			} else {
+				competitor.is_member = parsed;
+			}
+		} else {
+			competitor.is_member = true;
+		}
 
 		for (const event of EVENTS) {
 			if (!activeEvents.includes(event)) {
