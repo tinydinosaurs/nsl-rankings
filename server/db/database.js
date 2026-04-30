@@ -71,6 +71,18 @@ db.exec(`
   );
 `);
 
+// Idempotent migration: add competitors.is_member if missing.
+// Default to 0 for new rows, but backfill existing rows to 1 so deploying this
+// change doesn't silently empty the public leaderboard for current data.
+const competitorColumns = db.prepare('PRAGMA table_info(competitors)').all();
+if (!competitorColumns.some((col) => col.name === 'is_member')) {
+	db.exec('ALTER TABLE competitors ADD COLUMN is_member INTEGER NOT NULL DEFAULT 0');
+	const backfilled = db.prepare('UPDATE competitors SET is_member = 1').run();
+	if (backfilled.changes > 0) {
+		console.log(`Migration: backfilled is_member=1 for ${backfilled.changes} existing competitors`);
+	}
+}
+
 // Seed a default owner user if none exists
 const existingOwner = db
 	.prepare('SELECT id FROM users WHERE role = ?')
