@@ -508,7 +508,12 @@ describe('Upload Route', () => {
 					.send({
 						tournament_id: existingId,
 						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
-						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						totalPoints: {
+							knockdowns: 120,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
 						competitors: [
 							{
 								name: 'Bob Smith',
@@ -538,7 +543,12 @@ describe('Upload Route', () => {
 					.send({
 						tournament_id: 9999,
 						activeEvents: ['knockdowns'],
-						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						totalPoints: {
+							knockdowns: 120,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
 						competitors: [
 							{
 								name: 'Alice Nguyen',
@@ -576,7 +586,12 @@ describe('Upload Route', () => {
 					.send({
 						tournament_id: id1,
 						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
-						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						totalPoints: {
+							knockdowns: 120,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
 						competitors: [
 							{
 								name: 'Alice Nguyen',
@@ -616,7 +631,12 @@ describe('Upload Route', () => {
 					.send({
 						tournament_id: tournId,
 						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
-						totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
+						totalPoints: {
+							knockdowns: 120,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
 						competitors: [
 							{
 								name: 'Alice Nguyen',
@@ -639,6 +659,123 @@ describe('Upload Route', () => {
 					.get(compId, tournId);
 				expect(result.knockdowns_earned).toBe(100);
 			});
+		});
+	});
+
+	describe('membership flag handling', () => {
+		it('inserts a new competitor with is_member=1 when the payload says true', async () => {
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						competitors: [
+							{
+								name: 'Alice Nguyen',
+								email: 'alice@example.com',
+								existing_competitor_id: null,
+								is_member: true,
+								knockdowns_earned: 100,
+								distance_earned: 90,
+								speed_earned: 110,
+								woods_earned: 80,
+							},
+						],
+					}),
+				);
+			expect(res.status).toBe(201);
+			const row = db
+				.prepare('SELECT is_member FROM competitors WHERE email = ?')
+				.get('alice@example.com');
+			expect(row.is_member).toBe(1);
+		});
+
+		it('inserts a new competitor with is_member=0 when the payload says false', async () => {
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						competitors: [
+							{
+								name: 'Bob Smith',
+								email: 'bob@example.com',
+								existing_competitor_id: null,
+								is_member: false,
+								knockdowns_earned: 50,
+								distance_earned: 50,
+								speed_earned: 50,
+								woods_earned: 50,
+							},
+						],
+					}),
+				);
+			expect(res.status).toBe(201);
+			const row = db
+				.prepare('SELECT is_member FROM competitors WHERE email = ?')
+				.get('bob@example.com');
+			expect(row.is_member).toBe(0);
+		});
+
+		it('flips an existing competitor when membership changes', async () => {
+			const { lastInsertRowid: id } = db
+				.prepare(
+					'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, ?)',
+				)
+				.run('Carol', 'carol@example.com', 0);
+
+			await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						competitors: [
+							{
+								name: 'Carol',
+								email: 'carol@example.com',
+								existing_competitor_id: id,
+								existing_name: 'Carol',
+								is_member: true,
+								knockdowns_earned: 100,
+								distance_earned: 90,
+								speed_earned: 110,
+								woods_earned: 80,
+							},
+						],
+					}),
+				);
+
+			const row = db
+				.prepare('SELECT is_member FROM competitors WHERE id = ?')
+				.get(id);
+			expect(row.is_member).toBe(1);
+		});
+
+		it('defaults to is_member=1 when the payload omits the field (no membership column in CSV)', async () => {
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						competitors: [
+							{
+								name: 'Dana',
+								email: 'dana@example.com',
+								existing_competitor_id: null,
+								// is_member intentionally omitted
+								knockdowns_earned: 100,
+								distance_earned: 90,
+								speed_earned: 110,
+								woods_earned: 80,
+							},
+						],
+					}),
+				);
+			expect(res.status).toBe(201);
+			const row = db
+				.prepare('SELECT is_member FROM competitors WHERE email = ?')
+				.get('dana@example.com');
+			expect(row.is_member).toBe(1);
 		});
 	});
 });

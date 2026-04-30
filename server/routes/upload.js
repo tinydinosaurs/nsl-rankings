@@ -111,7 +111,7 @@ function createUploadRouter(db) {
 				if (c.email) {
 					existing = db
 						.prepare(
-							'SELECT id, name, email FROM competitors WHERE LOWER(email) = LOWER(?)',
+							'SELECT id, name, email, is_member FROM competitors WHERE LOWER(email) = LOWER(?)',
 						)
 						.get(c.email);
 				}
@@ -120,7 +120,7 @@ function createUploadRouter(db) {
 				if (!existing) {
 					existing = db
 						.prepare(
-							'SELECT id, name, email FROM competitors WHERE LOWER(name) = LOWER(?)',
+							'SELECT id, name, email, is_member FROM competitors WHERE LOWER(name) = LOWER(?)',
 						)
 						.get(c.name);
 				}
@@ -130,6 +130,7 @@ function createUploadRouter(db) {
 					existing_competitor_id: existing?.id ?? null,
 					existing_name: existing?.name ?? null,
 					existing_email: existing?.email ?? null,
+					existing_is_member: existing ? existing.is_member === 1 : null,
 					is_new: !existing,
 					match_type: existing
 						? c.email && existing.email
@@ -139,10 +140,26 @@ function createUploadRouter(db) {
 				};
 			});
 
+			// Build membership-change diff so the admin can see who will be flipped
+			const membershipChanges = enriched
+				.filter(
+					(c) =>
+						!c.is_new &&
+						typeof c.is_member === 'boolean' &&
+						c.existing_is_member !== c.is_member,
+				)
+				.map((c) => ({
+					name: c.name,
+					email: c.email,
+					before: c.existing_is_member,
+					after: c.is_member,
+				}));
+
 			res.json({
 				competitors: enriched,
 				warnings: rebuildPlaceholderWarnings(warnings, enriched),
 				errors: [],
+				membership_changes: membershipChanges,
 			});
 		}),
 	);
@@ -269,21 +286,31 @@ function createUploadRouter(db) {
 					// All competitors now have email addresses (required by parser)
 					let competitorId = comp.existing_competitor_id;
 
+					// Default to member when the CSV lacked a membership column (parser sets
+					// is_member=true in that case, but defend against malformed payloads).
+					const isMemberFlag =
+						typeof comp.is_member === 'boolean' ? (comp.is_member ? 1 : 0) : 1;
+
 					if (!competitorId) {
 						// Insert new competitor
 						const cResult = db
-							.prepare('INSERT INTO competitors (name, email) VALUES (?, ?)')
-							.run(comp.name, comp.email);
+							.prepare(
+								'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, ?)',
+							)
+							.run(comp.name, comp.email, isMemberFlag);
 						competitorId = cResult.lastInsertRowid;
 						inserted.push(comp.name);
 					} else {
-						// Update existing competitor's name if it's different
+						// Update existing competitor's name and membership if either changed
 						if (comp.name !== comp.existing_name) {
 							db.prepare('UPDATE competitors SET name = ? WHERE id = ?').run(
 								comp.name,
 								competitorId,
 							);
 						}
+						db.prepare(
+							'UPDATE competitors SET is_member = ? WHERE id = ? AND is_member != ?',
+						).run(isMemberFlag, competitorId, isMemberFlag);
 						updated.push(comp.name);
 					}
 
