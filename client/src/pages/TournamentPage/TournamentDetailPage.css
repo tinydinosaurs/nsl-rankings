@@ -57,18 +57,7 @@
 }
 
 .event-edit-toggle {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	cursor: pointer;
 	min-width: 7rem;
-}
-
-.event-edit-toggle input[type='checkbox'] {
-	width: 1rem;
-	height: 1rem;
-	cursor: pointer;
-	accent-color: var(--accent);
 }
 
 .event-edit-points {

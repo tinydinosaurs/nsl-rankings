@@ -23,6 +23,8 @@ The POC is functionally complete and has been demoed to stakeholders. It include
 
 Running log of pre-MVP work that's done. Newest at the top.
 
+- **2026-05-01 — Member-only rankings shipped.** `competitors.is_member` column added (idempotent migration, existing rows backfilled to `true`). CSV parser recognizes `member` / `NSL member` column with truthy/falsy parsing; missing column treated as all-members with a warning. Upload preview surfaces a membership-changes diff before commit. `computeRankings()` filters to `is_member = 1`; admin views still show non-members with a "Non-member" badge. Add/Edit Competitor modals expose the toggle; Competitors list page has an All / Members / Non-members filter and a Membership column.
+- **2026-05-01 — Repo professionalization.** `LICENSE` (MIT), `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, PR template, issue templates, GitHub Actions CI workflow, branch protection ruleset, `CHANGELOG.md` (Keep a Changelog + semver), and `release-please` for automated version bumps and changelog entries from Conventional Commits.
 - **2026-04-29 — Production deployment live on Render.** Web service + 1 GB persistent disk at `/data`, owner account seeded from env vars, GitHub App connected for auto-deploy on push to `main`, `/api/health` green, full owner login → admin creation → CSV upload flow verified. App is live at `https://nsl-rankings.onrender.com`. Total cost: ~$7.25/month (Starter instance + 1 GB disk).
 
 ---
@@ -31,23 +33,7 @@ Running log of pre-MVP work that's done. Newest at the top.
 
 The path from POC to MVP — everything needed before handing the app to a real user for real data entry. Listed in rough priority order: must-haves for a beta tournament first, operational/admin quality work next, polish and verification last.
 
-### 1. Member-Only Rankings
-
-The CSV will gain a new column (header something like `member` or `NSL member`) containing a boolean. Only competitors marked `true` should appear in rankings. Non-members may compete in tournaments and have their results recorded, but they don't show up on the leaderboard.
-
-**Why this is #1:** it changes the meaning of the leaderboard. Doing the WordPress embed before this would mean re-doing it after.
-
-Detailed plan in the chat thread; high-level scope:
-
-- Add `competitors.is_member` (boolean, default false for new rows; true when backfilling existing rows so the current leaderboard isn't wiped)
-- CSV parser: recognize the new column with aliases (`member`, `nsl member`, `is_member`, `membership`); parse common truthy/falsy values; warn if the column is missing entirely (and treat all rows as members for backward compatibility)
-- Membership comes *from the CSV* — the latest upload for a competitor wins. Admins can also toggle it manually on the competitor edit page.
-- Upload preview shows a **"Membership changes" callout** at the top whenever the incoming CSV would flip any competitor's status (e.g. "3 membership changes: Bob Smith — non-member → member; Alice Jones — non-member → member; Carlos Diaz — member → non-member"). Admin reviews before committing.
-- `computeRankings()` filters to `WHERE is_member = 1`
-- All admin views still show non-members (with a clear "non-member" badge) so admins can manage them; public leaderboard shows members only
-- Add tests covering: ranked vs. unranked, non-member with results, member status change between tournaments
-
-### 2. WordPress Embed (Public Leaderboard)
+### 1. WordPress Embed (Public Leaderboard)
 
 The non-profit's WordPress site needs to display the leaderboard. The app already exposes `GET /api/rankings/public` — no new endpoint needed.
 
@@ -73,7 +59,7 @@ The non-profit's WordPress site needs to display the leaderboard. The app alread
 
 If traffic ever becomes a real concern, add a Cloudflare or similar edge cache in front of `/api/rankings/public` — no app changes required.
 
-### 3. Mobile-Readable Public Leaderboard
+### 2. Mobile-Readable Public Leaderboard
 
 The current rankings table is not optimized for small screens. The leaderboard URL will be shared on phones — this matters more than internal admin polish.
 
@@ -82,7 +68,7 @@ The current rankings table is not optimized for small screens. The leaderboard U
 - Event columns may scroll out of view on narrow screens — that's acceptable as long as name + total stay visible
 - Empty states matter on day one: leaderboard with zero tournaments, zero competitors, or one tournament should all render gracefully (not a blank page or a broken table)
 
-### 4. Password Change UI
+### 3. Password Change UI
 
 Owner and admin accounts currently have no way to change their own password — passwords are set at creation by whoever created the account (the owner via env vars, admins via the user management UI). Before going live with real users this needs to exist so admins aren't dependent on the owner for password resets.
 
@@ -95,7 +81,7 @@ Owner and admin accounts currently have no way to change their own password — 
 
 No password reset flow (email-based "I forgot my password") for MVP — owner can reset an admin's password manually via `/admin/users`. Self-service reset is a post-MVP item if/when needed.
 
-### 5. Hide Login from Public Leaderboard
+### 4. Hide Login from Public Leaderboard
 
 The public leaderboard currently has a visible "Login" button in the nav. Most visitors can't create an account, so it's confusing. Need to make the login path discoverable to admins but not surfaced on the public page.
 
@@ -107,7 +93,7 @@ The public leaderboard currently has a visible "Login" button in the nav. Most v
 
 This is "security through obscurity" only at the URL level — actual security is the JWT auth. The point is UX, not access control.
 
-### 6. Upload Confirmation + Batch Delete
+### 5. Upload Confirmation + Batch Delete
 
 After clicking "Commit" on the upload preview, the page should clearly confirm what happened — e.g. "27 results imported into Spring Open 2026" with a link to the tournament page. The current success state is too quiet to build trust on a first try.
 
@@ -115,7 +101,7 @@ Paired with this: a **"Delete all results from this tournament"** button on the 
 
 Stretch: tag each upload as a batch (`upload_batch_id` on `tournament_results`) and offer an explicit "Undo last upload." The simpler delete-all-for-tournament covers ~90% of real cases.
 
-### 7. Backup Script
+### 6. Backup Script
 
 Render's persistent disk survives redeploys but is not backed up. Data loss would end the project's credibility. Need at least a daily snapshot stored off-server.
 
@@ -128,7 +114,7 @@ Render's persistent disk survives redeploys but is not backed up. Data loss woul
 
 Cost: pennies per month.
 
-### 8. Error Monitoring + Uptime Ping
+### 7. Error Monitoring + Uptime Ping
 
 Right now the only way to know the app is broken is to check Render logs or have a user report it. Two free services close that loop:
 
@@ -137,20 +123,20 @@ Right now the only way to know the app is broken is to check Render logs or have
 
 Together: the moment something breaks, you know.
 
-### 9. Footer with Version + "How Rankings Work" Page
+### 8. Footer with Version + "How Rankings Work" Page
 
 Two small polish items that materially reduce support requests:
 
 - Add a footer to every page with the build version (git short SHA, populated at build time via a Vite env var) and deploy timestamp. When someone says "it's broken," you can verify they're on the new code.
 - Add a static `/how-rankings-work` page (linked from the public leaderboard) explaining the scoring formula in plain English: per-event averages, total = sum/4, missing events excluded. Reduces "why is X ranked higher than me" arguments.
 
-### 10. CSV Export Per Tournament
+### 9. CSV Export Per Tournament
 
 The reverse of upload. On the tournament detail page, an admin can click "Export CSV" and download the current state of the tournament's results in the same format the upload accepts. Useful for sharing, archiving, and producing a clean copy after manual edits.
 
 **Implementation:** new endpoint `GET /api/rankings/tournaments/:id/export` returning CSV with the canonical column names. Admin-only.
 
-### 11. Audit Log
+### 10. Audit Log
 
 Append-only log of every mutating action (create/update/delete on competitors, tournaments, results, users). New `audit_log` table:
 
@@ -158,17 +144,17 @@ Append-only log of every mutating action (create/update/delete on competitors, t
 
 Surfaced as an owner-only admin page. Becomes essential the moment two admins disagree about who changed what.
 
-### 12. Tournament Lock
+### 11. Tournament Lock
 
 Add `tournaments.locked BOOLEAN DEFAULT 0` (idempotent `ALTER TABLE` migration). Once a tournament is finalized (e.g. at end of season), the owner can lock it — all mutating operations on its results return 403. Unlocking requires a confirmation. Protects historical data from accidental edits.
 
-### 13. Mobile-Readable Admin Pages
+### 12. Mobile-Readable Admin Pages
 
 Admins may need to add or fix a single result from their phone at the venue. The upload page, competitor list, and tournament detail page need basic responsive layout — not a full mobile redesign, just usable.
 
 **Scope:** same approach as the public leaderboard (sticky important columns, collapse non-essentials, larger tap targets on actions).
 
-### 14. Custom Domain
+### 13. Custom Domain
 
 Move from `nsl-rankings.onrender.com` to a real domain (e.g. `rankings.nationalslingshotleague.org` or whatever the org chooses).
 
@@ -181,7 +167,7 @@ Move from `nsl-rankings.onrender.com` to a real domain (e.g. `rankings.nationals
 
 The `.onrender.com` URL keeps working in parallel unless explicitly disabled — useful as a fallback during the cutover.
 
-### 15. Outstanding Bugs / Cleanup
+### 14. Outstanding Bugs / Cleanup
 
 From the integration test review (CODE_REVIEW.md, items not yet applied):
 
@@ -189,7 +175,7 @@ From the integration test review (CODE_REVIEW.md, items not yet applied):
 - **Fix multi-tournament test assertions** — the test uses `expect(total).toBeGreaterThan(0)` instead of verifying the actual computed score values. This is the most important test in the file (proves averaging logic) and currently doesn't actually prove anything.
 - **Delete the "Integration Test Coverage Summary" block** — fake test that always passes regardless of actual results.
 
-### 16. Pre-Launch Smoke Test
+### 15. Pre-Launch Smoke Test
 
 Before declaring MVP, run through the full demo script in production:
 
@@ -303,6 +289,39 @@ Add a `division` column to `competitors` so different competitor classes (e.g. P
 - **Not urgent** — only build when a real division-based requirement appears (e.g. a kids ranking)
 
 ### 🟡 Medium Priority — Code Quality
+
+#### Shared Component Library Refactors
+
+Repeated patterns across pages and modals that should be extracted into `client/src/components/shared/`. Listed in rough priority order — highest leverage first.
+
+- **`Checkbox`** — 6 call sites (`UploadPage.jsx:159`, `CompetitorsListPage.jsx:212`, `TournamentDetailPage.jsx:260`, `EditCompetitorModal.jsx:114`, `AddTournamentModal.jsx:124`, `AddCompetitorModal.jsx:74`). Currently the global `input { background, border, padding }` rule overrides native checkbox rendering, requiring page-level `.checkbox-label` overrides in `UploadPage.css` and `CompetitorsListPage.css`. A dedicated component lets us scope styling once and stop fighting the global input rule. Suggested API: `<Checkbox label description checked onChange disabled />`.
+- **`Alert`** — 20+ call sites of `<div className="alert alert-error|success|warn">{msg}</div>`. Trivial wrapper: `<Alert variant="error|success|warn">{children}</Alert>`. Big readability win, no behavior change.
+- **`Button`** — 20+ call sites of `<button className="btn btn-primary|secondary|danger" + btn-sm>`. Wrap as `<Button variant="primary|secondary|danger" size="sm|md" loading disabled>`. Lets us add a built-in loading spinner once and remove ad-hoc disabled-during-submit logic from every form.
+- **`PageLoading`** — `<div className="page-loading">Loading…</div>` repeated in nearly every page-level component. Trivial extraction: `<PageLoading message="Loading competitors…" />`.
+- **`getErrorMessage(err, fallback)` util** — 9 sites of `err.response?.data?.error || 'fallback'`. Already in roadmap, restated here for completeness. Pairs naturally with `Alert`.
+- **`useResource(loader)` hook** — every list/detail page has the same `useState(null)` + `useState(true)` + `useState(null)` triple for `data` / `loading` / `error`, plus a `loadX` function in a `useEffect`. A small custom hook collapses this to one line. Lower priority than React Query but cheaper to ship and a stepping stone toward it.
+- **`FormField`** — every modal repeats `<div className="form-group"><label htmlFor="x" />…<input id="x" />{error && <small>}</div>`. Wrap as `<FormField label="Name" htmlFor="name" error={errors.name}><input id="name" … /></FormField>` so labels, ids, and inline errors stay in sync. Prerequisite for any future form library migration.
+- **`Select`** — only one current use (AdminUsersPage role dropdown), so low priority. Build when the second use case appears.
+- **`SearchInput`** — only one current use (`CompetitorsListPage`). Defer until duplicated elsewhere.
+
+#### Component Folder Reorg (`ui/` vs `shared/`)
+
+The current `client/src/components/shared/` folder mixes two kinds of things:
+
+- **Generic UI primitives** with no business logic: `Modal`, `Badge`, `EmptyState`, `PageHeader`, `EditableField`, `EyeIcons`, `Layout`, `ConfirmDialog`, plus the planned `Checkbox` / `Alert` / `Button` / `FormField` / `PageLoading`.
+- **Cross-page composites** that bundle entity-specific form/API logic: `AddCompetitorModal`, `AddTournamentModal`, `AddResultModal`, `EditCompetitorModal`, `EditResultModal`, `ResultsUploadForm`.
+
+The composites legitimately live in `shared/` because they're reused across more than one page (e.g. `AddResultModal` is used from both `TournamentDetailPage` and `CompetitorDetailPage`) — not because they're generic. Once enough primitives exist to make the distinction obvious, split into:
+
+```
+client/src/components/
+├── ui/        ← generic primitives, no business logic
+└── shared/    ← cross-page composites that wrap ui/ + call api.js
+```
+
+Defer until after `Checkbox` / `Alert` / `Button` / `FormField` land — at that point the line is clearer and the move is mostly mechanical.
+
+#### Other Code Quality Items
 
 - **`getCompetitorHistory()` tests** — chronological order, per-tournament score calculation, null handling
 - **HTTP integration tests for results & competitors endpoints** — partial updates, auth guards, cascades, placeholder email generation

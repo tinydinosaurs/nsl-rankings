@@ -8,6 +8,7 @@ import EditResultModal from '../../components/shared/EditResultModal/EditResultM
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
 import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
+import Checkbox from '../../components/shared/Checkbox/Checkbox.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import { formatScore as fmt } from '../../utils/formatScore.js';
 import '../../styles/podium.css';
@@ -255,19 +256,17 @@ export default function TournamentDetailPage() {
 						</div>
 						{EVENTS.map(({ key, label }) => (
 							<div key={key} className="event-edit-row">
-								<label className="event-edit-toggle">
-									<input
-										type="checkbox"
-										checked={eventDraft[key].enabled}
-										onChange={(e) =>
-											setEventDraft((d) => ({
-												...d,
-												[key]: { ...d[key], enabled: e.target.checked },
-											}))
-										}
-									/>
-									<span>{label}</span>
-								</label>
+								<Checkbox
+									label={label}
+									className="event-edit-toggle"
+									checked={eventDraft[key].enabled}
+									onChange={(e) =>
+										setEventDraft((d) => ({
+											...d,
+											[key]: { ...d[key], enabled: e.target.checked },
+										}))
+									}
+								/>
 								{eventDraft[key].enabled && (
 									<label className="event-edit-points">
 										<span>Total points</span>

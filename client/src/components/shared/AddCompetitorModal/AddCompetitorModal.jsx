@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import api from '../../../utils/api.js';
 import Modal from '../Modal/Modal.jsx';
+import Checkbox from '../Checkbox/Checkbox.jsx';
 
 export default function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 	const [name, setName] = useState('');
@@ -68,19 +69,12 @@ export default function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 					</small>
 				</div>
 
-				<div className="form-group">
-					<label className="checkbox-label">
-						<input
-							type="checkbox"
-							checked={isMember}
-							onChange={(e) => setIsMember(e.target.checked)}
-						/>
-						NSL member
-					</label>
-					<small className="form-help">
-						Only members appear on the public leaderboard.
-					</small>
-				</div>
+				<Checkbox
+					label="NSL member"
+					description="Only members appear on the public leaderboard."
+					checked={isMember}
+					onChange={(e) => setIsMember(e.target.checked)}
+				/>
 
 				<div className="modal-actions">
 					<button type="button" className="btn btn-secondary" onClick={onClose}>

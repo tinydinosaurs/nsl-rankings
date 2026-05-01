@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { EVENTS, EVENT_LABELS } from '../../constants/events';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
+import Checkbox from '../../components/shared/Checkbox/Checkbox.jsx';
 import './UploadPage.css';
 
 const defaultSettings = () => ({
@@ -154,18 +155,11 @@ export default function UploadPage() {
 									key={event}
 									className={`event-row ${!settings.activeEvents.includes(event) ? 'inactive' : ''}`}
 								>
-									<label className="checkbox-label">
-										<input
-											type="checkbox"
-											checked={settings.activeEvents.includes(event)}
-											onChange={() => toggleEvent(event)}
-											style={{
-												width: 'auto',
-												marginRight: 8,
-											}}
-										/>
-										{EVENT_LABELS[event]}
-									</label>
+									<Checkbox
+										label={EVENT_LABELS[event]}
+										checked={settings.activeEvents.includes(event)}
+										onChange={() => toggleEvent(event)}
+									/>
 									<div
 										className="form-group"
 										style={{

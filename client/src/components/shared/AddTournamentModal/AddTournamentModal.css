@@ -27,10 +27,6 @@
 }
 
 .event-checkbox {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	cursor: pointer;
 	font-size: 0.95rem;
 }
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import api from '../../../utils/api.js';
 import { EVENT_LIST as EVENTS } from '../../../constants/events.js';
 import Modal from '../Modal/Modal.jsx';
+import Checkbox from '../Checkbox/Checkbox.jsx';
 import './AddTournamentModal.css';
 
 export default function AddTournamentModal({ isOpen, onClose, onAdd }) {
@@ -119,19 +120,18 @@ export default function AddTournamentModal({ isOpen, onClose, onAdd }) {
 					<legend className="form-legend">Active Events</legend>
 					<div className="event-grid">
 						{EVENTS.map(({ key, label }) => (
-							<label key={key} className="event-checkbox">
-								<input
-									type="checkbox"
-									checked={events[`has_${key}`]}
-									onChange={(e) =>
-										setEvents((prev) => ({
-											...prev,
-											[`has_${key}`]: e.target.checked,
-										}))
-									}
-								/>
-								{label}
-							</label>
+							<Checkbox
+								key={key}
+								label={label}
+								className="event-checkbox"
+								checked={events[`has_${key}`]}
+								onChange={(e) =>
+									setEvents((prev) => ({
+										...prev,
+										[`has_${key}`]: e.target.checked,
+									}))
+								}
+							/>
 						))}
 					</div>
 				</fieldset>
