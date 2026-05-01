@@ -1,139 +1,146 @@
-# NSL Rankings App
+# NSL Rankings
 
-A national rankings tracker for a four-event sport. Admins upload tournament CSVs or enter results manually; everyone can view sortable rankings and competitor history.
+Internal web app for tracking national slingshot league competition results.
+Admins upload tournament CSVs (or Excel/ODS files); the app computes live
+rankings across four events — knockdowns, distance, speed, woods course — and
+publishes a public leaderboard.
+
+Live: https://nsl-rankings.onrender.com
 
 ## Tech Stack
 
-- **Frontend**: React 18 + Vite, TanStack Table, React Router
-- **Backend**: Node.js + Express
-- **Database**: SQLite (via `better-sqlite3`) — zero setup, file-based
-- **Auth**: JWT (24hr tokens), bcrypt password hashing
-- **CSV Parsing**: PapaParse with flexible column detection
-
----
+- **Frontend:** React 18 + Vite, TanStack Table, React Router v6
+- **Backend:** Node.js + Express
+- **Database:** SQLite (`better-sqlite3`) — file-based, single-server
+- **Auth:** JWT (24h tokens), bcrypt password hashing, three roles (`owner`,
+  `admin`, `user`)
+- **CSV parsing:** PapaParse + SheetJS (handles `.csv`, `.xlsx`, `.xls`, `.ods`)
 
 ## Quick Start
 
-### 1. Install dependencies
-
 ```bash
-# From the project root
 npm install
-npm install --workspace=client
-npm install --workspace=server
-```
-
-### 2. Start development servers
-
-```bash
 npm run dev
 ```
 
-This starts:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:3001
+- Frontend: http://localhost:5173
+- Backend:  http://localhost:3001
 
-The SQLite database file is created automatically at `server/data/rankings.db`.
+The SQLite database is created automatically at `server/data/rankings.db` on
+first boot.
 
-### 3. Default admin account
+### Credentials
 
-On first run, a default admin is created:
-- **Username**: `admin`
-- **Password**: `admin123`
-
-**Change this immediately** via Admin → Users.
-
----
-
-## Project Structure
+Credentials are set via environment variables — never hardcoded. Create
+`server/.env` (gitignored) with at least:
 
 ```
-sports-rankings/
-├── client/                  # React frontend (Vite)
-│   └── src/
-│       ├── pages/
-│       │   ├── LoginPage.jsx
-│       │   ├── RankingsPage.jsx     # Main sortable rankings table
-│       │   ├── CompetitorPage.jsx   # Per-competitor history
-│       │   ├── UploadPage.jsx       # CSV upload with preview
-│       │   └── AdminPage.jsx        # Admin tools (tabs)
-│       ├── hooks/useAuth.jsx
-│       ├── utils/api.js
-│       └── components/shared/Layout.jsx
-└── server/
-    ├── index.js             # Express entry point
-    ├── db/
-    │   ├── database.js      # SQLite schema + seed
-    │   ├── rankings.js      # Score computation logic
-    │   └── csvParser.js     # Flexible CSV parser
-    ├── middleware/auth.js   # JWT middleware
-    └── routes/
-        ├── auth.js          # Login, user management
-        ├── rankings.js      # Competitors, tournaments, results
-        └── upload.js        # CSV preview + commit
+OWNER_USERNAME=yourname
+OWNER_PASSWORD=yourchosenpassword
+JWT_SECRET=your-long-random-secret
 ```
 
----
+Optional: `ADMIN_USERNAME` / `ADMIN_PASSWORD` to seed an admin account on first
+boot. Without `ADMIN_USERNAME`, no admin is seeded.
 
-## Scoring Logic
+To reset everything locally:
 
-**Event score** = average of `(earned / total_points) × 100` across all tournaments where that event was present.
-
-**Total score** = `(knockdowns + distance + speed + woods) / 4`  
-Missing events contribute 0 to the total (not excluded from denominator).
-
-**On upload**: new scores are added to the per-event history. The displayed score is always the true average of all raw results — not a running average of averages.
-
----
-
-## CSV Format
-
-The parser is flexible and tolerant of messy spreadsheets. It will:
-- Detect the header row (scans first 5 rows)
-- Recognize column names by common aliases (e.g. "knock downs", "kd", "knockdown" → knockdowns)
-- Skip blank rows and warn about unparseable values
-- Treat blank cells in active events as 0
-- Show a preview with warnings before committing
-
-**Minimum required columns**: one for competitor names, one per active event.
-
-Example valid CSV:
-```
-name, knockdowns, distance, speed, woods course
-Alice, 90, 80, 110, 60
-Bob, 120, 95, 100, 75
+```bash
+rm server/data/rankings.db
+npm run dev   # seeding runs again
 ```
 
-Totals are set per-upload in the UI (default: 120 per event).
+To repopulate with realistic demo data:
 
----
+```bash
+npm run seed:demo --workspace=server
+# or wipe + reseed:
+npm run seed:reset --workspace=server
+```
 
-## Admin Features
+## Tests
 
-- **Competitors**: Add, rename, delete
-- **Tournaments**: Create, delete (deletes all associated results)
-- **Manual Entry**: Add/update a single result for any competitor × tournament
-- **Upload CSV**: Preview → confirm flow with per-event toggle and total-points override
-- **Users**: Create admin or user accounts, delete accounts
+```bash
+npm test                 # everything
+npm run test:server      # server only
+npm run test:client      # client only
+```
 
----
+Server tests use Vitest with an in-memory SQLite DB. Client tests use Vitest +
+jsdom + React Testing Library.
 
-## Deployment (Future)
+## Roles
 
-When ready to deploy:
+| Role    | Permissions                                                  |
+| ------- | ------------------------------------------------------------ |
+| `owner` | Everything admins can do, plus create/delete admin accounts  |
+| `admin` | Upload, edit/delete results, manage competitors & tournaments|
+| `user`  | Reserved for post-MVP — no current UI                        |
 
-1. **Database**: Migrate to [Supabase](https://supabase.com) (free tier, Postgres)
-   - Schema maps 1:1 from SQLite → Postgres with minor type adjustments
-2. **Backend**: Deploy to [Railway](https://railway.app) or [Render](https://render.com) (both have free tiers)
-3. **Frontend**: Deploy to [Vercel](https://vercel.com) or [Netlify](https://netlify.com) (both free)
-4. Set environment variables: `JWT_SECRET`, `DATABASE_URL`, `CLIENT_URL`
+The public leaderboard at `/` requires no authentication.
 
----
+## Scoring
 
-## Environment Variables (server)
+- **Event score** = average of `(earned / total_points) × 100` across all
+  tournaments where that event was held for that competitor.
+- **Total score** = `(knockdowns + distance + speed + woods) / 4` — always
+  divided by four.
+- `null` earned = event not held in that tournament (excluded from average).
+  `0` earned = competitor participated and scored nothing (included).
+- Missing events do not change a competitor's existing score.
+- Scores are never cached — always recomputed from raw results.
 
-| Variable | Default | Notes |
-|----------|---------|-------|
-| `PORT` | `3001` | API port |
-| `JWT_SECRET` | `dev-secret-change-in-production` | **Must change in prod** |
-| `CLIENT_URL` | `http://localhost:5173` | CORS origin |
+Implementation: [server/db/rankings.js](server/db/rankings.js).
+
+## Membership & the public leaderboard
+
+Each competitor has an `is_member` flag. Only members appear on the public
+leaderboard and the admin Rankings view. Non-members still show up on the
+Competitors and Tournaments admin pages (with a "Non-member" badge), and their
+results still feed the per-event history if you toggle them to a member later.
+
+CSVs may include a `member` (or `NSL Member`) boolean column — `true`/`yes`/`1`
+mark a competitor as a member; `false`/`no`/`0` mark non-members. If the column
+is missing entirely, the parser warns and treats every row as a member to keep
+existing workflows working.
+
+## CSV format
+
+The parser is flexible:
+
+- Detects the header row (scans the first 5 rows)
+- Recognises common column aliases (`knock downs`, `kd`, `velocity` for speed,
+  `forest`/`wc` for woods, etc.)
+- Skips blank rows and warns about unparseable values
+- Treats blank cells in active events as `0`
+- Shows a preview (with warnings) before committing
+
+**Required columns:** competitor name, plus one column per active event.
+Missing emails get a generated placeholder
+(`firstname.lastname.nsl@placeholder.local`).
+
+## Project structure
+
+See [AGENTS.md](AGENTS.md) for the canonical layout and architecture rules
+(database injection pattern, testing conventions, CommonJS vs ESM split,
+roadmap, etc.). That file is the source of truth for contributors and AI
+assistants.
+
+## Deployment
+
+Deployed on Render as a single web service. Express serves both the API and
+the built React app; SQLite lives on a 1 GB persistent disk mounted at `/data`.
+Pushes to `main` trigger an automatic redeploy.
+
+## Environment variables (server)
+
+| Variable          | Default                      | Notes                                  |
+| ----------------- | ---------------------------- | -------------------------------------- |
+| `PORT`            | `3001`                       | API port                               |
+| `JWT_SECRET`      | dev fallback                 | **Must be set in production**          |
+| `CLIENT_URL`      | `http://localhost:5173`      | CORS origin; required in production    |
+| `OWNER_USERNAME`  | —                            | Seeded on first boot if no owner exists |
+| `OWNER_PASSWORD`  | —                            | Required alongside `OWNER_USERNAME`    |
+| `ADMIN_USERNAME`  | —                            | Optional admin seed                    |
+| `ADMIN_PASSWORD`  | —                            | Required alongside `ADMIN_USERNAME`    |
+| `NODE_ENV`        | —                            | `production` switches DB to `/data/rankings.db` |
