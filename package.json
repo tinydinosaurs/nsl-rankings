@@ -1,6 +1,6 @@
 {
-	"name": "sports-rankings",
-	"version": "1.0.0",
+	"name": "nsl-rankings",
+	"version": "0.1.0",
 	"private": true,
 	"workspaces": [
 		"client",
