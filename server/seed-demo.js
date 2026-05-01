@@ -8,51 +8,61 @@ const { generatePlaceholderEmail } = require('./utils/competitorUtils');
 
 console.log('🌱 Seeding demo data...');
 
-// Demo competitors - mix of realistic names with email addresses
+// Demo competitors - mix of realistic names with email addresses.
+// is_member: most are members (visible on the public leaderboard); a handful
+// are non-members so the membership filter has something interesting to show.
 const demoCompetitors = [
-	{ name: 'Alice Chen', email: null }, // Missing email → placeholder test
-	{ name: 'Bob Martinez', email: 'bob.martinez@email.com' },
-	{ name: 'Carmen Rodriguez', email: 'carmen.rodriguez@email.com' },
-	{ name: 'David Park', email: 'david.park@email.com' },
-	{ name: 'Elena Volkov', email: 'elena.volkov@email.com' },
-	{ name: 'Frank Johnson', email: 'frank.johnson@email.com' },
-	{ name: 'Grace Kim', email: 'grace.kim@email.com' },
-	{ name: 'Hassan Ali', email: 'hassan.ali@email.com' },
-	{ name: 'Isabella Torres', email: 'isabella.torres@email.com' },
-	{ name: 'Jake Wilson', email: 'jake.wilson@email.com' },
-	{ name: 'Katherine Liu', email: 'katherine.liu@email.com' },
-	{ name: 'Luis Garcia', email: 'luis.garcia@email.com' },
-	{ name: 'Maya Patel', email: 'maya.patel@email.com' },
-	{ name: 'Nick Thompson', email: 'nick.thompson@email.com' },
-	{ name: 'Olivia Brown', email: 'olivia.brown@email.com' },
-	{ name: 'Pavel Novak', email: 'pavel.novak@email.com' },
-	{ name: "Quinn O'Connor", email: 'quinn.oconnor@email.com' },
-	{ name: 'Rachel Green', email: 'rachel.green@email.com' },
-	{ name: 'Sam Anderson', email: 'sam.anderson@email.com' },
-	{ name: 'Tara Singh', email: 'tara.singh@email.com' },
-	{ name: 'Victor Reyes', email: 'victor.reyes@email.com' },
-	{ name: 'Wendy Chang', email: 'wendy.chang@email.com' },
-	{ name: 'Xavier Dubois', email: 'xavier.dubois@email.com' },
-	{ name: 'Yuki Tanaka', email: 'yuki.tanaka@email.com' },
-	{ name: 'Zoe Mitchell', email: 'zoe.mitchell@email.com' },
-	{ name: 'Jordan Reeves', email: null }, // Missing email → placeholder test
-	{ name: 'Sam Holloway', email: null }, // Missing email → placeholder test
-	{ name: 'Alex Morgan', email: 'alex.morgan@email.com' },
-	{ name: 'Blair Hughes', email: 'blair.hughes@email.com' },
-	{ name: 'Casey Smith', email: 'casey.smith@email.com' },
-	{ name: 'Dylan Foster', email: 'dylan.foster@email.com' },
-	{ name: 'Emma Davis', email: 'emma.davis@email.com' },
-	{ name: 'Felix Weber', email: 'felix.weber@email.com' },
-	{ name: 'Gina Romano', email: 'gina.romano@email.com' },
-	{ name: 'Hugo Larsen', email: 'hugo.larsen@email.com' },
-	{ name: 'Iris Nakamura', email: 'iris.nakamura@email.com' },
-	{ name: 'Joel Murphy', email: 'joel.murphy@email.com' },
-	{ name: 'Kira Petrov', email: 'kira.petrov@email.com' },
-	{ name: 'Logan Scott', email: 'logan.scott@email.com' },
-	{ name: 'Mia Thompson', email: 'mia.thompson@email.com' },
-	{ name: 'Nathan Reed', email: 'nathan.reed@email.com' },
-	{ name: 'Oscar Silva', email: 'oscar.silva@email.com' },
-	{ name: 'River Blackwood-James', email: null }, // long hyphenated name → placeholder email test
+	{ name: 'Alice Chen', email: null, is_member: true }, // Missing email → placeholder test
+	{ name: 'Bob Martinez', email: 'bob.martinez@email.com', is_member: true },
+	{
+		name: 'Carmen Rodriguez',
+		email: 'carmen.rodriguez@email.com',
+		is_member: true,
+	},
+	{ name: 'David Park', email: 'david.park@email.com', is_member: false },
+	{ name: 'Elena Volkov', email: 'elena.volkov@email.com', is_member: false },
+	{ name: 'Frank Johnson', email: 'frank.johnson@email.com', is_member: true },
+	{ name: 'Grace Kim', email: 'grace.kim@email.com', is_member: false },
+	{ name: 'Hassan Ali', email: 'hassan.ali@email.com', is_member: true },
+	{
+		name: 'Isabella Torres',
+		email: 'isabella.torres@email.com',
+		is_member: true,
+	},
+	{ name: 'Jake Wilson', email: 'jake.wilson@email.com', is_member: false },
+	{ name: 'Katherine Liu', email: 'katherine.liu@email.com', is_member: true },
+	{ name: 'Luis Garcia', email: 'luis.garcia@email.com', is_member: true },
+	{ name: 'Maya Patel', email: 'maya.patel@email.com', is_member: true },
+	{ name: 'Nick Thompson', email: 'nick.thompson@email.com', is_member: true },
+	{ name: 'Olivia Brown', email: 'olivia.brown@email.com', is_member: true },
+	{ name: 'Pavel Novak', email: 'pavel.novak@email.com', is_member: false },
+	{ name: "Quinn O'Connor", email: 'quinn.oconnor@email.com', is_member: true },
+	{ name: 'Rachel Green', email: 'rachel.green@email.com', is_member: true },
+	{ name: 'Sam Anderson', email: 'sam.anderson@email.com', is_member: true },
+	{ name: 'Tara Singh', email: 'tara.singh@email.com', is_member: true },
+	{ name: 'Victor Reyes', email: 'victor.reyes@email.com', is_member: true },
+	{ name: 'Wendy Chang', email: 'wendy.chang@email.com', is_member: true },
+	{ name: 'Xavier Dubois', email: 'xavier.dubois@email.com', is_member: false },
+	{ name: 'Yuki Tanaka', email: 'yuki.tanaka@email.com', is_member: true },
+	{ name: 'Zoe Mitchell', email: 'zoe.mitchell@email.com', is_member: true },
+	{ name: 'Jordan Reeves', email: null, is_member: true }, // Missing email → placeholder test
+	{ name: 'Sam Holloway', email: null, is_member: false }, // Missing email + non-member
+	{ name: 'Alex Morgan', email: 'alex.morgan@email.com', is_member: true },
+	{ name: 'Blair Hughes', email: 'blair.hughes@email.com', is_member: true },
+	{ name: 'Casey Smith', email: 'casey.smith@email.com', is_member: true },
+	{ name: 'Dylan Foster', email: 'dylan.foster@email.com', is_member: true },
+	{ name: 'Emma Davis', email: 'emma.davis@email.com', is_member: true },
+	{ name: 'Felix Weber', email: 'felix.weber@email.com', is_member: false },
+	{ name: 'Gina Romano', email: 'gina.romano@email.com', is_member: true },
+	{ name: 'Hugo Larsen', email: 'hugo.larsen@email.com', is_member: true },
+	{ name: 'Iris Nakamura', email: 'iris.nakamura@email.com', is_member: true },
+	{ name: 'Joel Murphy', email: 'joel.murphy@email.com', is_member: true },
+	{ name: 'Kira Petrov', email: 'kira.petrov@email.com', is_member: true },
+	{ name: 'Logan Scott', email: 'logan.scott@email.com', is_member: true },
+	{ name: 'Mia Thompson', email: 'mia.thompson@email.com', is_member: true },
+	{ name: 'Nathan Reed', email: 'nathan.reed@email.com', is_member: true },
+	{ name: 'Oscar Silva', email: 'oscar.silva@email.com', is_member: true },
+	{ name: 'River Blackwood-James', email: null, is_member: true }, // long hyphenated name → placeholder email test
 ];
 
 // Demo tournaments with realistic data
@@ -101,10 +111,13 @@ const competitorIds = [];
 for (const competitor of demoCompetitors) {
 	try {
 		const result = db
-			.prepare('INSERT INTO competitors (name, email) VALUES (?, ?)')
+			.prepare(
+				'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, ?)',
+			)
 			.run(
 				competitor.name,
 				competitor.email ?? generatePlaceholderEmail(competitor.name),
+				competitor.is_member ? 1 : 0,
 			);
 		competitorIds.push(result.lastInsertRowid);
 	} catch (e) {
@@ -119,6 +132,11 @@ for (const competitor of demoCompetitors) {
 					.get(competitor.name);
 			}
 			if (existing) {
+				// Keep is_member in sync on re-runs
+				db.prepare('UPDATE competitors SET is_member = ? WHERE id = ?').run(
+					competitor.is_member ? 1 : 0,
+					existing.id,
+				);
 				competitorIds.push(existing.id);
 			}
 		} else {
