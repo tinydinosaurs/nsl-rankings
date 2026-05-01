@@ -7,6 +7,7 @@ import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.j
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
 import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
+import Badge from '../../components/shared/Badge/Badge.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import { formatScore as fmt } from '../../utils/formatScore.js';
 import '../../styles/podium.css';
@@ -475,6 +476,12 @@ export default function TournamentDetailPage() {
 											>
 												{p.competitor_name}
 											</button>
+											{p.competitor_is_member === 0 && (
+												<>
+													{' '}
+													<Badge text="Non-member" variant="neutral" />
+												</>
+											)}
 										</td>
 										{activeEvents.map(({ key }) => (
 											<td

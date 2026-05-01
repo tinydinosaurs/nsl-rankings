@@ -388,6 +388,7 @@ function createRankingsRouter(db) {
         tr.competitor_id,
         c.name as competitor_name,
         c.email as competitor_email,
+        c.is_member as competitor_is_member,
         tr.knockdowns_earned,
         tr.distance_earned,
         tr.speed_earned,
