@@ -13,6 +13,51 @@
 
 .competitor-detail__email-status {
 	padding-top: 0.25rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+/* Profile fields (read-only display; edits happen in EditCompetitorModal) */
+.profile-fields {
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.profile-field {
+	display: grid;
+	grid-template-columns: 6rem 1fr;
+	align-items: baseline;
+	gap: 0.75rem;
+}
+
+.profile-field dt {
+	font-size: 0.8125rem;
+	color: var(--text-muted);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	font-weight: 600;
+}
+
+.profile-field dd {
+	margin: 0;
+	font-size: 1rem;
+	word-break: break-word;
+}
+
+.profile-field__muted {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+/* Stack labels above values on narrow screens — sets up mobile-friendly layout. */
+@media (max-width: 480px) {
+	.profile-field {
+		grid-template-columns: 1fr;
+		gap: 0.125rem;
+	}
 }
 
 /* History table */

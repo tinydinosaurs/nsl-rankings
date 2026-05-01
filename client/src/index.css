@@ -331,6 +331,26 @@ label {
 	margin-bottom: 4px;
 }
 
+/* Inline checkbox/radio label — overrides the default block label so the
+   control sits next to its text instead of stacking. Used in modals, filter
+   bars, and form groups across the app. */
+.checkbox-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	color: var(--text);
+	margin-bottom: 0;
+	cursor: pointer;
+	user-select: none;
+}
+
+.checkbox-label input[type='checkbox'],
+.checkbox-label input[type='radio'] {
+	margin: 0;
+	width: auto;
+}
+
 .form-group {
 	margin-bottom: 16px;
 }

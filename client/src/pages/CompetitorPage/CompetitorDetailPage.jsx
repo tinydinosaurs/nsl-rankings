@@ -7,7 +7,7 @@ import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import AddResultModal from '../../components/shared/AddResultModal/AddResultModal.jsx';
-import EditableField from '../../components/shared/EditableField/EditableField.jsx';
+import EditCompetitorModal from '../../components/shared/EditCompetitorModal/EditCompetitorModal.jsx';
 import { formatScore } from '../../utils/formatScore.js';
 import './CompetitorDetailPage.css';
 
@@ -36,6 +36,7 @@ export default function CompetitorDetailPage() {
 	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteCompetitorOpen, setDeleteCompetitorOpen] = useState(false);
 	const [addResultOpen, setAddResultOpen] = useState(false);
+	const [editProfileOpen, setEditProfileOpen] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -61,20 +62,6 @@ export default function CompetitorDetailPage() {
 		load();
 	}, [load]);
 
-	const handleSaveName = async (name) => {
-		if (!name) throw new Error('Name is required');
-		await api.put(`/rankings/competitors/${id}`, { name });
-		setCompetitor((c) => ({ ...c, name }));
-	};
-
-	const handleSaveEmail = async (email) => {
-		if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-			throw new Error('Please enter a valid email address');
-		}
-		await api.put(`/rankings/competitors/${id}`, { email: email || null });
-		setCompetitor((c) => ({ ...c, email: email || null }));
-	};
-
 	const handleDeleteResult = async () => {
 		await api.delete(`/rankings/results/${deleteResultTarget.result_id}`);
 		setDeleteResultTarget(null);
@@ -84,6 +71,17 @@ export default function CompetitorDetailPage() {
 	const handleDeleteCompetitor = async () => {
 		await api.delete(`/rankings/competitors/${id}`);
 		navigate('/admin/competitors');
+	};
+
+	const handleProfileSaved = (updated) => {
+		setCompetitor((c) => ({
+			...c,
+			name: updated.name,
+			email: updated.email,
+			is_member: updated.is_member ? 1 : 0,
+		}));
+		// Reload so dependent values (overall rank when membership flips) refresh.
+		load();
 	};
 
 	const isPlaceholder =
@@ -109,27 +107,41 @@ export default function CompetitorDetailPage() {
 
 			{/* Profile */}
 			<section className="card competitor-detail__profile">
-				<h2 className="section-title">Profile</h2>
-				<EditableField
-					label="Name"
-					value={competitor.name}
-					onSave={handleSaveName}
-				/>
-				<EditableField
-					label="Email"
-					value={isPlaceholder ? null : competitor.email}
-					placeholder={
-						isPlaceholder
-							? (competitor.email ?? 'No email — placeholder assigned')
-							: undefined
-					}
-					onSave={handleSaveEmail}
-					type="email"
-				/>
+				<div className="section-title-row">
+					<h2 className="section-title">Profile</h2>
+					<button
+						className="btn btn-sm btn-secondary"
+						onClick={() => setEditProfileOpen(true)}
+					>
+						Edit Profile
+					</button>
+				</div>
+				<dl className="profile-fields">
+					<div className="profile-field">
+						<dt>Name</dt>
+						<dd>{competitor.name}</dd>
+					</div>
+					<div className="profile-field">
+						<dt>Email</dt>
+						<dd>
+							{isPlaceholder ? (
+								<span className="profile-field__muted">
+									{competitor.email ?? 'No email — placeholder assigned'}
+								</span>
+							) : (
+								competitor.email
+							)}
+						</dd>
+					</div>
+				</dl>
 				<div className="competitor-detail__email-status">
 					<Badge
 						text={isPlaceholder ? 'Placeholder Email' : 'Email Verified'}
 						variant={isPlaceholder ? 'warning' : 'success'}
+					/>
+					<Badge
+						text={competitor.is_member ? 'Member' : 'Non-member'}
+						variant={competitor.is_member ? 'success' : 'neutral'}
 					/>
 				</div>
 			</section>
@@ -250,6 +262,12 @@ export default function CompetitorDetailPage() {
 					onSaved={load}
 				/>
 			)}
+			<EditCompetitorModal
+				isOpen={editProfileOpen}
+				onClose={() => setEditProfileOpen(false)}
+				competitor={competitor}
+				onSaved={handleProfileSaved}
+			/>
 			{/* Delete result confirmation */}
 			<ConfirmDialog
 				isOpen={!!deleteResultTarget}
