@@ -27,6 +27,14 @@ function EmailStatusBadge({ competitor }) {
 	);
 }
 
+function MemberBadge({ competitor }) {
+	return competitor.is_member ? (
+		<Badge text="Member" variant="success" />
+	) : (
+		<Badge text="Non-member" variant="neutral" />
+	);
+}
+
 export default function CompetitorsListPage() {
 	const [data, setData] = useState([]);
 	const [loading, setLoading] = useState(true);
@@ -34,6 +42,7 @@ export default function CompetitorsListPage() {
 	const [sorting, setSorting] = useState([{ id: 'name', desc: false }]);
 	const [filtering, setFiltering] = useState('');
 	const [showPlaceholdersOnly, setShowPlaceholdersOnly] = useState(false);
+	const [membershipFilter, setMembershipFilter] = useState('all'); // 'all' | 'members' | 'non-members'
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [confirmTarget, setConfirmTarget] = useState(null);
 	const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 20 });
@@ -95,6 +104,12 @@ export default function CompetitorsListPage() {
 				cell: (info) => <EmailStatusBadge competitor={info.row.original} />,
 				enableSorting: false,
 			}),
+			columnHelper.accessor('is_member', {
+				header: 'Membership',
+				cell: (info) => <MemberBadge competitor={info.row.original} />,
+				sortingFn: (a, b) =>
+					Number(b.original.is_member) - Number(a.original.is_member),
+			}),
 			columnHelper.accessor('total_score', {
 				header: 'Total Score',
 				cell: (info) => {
@@ -129,7 +144,12 @@ export default function CompetitorsListPage() {
 	);
 
 	const table = useReactTable({
-		data,
+		data: useMemo(() => {
+			if (membershipFilter === 'members') return data.filter((c) => c.is_member);
+			if (membershipFilter === 'non-members')
+				return data.filter((c) => !c.is_member);
+			return data;
+		}, [data, membershipFilter]),
 		columns,
 		state: {
 			sorting,
@@ -176,6 +196,17 @@ export default function CompetitorsListPage() {
 				</div>
 
 				<div className="filter-controls">
+					<label className="checkbox-label">
+						Membership:&nbsp;
+						<select
+							value={membershipFilter}
+							onChange={(e) => setMembershipFilter(e.target.value)}
+						>
+							<option value="all">All</option>
+							<option value="members">Members only</option>
+							<option value="non-members">Non-members only</option>
+						</select>
+					</label>
 					<label className="checkbox-label">
 						<input
 							type="checkbox"

@@ -5,6 +5,7 @@ import Modal from '../Modal/Modal.jsx';
 export default function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 	const [name, setName] = useState('');
 	const [email, setEmail] = useState('');
+	const [isMember, setIsMember] = useState(false);
 	const [error, setError] = useState('');
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -22,10 +23,12 @@ export default function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 			await api.post('/rankings/competitors', {
 				name: name.trim(),
 				email: email.trim() || undefined,
+				is_member: isMember,
 			});
 			onAdd();
 			setName('');
 			setEmail('');
+			setIsMember(false);
 			onClose();
 		} catch (err) {
 			setError(err.response?.data?.error || 'Failed to add competitor');
@@ -62,6 +65,20 @@ export default function AddCompetitorModal({ isOpen, onClose, onAdd }) {
 					/>
 					<small className="form-help">
 						If empty, a placeholder email will be generated
+					</small>
+				</div>
+
+				<div className="form-group">
+					<label className="checkbox-label">
+						<input
+							type="checkbox"
+							checked={isMember}
+							onChange={(e) => setIsMember(e.target.checked)}
+						/>
+						NSL member
+					</label>
+					<small className="form-help">
+						Only members appear on the public leaderboard.
 					</small>
 				</div>
 
