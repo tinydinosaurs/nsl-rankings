@@ -5,7 +5,6 @@ import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
-import AddTournamentModal from '../../components/shared/AddTournamentModal/AddTournamentModal.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import './TournamentListPage.css';
 
@@ -25,7 +24,6 @@ export default function TournamentListPage() {
 	const [data, setData] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
-	const [showAddModal, setShowAddModal] = useState(false);
 	const [deleteTarget, setDeleteTarget] = useState(null);
 	const navigate = useNavigate();
 
@@ -71,7 +69,7 @@ export default function TournamentListPage() {
 				action={
 					<button
 						className="btn btn-primary"
-						onClick={() => setShowAddModal(true)}
+						onClick={() => navigate('/admin/tournaments/new')}
 					>
 						Add Tournament
 					</button>
@@ -128,12 +126,6 @@ export default function TournamentListPage() {
 					</div>
 				</div>
 			)}
-
-			<AddTournamentModal
-				isOpen={showAddModal}
-				onClose={() => setShowAddModal(false)}
-				onAdd={load}
-			/>
 
 			<ConfirmDialog
 				isOpen={!!deleteTarget}

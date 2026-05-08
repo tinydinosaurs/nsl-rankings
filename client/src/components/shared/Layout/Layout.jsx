@@ -55,9 +55,6 @@ export default function Layout() {
 							<NavLink to="/admin/tournaments" className={navLinkClass}>
 								Tournaments
 							</NavLink>
-							<NavLink to="/admin/upload" className={navLinkClass}>
-								Upload
-						</NavLink>
 						{user?.role === 'owner' && (
 							<NavLink to="/admin/users" className={navLinkClass}>
 								Users
@@ -121,13 +118,6 @@ export default function Layout() {
 								onClick={closeMenu}
 							>
 								Tournaments
-							</NavLink>
-							<NavLink
-								to="/admin/upload"
-								className={navLinkClass}
-								onClick={closeMenu}
-							>
-								Upload
 							</NavLink>
 							{user?.role === 'owner' && (
 								<NavLink

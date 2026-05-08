@@ -6,8 +6,9 @@ import CompetitorDetailPage from './pages/CompetitorPage/CompetitorDetailPage.js
 import CompetitorsListPage from './pages/CompetitorPage/CompetitorsListPage.jsx';
 import TournamentListPage from './pages/TournamentPage/TournamentListPage.jsx';
 import TournamentDetailPage from './pages/TournamentPage/TournamentDetailPage.jsx';
+import TournamentNewPage from './pages/TournamentNewPage/TournamentNewPage.jsx';
+import TournamentUploadPage from './pages/TournamentUploadPage/TournamentUploadPage.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
-import UploadPage from './pages/UploadPage/UploadPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage/AdminUsersPage.jsx';
 import Layout from './components/shared/Layout/Layout.jsx';
 
@@ -58,10 +59,18 @@ export default function App() {
 							}
 						/>
 						<Route
-							path="admin/upload"
+							path="admin/tournaments/new"
 							element={
 								<RequireAdmin>
-									<UploadPage />
+									<TournamentNewPage />
+								</RequireAdmin>
+							}
+						/>
+						<Route
+							path="admin/tournaments/:id/upload"
+							element={
+								<RequireAdmin>
+									<TournamentUploadPage />
 								</RequireAdmin>
 							}
 						/>

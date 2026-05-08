@@ -81,11 +81,11 @@ describe('Layout', () => {
 			).toBeInTheDocument();
 		});
 
-		it('shows Upload link when logged in as admin', () => {
+		it('does not show Upload link (replaced by tournament flow)', () => {
 			renderLayout(adminAuth);
 			expect(
-				screen.getByRole('link', { name: 'Upload' }),
-			).toBeInTheDocument();
+				screen.queryByRole('link', { name: 'Upload' }),
+			).not.toBeInTheDocument();
 		});
 
 		it('shows Rankings link when logged in as admin', () => {
