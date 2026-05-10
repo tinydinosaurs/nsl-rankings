@@ -165,6 +165,31 @@ nsl-rankings/
 
 ---
 
+## Project Docs Layout
+
+Two folders, two purposes — don't mix them.
+
+- **`docs/`** — public, committed to git. Anything other contributors (or the
+  GitHub UI) should see. Currently: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+  `SECURITY.md`, `tokens.yaml`. GitHub auto-discovers community health files
+  in `docs/`, the repo root, or `.github/` — keep `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, and `SECURITY.md` in one of those three locations
+  or the auto-linked banners in the GitHub UI disappear.
+- **`notes/`** — local-only, **gitignored**. The maintainer's working
+  memory: `ROADMAP.md`, `TECH_DEBT.md`, `TROUBLESHOOTING.md`, design
+  scratch, archived migration plans. Safe to be candid (cost figures,
+  honest "this option sucks because…" notes, half-formed ideas). Files
+  here are visible to the maintainer and to AI assistants working in this
+  workspace, but not to anyone who clones the repo.
+
+When suggesting where to put new documentation, default to `docs/` for
+anything a contributor would benefit from, and `notes/` for working state
+that should stay private. If something in `notes/` matures into
+contributor-facing reference, promote it to `docs/` with an editorial pass
+(strip cost numbers, internal jargon, and unfiltered opinions).
+
+---
+
 ## Architecture Rules
 
 ### Database injection — always follow this pattern
