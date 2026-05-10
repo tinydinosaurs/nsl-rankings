@@ -105,7 +105,6 @@ nsl-rankings/
 │       │   └── shared/
 │       │       ├── AddCompetitorModal/
 │       │       ├── AddResultModal/
-│       │       ├── AddTournamentModal/
 │       │       ├── Badge/
 │       │       ├── ConfirmDialog/
 │       │       ├── EditResultModal/
@@ -115,7 +114,7 @@ nsl-rankings/
 │       │       ├── Layout/             # Nav + page shell
 │       │       ├── Modal/
 │       │       ├── PageHeader/
-│       │       └── ResultsUploadForm/  # Shared upload form (UploadPage + TournamentDetailPage)
+│       │       └── ResultsUploadForm/  # Shared file → preview → commit form (used by TournamentNewPage, TournamentUploadPage, TournamentDetailPage)
 │       ├── constants/
 │       │   └── events.js              # Event definitions (client copy)
 │       ├── hooks/
@@ -126,8 +125,9 @@ nsl-rankings/
 │       │   ├── CompetitorPage/        # /admin/competitors (list + detail)
 │       │   ├── LoginPage/             # /login
 │       │   ├── RankingsPage/          # / — public leaderboard
+│       │   ├── TournamentNewPage/     # /admin/tournaments/new — create tournament + optional file
 │       │   ├── TournamentPage/        # /admin/tournaments (list + detail)
-│       │   └── UploadPage/            # /admin/upload — CSV upload flow
+│       │   └── TournamentUploadPage/  # /admin/tournaments/:id/upload — preview + commit results
 │       ├── styles/
 │       │   └── podium.css       ├── test/
        │   └── setup.js               # Vitest client test setup (jsdom)│       └── utils/
@@ -347,11 +347,12 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | `/`                        | `RankingsPage`         | None  | Public leaderboard                                    |
 | `/login`                   | `LoginPage`            | None  | Redirect to `/admin` if already authed                |
 | `/admin`                   | `AdminPage`            | Admin | Dashboard: stats, quick actions, recent tournaments, top 5 |
-| `/admin/upload`            | `UploadPage`           | Admin | 3-step: configure → preview → confirm                 |
 | `/admin/competitors`       | `CompetitorsListPage`  | Admin | List, search, filter, add, delete competitors         |
 | `/admin/competitors/:id`   | `CompetitorDetailPage` | Admin | Edit name/email, view history, delete results         |
-| `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments                         |
-| `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, upload results inline, delete tournament |
+| `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments. "Add Tournament" navigates to `/admin/tournaments/new` |
+| `/admin/tournaments/new`   | `TournamentNewPage`    | Admin | Create a tournament. Single page with metadata + optional file picker. If a file is attached, navigates to the upload page on save; otherwise navigates to the tournament detail page. |
+| `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, delete tournament. "Upload Results" button navigates to the upload page. |
+| `/admin/tournaments/:id/upload` | `TournamentUploadPage` | Admin | Preview + confirm a results file for an existing tournament. Used both as step 2 of the new-tournament flow (file passed via router state, auto-previews) and for adding/replacing results on an existing tournament. |
 | `/admin/users`             | `AdminUsersPage`       | Owner | Create/edit/delete admin and owner accounts           |
 
 React Router v6 is already configured in `client/src/App.jsx`. Add new routes there — do not create a new router.

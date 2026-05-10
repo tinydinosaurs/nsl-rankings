@@ -26,4 +26,9 @@ jobs:
         run: npm run lint
 
       - name: Test
+        env:
+          # Required by server/db/database.js seed step. Tests use in-memory
+          # SQLite, so these credentials never persist.
+          OWNER_USERNAME: ci-owner
+          OWNER_PASSWORD: ci-password
         run: npm test

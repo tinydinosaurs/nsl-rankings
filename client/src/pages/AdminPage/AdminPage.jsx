@@ -95,8 +95,8 @@ export default function AdminPage() {
 			<section className="dashboard-section">
 				<h2 className="section-heading">Quick Actions</h2>
 				<div className="action-grid">
-					<button className="action-card" onClick={() => navigate('/upload')}>
-						<span className="action-label">Upload Tournament Results</span>
+					<button className="action-card" onClick={() => navigate('/admin/tournaments/new')}>
+						<span className="action-label">Add Tournament</span>
 					</button>
 					<button
 						className="action-card"
@@ -128,7 +128,8 @@ export default function AdminPage() {
 					</div>
 					{tournaments !== null && recentTournaments.length === 0 && (
 						<p className="empty-state">
-							No tournaments yet. <Link to="/admin/upload">Upload a CSV</Link>{' '}
+							No tournaments yet.{' '}
+							<Link to="/admin/tournaments/new">Add a tournament</Link>{' '}
 							to get started.
 						</p>
 					)}

@@ -31,10 +31,19 @@ noted under `Changed` only when they meaningfully affect contributors.
 - This `CHANGELOG.md`.
 
 ### Changed
+- Tournament/Upload UX refactor. The standalone Upload page is gone; the nav
+  no longer has an Upload entry. "Add Tournament" now opens a single page
+  (`/admin/tournaments/new`) with metadata and an optional file picker; the
+  date defaults to today. If a file is attached, the user is taken to a
+  dedicated preview/confirm page (`/admin/tournaments/:id/upload`); the same
+  page is used to add results to existing tournaments from their detail view.
 - README rewritten to reflect current deployment, env vars, and the membership
   feature.
 - Demo seed data and happy-path mock CSVs updated with mixed
   member / non-member rows so the new filter has something to show.
+
+### Removed
+- `/admin/upload` page and the "Upload" nav link. Use "Add Tournament" instead.
 
 ## [0.1.0] - 2026-04-29
 

@@ -6,7 +6,6 @@ import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import EditableField from '../../components/shared/EditableField/EditableField.jsx';
-import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import Checkbox from '../../components/shared/Checkbox/Checkbox.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
@@ -31,7 +30,6 @@ export default function TournamentDetailPage() {
 	const [eventError, setEventError] = useState('');
 	const [sortKey, setSortKey] = useState('competitor_name');
 	const [sortDir, setSortDir] = useState('asc');
-	const [showUploadForm, setShowUploadForm] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -369,56 +367,26 @@ export default function TournamentDetailPage() {
 				<h2 className="section-title">
 					Results <span className="section-count">({participants.length})</span>
 				</h2>
-				{participants.length > 0 && !showUploadForm && (
+				{participants.length > 0 && (
 					<button
 						className="btn btn-sm btn-secondary"
-						onClick={() => setShowUploadForm(true)}
+						onClick={() => navigate(`/admin/tournaments/${tournament.id}/upload`)}
 					>
 						Upload Results
 					</button>
 				)}
 			</div>
-			{participants.length === 0 ? (
-				<>
-					<p className="section-empty-hint">
-						No results yet. Upload a results file to get started.
-					</p>
-					<ResultsUploadForm
-						activeEvents={activeEvents.map((e) => e.key)}
-						totalPoints={{
-							knockdowns: tournament.total_points_knockdowns,
-							distance: tournament.total_points_distance,
-							speed: tournament.total_points_speed,
-							woods: tournament.total_points_woods,
-						}}
-						tournamentId={tournament.id}
-						tournamentName={tournament.name}
-						tournamentDate={tournament.date}
-						onSuccess={() => load()}
-					/>
-				</>
-			) : showUploadForm ? (
-				<>
-					<div style={{ marginBottom: 20 }}>
-						<ResultsUploadForm
-							activeEvents={activeEvents.map((e) => e.key)}
-							totalPoints={{
-								knockdowns: tournament.total_points_knockdowns,
-								distance: tournament.total_points_distance,
-								speed: tournament.total_points_speed,
-								woods: tournament.total_points_woods,
-							}}
-							tournamentId={tournament.id}
-							tournamentName={tournament.name}
-							tournamentDate={tournament.date}
-							onSuccess={() => { load(); setShowUploadForm(false); }}
-							onBack={() => setShowUploadForm(false)}
-							onBackLabel="Cancel"
-						/>
-					</div>
-					<hr style={{ border: 'none', borderTop: '1px solid var(--border)', marginBottom: 20 }} />
-				</>
-			) : null}
+			{participants.length === 0 && (
+				<div className="section-empty-hint" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
+					<span>No results yet. Upload a results file to get started.</span>
+					<button
+						className="btn btn-primary"
+						onClick={() => navigate(`/admin/tournaments/${tournament.id}/upload`)}
+					>
+						Upload Results
+					</button>
+				</div>
+			)}
 			{participants.length > 0 && (
 					<div className="table-wrapper">
 						<table className="data-table">

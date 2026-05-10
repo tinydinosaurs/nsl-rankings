@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../../../utils/api.js';
 import { EVENTS, EVENT_LABELS } from '../../../constants/events.js';
@@ -16,6 +16,8 @@ import './ResultsUploadForm.css';
  *   onSuccess      (data) => void    — called with commit response after save
  *   onBack         () => void | null — if provided, renders a button on the file step
  *   onBackLabel    string            — label for the onBack button (default: "← Edit Settings")
+ *   initialFile    File | null       — if provided, prefills the file picker and
+ *                                      auto-triggers preview on mount
  */
 export default function ResultsUploadForm({
 	activeEvents,
@@ -26,14 +28,16 @@ export default function ResultsUploadForm({
 	onSuccess,
 	onBack,
 	onBackLabel = '← Edit Settings',
+	initialFile = null,
 }) {
 	const [step, setStep] = useState('file'); // 'file' | 'preview'
-	const [selectedFile, setSelectedFile] = useState(null);
+	const [selectedFile, setSelectedFile] = useState(initialFile);
 	const [preview, setPreview] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [conflictTournamentId, setConflictTournamentId] = useState(null);
 	const fileRef = useRef();
+	const autoPreviewRef = useRef(false);
 
 	const handlePreview = async (e) => {
 		e.preventDefault();
@@ -67,6 +71,16 @@ export default function ResultsUploadForm({
 			setLoading(false);
 		}
 	};
+
+	// Auto-trigger preview if an initialFile was supplied (e.g. carried over
+	// from the tournament-creation page).
+	useEffect(() => {
+		if (initialFile && !autoPreviewRef.current) {
+			autoPreviewRef.current = true;
+			handlePreview({ preventDefault: () => {} });
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [initialFile]);
 
 	const handleCommit = async () => {
 		setError('');
