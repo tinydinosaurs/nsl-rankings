@@ -157,85 +157,6 @@
 	   replaces consumers with var(--nsl-font-sans-ui) directly. */
 	--font: var(--nsl-font-sans-ui);
 
-	/* ── Palette — raw named colors, never used directly in components ───── */
-
-	/* Neutrals */
-	--white: #ffffff;
-	--gray-50: #f5f6fa;
-	--gray-100: #eef1f7;
-	--gray-200: #d1d6e4;
-	--gray-300: #b0b8d0;
-	--gray-800: #1a1d27;
-	--gray-600: #5c6378;
-	--black: #0f1117;
-
-	/* Dark-mode surface neutrals */
-	--dark-surface: #1a1d27;
-	--dark-surface2: #22263a;
-	--dark-border: #2e3250;
-	--dark-text-muted: #a0a7d1;
-	--dark-text: #e8eaf6;
-
-	/* Blues */
-	--blue-400: #6b93ff;
-	--blue-500: #4f7ef8;
-	--blue-600: #3d6ae6;
-	--blue-700: #2d5ad4;
-	--blue-800: #1d4ac2;
-	--blue-900: #1a2340; /* dark tint bg */
-	--blue-tint-bg: #eef2fd;
-	--blue-tint-border: #b3c4f5;
-
-	/* Teals */
-	--teal-300: #2dd4bf;
-	--teal-400: #14b8a6;
-	--teal-600: #0d8a80;
-	--teal-700: #0a6e66;
-	--teal-tint-bg: #eef8f7;
-	--teal-tint-border: #8dd4ce;
-	--dark-teal-tint-bg: #0a1e1d;
-	--dark-teal-tint-border: #124e4a;
-
-	/* Indigos */
-	--indigo-300: #a78bfa;
-	--indigo-500: #7c6ae6;
-	--indigo-600: #5b3dcc;
-	--indigo-700: #4527a8;
-	--indigo-tint-bg: #f0eefb;
-	--indigo-tint-border: #c0b0ef;
-	--dark-indigo-tint-bg: #16102e;
-	--dark-indigo-tint-border: #352870;
-
-	/* Greens */
-	--green-400: #4caf82;
-	--green-600: #16a34a;
-	--green-700: #166534;
-	--green-tint-bg: #eef8f3;
-	--green-tint-border: #a3d5ba;
-	--dark-green-tint-bg: #0a1a10;
-	--dark-green-tint-border: #1a4428;
-
-	/* Reds */
-	--red-400: #e05252;
-	--red-600: #dc2626;
-
-	/* Bronzes */
-	--bronze-400: #c8874f;
-	--bronze-800: #7c3f0e;
-	--bronze-tint-bg: #fdf3e7;
-	--bronze-tint-border: #d4a47a;
-	--dark-bronze-tint-bg: #1e1208;
-	--dark-bronze-tint-border: #5a3210;
-
-	/* Ambers / Oranges */
-	--amber-400: #e0a84f;
-	--amber-600: #d97706;
-	--amber-800: #92400e;
-	--amber-tint-bg: #fdf8ee;
-	--amber-tint-border: #e4cc90;
-	--dark-amber-tint-bg: #1e1508;
-	--dark-amber-tint-border: #4a3208;
-
 	/* ── Light theme (default) ───────────────────────────────────────────── */
 	/* ============================================================== *
 	 * NSL SEMANTIC LAYER                                              *
@@ -290,12 +211,6 @@
 		var(--nsl-burgundy-700),
 		var(--nsl-rain-600)
 	);
-
-	/* Legacy brand aliases — slated for deletion in Phase 4. Both now
-	   point at brand-primary so any lingering consumers stay on-brand
-	   instead of teal/indigo. */
-	--brand-secondary: var(--brand-primary);
-	--brand-tertiary: var(--brand-identity);
 
 	/* Action colors */
 	--accent: var(--brand-primary);
@@ -364,39 +279,8 @@
 	--podium-neutral-rule: var(--border-subtle);
 	--podium-neutral-chip-bg: var(--nsl-base-light-200);
 	--podium-neutral-chip-text: var(--nsl-base-light-700);
-
-	/* ── Legacy tint aliases — kept until Phase 3 sweep ──────────────── */
-	--tint-blue-border: var(--blue-tint-border);
-	--tint-blue-fg: var(--blue-700);
-
-	--tint-teal-bg: var(--teal-tint-bg);
-	--tint-teal-border: var(--teal-tint-border);
-	--tint-teal-fg: var(--teal-700);
-
-	--tint-amber-bg: var(--amber-tint-bg);
-	--tint-amber-border: var(--amber-tint-border);
-	--tint-amber-fg: var(--amber-800);
-
-	--tint-green-bg: var(--green-tint-bg);
-	--tint-green-border: var(--green-tint-border);
-	--tint-green-fg: var(--green-700);
-
-	--tint-indigo-bg: var(--indigo-tint-bg);
-	--tint-indigo-border: var(--indigo-tint-border);
-	--tint-indigo-fg: var(--indigo-700);
-
-	--tint-bronze-bg: var(--bronze-tint-bg);
-	--tint-bronze-border: var(--bronze-tint-border);
-	--tint-bronze-fg: var(--bronze-800);
-
-	/* TYPOGRAPHY */
-	--tint-text-high-contrast: var(--blue-900);
 }
 
-/* Dark mode is intentionally not implemented (NSL is light-only — see
-   docs/tokens.yaml meta.scheme). The previous global @media block has
-   been removed. A handful of component CSS files still ship dark-mode
-   overrides; those will be cleaned up in Phase 3/4. */
 
 body {
 	background: var(--bg);
@@ -550,25 +434,7 @@ label {
 	margin-bottom: 4px;
 }
 
-/* Inline checkbox/radio label — overrides the default block label so the
-   control sits next to its text instead of stacking. Used in modals, filter
-   bars, and form groups across the app. */
-.checkbox-label {
-	display: inline-flex;
-	align-items: center;
-	gap: 12px;
-	font-size: 14px;
-	color: var(--text);
-	margin-bottom: 0;
-	cursor: pointer;
-	user-select: none;
-}
-
-.checkbox-label input[type='checkbox'],
-.checkbox-label input[type='radio'] {
-	margin: 0;
-	width: auto;
-}
+/* Inline checkbox/radio label styles live in Checkbox/Checkbox.css. */
 
 .form-group {
 	margin-bottom: 16px;
@@ -738,55 +604,6 @@ label {
 .score-card--total .score-card__value,
 .score-card--overall .score-card__value {
 	color: var(--brand-primary);
-}
-
-/* ── Legacy hue variants — kept until callers swap to event variants. ──── */
-.score-card--blue {
-	background: var(--tint-blue-bg);
-	border-color: var(--tint-blue-border);
-}
-.score-card--blue .score-card__value {
-	color: var(--tint-blue-fg);
-}
-
-.score-card--teal {
-	background: var(--tint-teal-bg);
-	border-color: var(--tint-teal-border);
-}
-.score-card--teal .score-card__value {
-	color: var(--tint-teal-fg);
-}
-
-.score-card--indigo {
-	background: var(--tint-indigo-bg);
-	border-color: var(--tint-indigo-border);
-}
-.score-card--indigo .score-card__value {
-	color: var(--tint-indigo-fg);
-}
-
-.score-card--green {
-	background: var(--tint-green-bg);
-	border-color: var(--tint-green-border);
-}
-.score-card--green .score-card__value {
-	color: var(--tint-green-fg);
-}
-
-.score-card--amber {
-	background: var(--tint-amber-bg);
-	border-color: var(--tint-amber-border);
-}
-.score-card--amber .score-card__value {
-	color: var(--tint-amber-fg);
-}
-
-.score-card--bronze {
-	background: var(--tint-bronze-bg);
-	border-color: var(--tint-bronze-border);
-}
-.score-card--bronze .score-card__value {
-	color: var(--tint-bronze-fg);
 }
 
 /* ── Accessibility utilities ── */

@@ -162,7 +162,7 @@
 
 .action-card:hover {
 	border-color: var(--brand-primary);
-	background: var(--tint-blue-bg);
+	background: var(--brand-primary-tint);
 }
 
 .action-card:hover .action-label {
@@ -228,7 +228,7 @@
 .top-rank {
 	font-size: 12px;
 	font-weight: 700;
-	color: var(--tint-text-high-contrast);
+	color: var(--brand-primary);
 	width: 28px;
 	flex-shrink: 0;
 	text-align: center;
@@ -260,7 +260,7 @@
 .top-score {
 	font-size: 13px;
 	font-weight: 600;
-	color: var(--tint-text-high-contrast);
+	color: var(--brand-primary);
 	flex-shrink: 0;
 	margin-left: auto;
 }
