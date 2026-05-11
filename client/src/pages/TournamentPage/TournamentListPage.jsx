@@ -13,7 +13,7 @@ function EventBadges({ tournament }) {
 		<div className="event-badges">
 			{EVENTS.map(({ key, label }) =>
 				tournament[`has_${key}`] ? (
-					<Badge key={key} text={label} variant="info" />
+					<Badge key={key} text={label} variant={key} />
 				) : null,
 			)}
 		</div>

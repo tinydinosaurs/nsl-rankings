@@ -28,7 +28,8 @@
 #
 # DEPENDENCY:
 #   Requires color.burgundy.{50,100,200,400,600,700,800,900} in base.yaml ✓
-#   Family: sans-ui (Inter, default — already in base)
+#   Fonts are NSL-specific (IBM Plex Sans / Archivo Black / IBM Plex Mono) and
+#   declared inline below — base.yaml's family.sans-ui/mono are not used.
 #
 # =============================================================================
 
@@ -275,17 +276,17 @@ typography:
   font:
     ui:
       {
-        value: '{typography.family.sans-ui}',
+        value: "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif",
         comment: 'IBM Plex Sans — UI, headings, tabular numerals',
       }
     display:
       {
-        value: '{typography.family.sans-ui}',
+        value: "'Archivo Black', 'Archivo', 'Helvetica Neue', Arial, sans-serif",
         comment: 'Archivo Black — display, hero, page headings',
       }
     mono:
       {
-        value: '{typography.family.mono}',
+        value: "'IBM Plex Mono', ui-monospace, monospace",
         comment: 'IBM Plex Mono - Tabular numerals on leaderboards',
       }
 

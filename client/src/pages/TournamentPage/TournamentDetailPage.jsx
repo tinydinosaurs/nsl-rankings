@@ -161,10 +161,10 @@ export default function TournamentDetailPage() {
 	if (!tournament) return <EmptyState message="Tournament not found." />;
 
 	const EVENT_VARIANTS = {
-		knockdowns: 'blue',
-		distance: 'teal',
-		speed: 'indigo',
-		woods: 'green',
+		knockdowns: 'knockdowns',
+		distance: 'distance',
+		speed: 'speed',
+		woods: 'woods',
 	};
 
 	const participantsWithTotal = participants.map((p) => ({
@@ -363,31 +363,44 @@ export default function TournamentDetailPage() {
 
 			{/* Participants */}
 			<section className="card tournament-detail__participants">
-			<div className="section-title-row">
-				<h2 className="section-title">
-					Results <span className="section-count">({participants.length})</span>
-				</h2>
-				{participants.length > 0 && (
-					<button
-						className="btn btn-sm btn-secondary"
-						onClick={() => navigate(`/admin/tournaments/${tournament.id}/upload`)}
-					>
-						Upload Results
-					</button>
-				)}
-			</div>
-			{participants.length === 0 && (
-				<div className="section-empty-hint" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '0.75rem' }}>
-					<span>No results yet. Upload a results file to get started.</span>
-					<button
-						className="btn btn-primary"
-						onClick={() => navigate(`/admin/tournaments/${tournament.id}/upload`)}
-					>
-						Upload Results
-					</button>
+				<div className="section-title-row">
+					<h2 className="section-title">
+						Results{' '}
+						<span className="section-count">({participants.length})</span>
+					</h2>
+					{participants.length > 0 && (
+						<button
+							className="btn btn-sm btn-secondary"
+							onClick={() =>
+								navigate(`/admin/tournaments/${tournament.id}/upload`)
+							}
+						>
+							Upload Results
+						</button>
+					)}
 				</div>
-			)}
-			{participants.length > 0 && (
+				{participants.length === 0 && (
+					<div
+						className="section-empty-hint"
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'flex-start',
+							gap: '0.75rem',
+						}}
+					>
+						<span>No results yet. Upload a results file to get started.</span>
+						<button
+							className="btn btn-primary"
+							onClick={() =>
+								navigate(`/admin/tournaments/${tournament.id}/upload`)
+							}
+						>
+							Upload Results
+						</button>
+					</div>
+				)}
+				{participants.length > 0 && (
 					<div className="table-wrapper">
 						<table className="data-table">
 							<thead>

@@ -4,10 +4,47 @@
 	margin-right: auto;
 }
 
-.dashboard-title {
-	font-size: 24px;
-	font-weight: 700;
-	margin-bottom: 24px;
+/* ── Admin hero (mirror of rankings-hero, slightly more restrained) ────── */
+
+.admin-hero {
+	padding: var(--nsl-space-md) 0 var(--nsl-space-lg);
+}
+
+.admin-kicker {
+	font-family: var(--nsl-font-mono);
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-medium);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+	margin: 0 0 var(--nsl-space-2xs);
+}
+
+.admin-kicker::before {
+	content: '';
+	display: inline-block;
+	width: 0.45em;
+	height: 0.45em;
+	margin-right: 0.55em;
+	border-radius: 50%;
+	background: var(--brand-primary);
+	transform: translateY(-0.1em);
+}
+
+.admin-hero__title {
+	font-family: var(--nsl-font-display);
+	font-weight: 900;
+	font-stretch: 110%;
+	font-size: clamp(2rem, 4vw, 2.75rem);
+	line-height: 1.02;
+	letter-spacing: -0.025em;
+	color: var(--text);
+	margin: 0;
+}
+
+.admin-hero__title em {
+	font-style: normal;
+	color: var(--brand-primary);
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────────────────── */
@@ -26,8 +63,8 @@
 }
 
 .stat-card {
-	background: var(--surface);
-	border: 1px solid var(--border);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-subtle);
 	border-radius: var(--radius);
 	padding: 18px 20px;
 	transition: border-color 0.15s;
@@ -36,60 +73,16 @@
 }
 
 .stat-card-link:hover .stat-card {
-	border-color: var(--accent);
-}
-
-/* ── Stat card color variants ───────────────────────────────────────────── */
-
-.stat-card--blue {
-	background: var(--tint-blue-bg);
-	border-color: var(--tint-blue-border);
-}
-.stat-card--blue .stat-value {
-	color: var(--tint-blue-fg);
-}
-.stat-card-link:hover .stat-card--blue {
-	border-color: var(--tint-blue-fg);
-}
-
-.stat-card--indigo {
-	background: var(--tint-indigo-bg);
-	border-color: var(--tint-indigo-border);
-}
-.stat-card--indigo .stat-value {
-	color: var(--tint-indigo-fg);
-}
-.stat-card-link:hover .stat-card--indigo {
-	border-color: var(--tint-indigo-fg);
-}
-
-.stat-card--amber {
-	background: var(--tint-amber-bg);
-	border-color: var(--tint-amber-border);
-}
-.stat-card--amber .stat-value {
-	color: var(--tint-amber-fg);
-}
-
-.stat-card-link:hover .stat-card--amber {
-	border-color: var(--tint-amber-fg);
-}
-
-.stat-card--green {
-	background: var(--tint-green-bg);
-	border-color: var(--tint-green-border);
-}
-.stat-card--green .stat-value {
-	color: var(--tint-green-fg);
-}
-.stat-card-link:hover .stat-card--green {
-	border-color: var(--tint-green-fg);
+	border-color: var(--brand-primary);
 }
 
 .stat-value {
+	font-family: var(--nsl-font-display);
+	font-variant-numeric: tabular-nums;
 	font-size: 36px;
-	font-weight: 700;
-	color: var(--text);
+	font-weight: 900;
+	font-stretch: 110%;
+	color: var(--brand-primary);
 	line-height: 1.1;
 	margin-bottom: 4px;
 	white-space: nowrap;
@@ -221,25 +214,13 @@
 
 /* Top 3 row hover — scoped to .panel-row so specificity beats generic hover */
 .panel-row[data-rank='1']:hover {
-	background: var(--tint-amber-bg);
+	background: var(--podium-gold-chip-bg);
 }
 .panel-row[data-rank='2']:hover {
-	background: var(--gray-100);
+	background: var(--podium-silver-chip-bg);
 }
 .panel-row[data-rank='3']:hover {
-	background: var(--tint-bronze-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-	.panel-row[data-rank='1']:hover {
-		background: var(--tint-amber-bg);
-	}
-	.panel-row[data-rank='2']:hover {
-		background: var(--dark-surface2);
-	}
-	.panel-row[data-rank='3']:hover {
-		background: var(--tint-bronze-bg);
-	}
+	background: var(--podium-bronze-chip-bg);
 }
 
 /* Top 5 row */

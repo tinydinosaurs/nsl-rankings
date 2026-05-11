@@ -31,3 +31,30 @@
   color: #374151;
   border: 1px solid #9ca3af;
 }
+
+/* ── Event-themed badge variants ──────────────────────────────────────────
+   Tinted bg + event-rule border + event-text color. Pairs the tournament
+   list "events held" badges with the same identity colors used elsewhere. */
+.badge-knockdowns {
+  background: var(--event-knockdowns-tint);
+  color: var(--event-knockdowns-text);
+  border: 1px solid var(--event-knockdowns-rule);
+}
+
+.badge-distance {
+  background: var(--event-distance-tint);
+  color: var(--event-distance-text);
+  border: 1px solid var(--event-distance-rule);
+}
+
+.badge-speed {
+  background: var(--event-speed-tint);
+  color: var(--event-speed-text);
+  border: 1px solid var(--event-speed-rule);
+}
+
+.badge-woods {
+  background: var(--event-woods-tint);
+  color: var(--event-woods-text);
+  border: 1px solid var(--event-woods-rule);
+}

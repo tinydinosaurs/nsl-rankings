@@ -154,24 +154,24 @@ export default function CompetitorDetailPage() {
 						<ScoreCard
 							label="Knockdowns"
 							score={scores.knockdowns}
-							variant="blue"
+							variant="knockdowns"
 						/>
 						<ScoreCard
 							label="Distance"
 							score={scores.distance}
-							variant="teal"
+							variant="distance"
 						/>
-						<ScoreCard label="Speed" score={scores.speed} variant="indigo" />
-						<ScoreCard label="Woods" score={scores.woods} variant="green" />
+						<ScoreCard label="Speed" score={scores.speed} variant="speed" />
+						<ScoreCard label="Woods" score={scores.woods} variant="woods" />
 						<ScoreCard
 							label="Total"
 							score={scores.total}
-							variant="amber"
+							variant="total"
 						/>{' '}
 						<ScoreCard
 							label="Overall Rank"
 							rawValue={overallRank ? `#${overallRank}` : '—'}
-							variant="bronze"
+							variant="overall"
 						/>{' '}
 					</div>
 				</section>
