@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/api.js';
-import { EyeIcon, EyeOffIcon } from '../../components/shared/EyeIcons/EyeIcons.jsx';
+import {
+	EyeIcon,
+	EyeOffIcon,
+} from '../../components/shared/EyeIcons/EyeIcons.jsx';
 import { useAuth } from '../../hooks/useAuth.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import Modal from '../../components/shared/Modal/Modal.jsx';
@@ -231,7 +234,7 @@ export default function AdminUsersPage() {
 											<td>{formatDate(u.created_at)}</td>
 											<td className="row-actions">
 												<button
-													className="btn btn-secondary btn-sm"
+													className="btn btn-secondary"
 													onClick={() => openEdit(u)}
 												>
 													Edit

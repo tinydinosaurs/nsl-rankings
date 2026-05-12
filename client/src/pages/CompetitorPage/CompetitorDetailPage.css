@@ -12,7 +12,7 @@
 }
 
 .competitor-detail__email-status {
-	padding-top: 0.25rem;
+	padding-top: var(--nsl-space-3xs);
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.5rem;
@@ -34,16 +34,16 @@
 }
 
 .profile-field dt {
-	font-size: 0.8125rem;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-	font-weight: 600;
+	font-weight: var(--nsl-weight-semibold);
 }
 
 .profile-field dd {
 	margin: 0;
-	font-size: 1rem;
+	font-size: var(--nsl-size-base);
 	word-break: break-word;
 }
 

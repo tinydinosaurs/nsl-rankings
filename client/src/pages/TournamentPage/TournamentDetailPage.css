@@ -31,12 +31,12 @@
 
 .section-empty-hint {
 	color: var(--text-muted);
-	font-size: 13px;
-	margin-bottom: 16px;
+	font-size: var(--nsl-size-sm);
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .score-card__sublabel {
-	font-size: 0.7rem;
+	font-size: var(--nsl-size-xs);
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
@@ -53,7 +53,7 @@
 	display: flex;
 	align-items: center;
 	gap: 1.5rem;
-	padding: 0.3rem 0;
+	padding: var(--nsl-space-3xs) 0;
 }
 
 .event-edit-toggle {
@@ -70,7 +70,7 @@
 
 .event-points-input {
 	width: 5rem;
-	padding: 0.25rem 0.5rem;
+	padding: var(--nsl-space-3xs) var(--nsl-space-2xs);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	background: var(--surface);
@@ -89,7 +89,7 @@
 }
 
 .rank-num {
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	font-variant-numeric: tabular-nums;
 	color: var(--text-muted);
 	width: 2rem;
@@ -111,7 +111,7 @@
 }
 
 .section-count {
-	font-weight: 400;
+	font-weight: var(--nsl-weight-regular);
 	color: var(--text-muted);
 	font-size: 0.9em;
 }
@@ -123,7 +123,7 @@
 }
 
 .total-earned {
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	color: var(--text);
 }
 
@@ -148,12 +148,12 @@
 }
 
 /* Competitor name button (shared with CompetitorsListPage) */
-.competitor-link {
+/* .competitor-link {
 	background: none;
 	border: none;
 	padding: 0;
 	color: var(--accent);
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 	font-weight: 500;
 	cursor: pointer;
 	text-align: left;
@@ -162,7 +162,7 @@
 .competitor-link:hover {
 	color: var(--accent-hover);
 	text-decoration: underline;
-}
+} */
 
 @media (max-width: 768px) {
 	.event-edit-row {

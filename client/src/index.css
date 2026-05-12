@@ -27,6 +27,16 @@
 	--nsl-base-light-700: oklch(38% 0.02 80);
 	--nsl-base-light-900: oklch(22% 0.02 80);
 
+	/* ── Color: neutral (full-range grey scale) ── */
+	--nsl-neutral-50: oklch(100% 0 0); /* true white — page bg */
+	--nsl-neutral-100: oklch(98% 0 0); /* cards, tables */
+	--nsl-neutral-200: oklch(95% 0 0); /* elevated surfaces, inputs */
+	--nsl-neutral-300: oklch(88% 0 0); /* borders subtle */
+	--nsl-neutral-400: oklch(72% 0 0); /* borders strong, text tertiary */
+	--nsl-neutral-500: oklch(55% 0 0); /* mid grey — available if needed */
+	--nsl-neutral-700: oklch(38% 0 0); /* text secondary / muted */
+	--nsl-neutral-900: oklch(18% 0 0); /* text primary — near black */
+
 	/* ── Color: rain (calm-blue — working primary, CTAs/links/focus) ── */
 	--nsl-rain-50: oklch(94% 0.03 240);
 	--nsl-rain-200: oklch(78% 0.08 240);
@@ -99,10 +109,15 @@
 	--nsl-size-3xl: 49px;
 
 	/* ── Typography: weights ── */
+	--nsl-weight-thin: 100;
+	--nsl-weight-extralight: 200;
+	--nsl-weight-light: 300;
 	--nsl-weight-regular: 400;
 	--nsl-weight-medium: 500;
 	--nsl-weight-semibold: 600;
 	--nsl-weight-bold: 700;
+	--nsl-weight-extrabold: 800;
+	--nsl-weight-black: 900;
 
 	/* ── Border radius ── */
 	--nsl-radius-sm: 2px;
@@ -176,25 +191,27 @@
 	/* Surfaces — warm-white papery hue (80°).
 	   Page is the lightest tier; cards/elevated step DOWN in lightness so
 	   surfaces feel inset against the page (per design brief). */
-	--bg: var(--nsl-base-light-50);
-	--surface: var(--nsl-base-light-100);
-	--surface2: var(--nsl-base-light-200);
-	--border: var(--nsl-base-light-300);
+	--bg: var(--nsl-neutral-100);
+	--surface: var(--nsl-neutral-50);
+	--surface2: var(--nsl-neutral-50);
+	--border: var(--nsl-neutral-300);
 	--text: var(--nsl-base-light-900);
 	--text-muted: var(--nsl-base-light-700);
 
 	/* New semantic surface names (preferred for Phase 3+) */
-	--bg-page: var(--nsl-base-light-50);
-	--bg-surface: var(--nsl-base-light-100);
-	--bg-elevated: var(--nsl-base-light-200);
-	--bg-input: var(--nsl-base-light-100);
+	--bg-page: var(--nsl-neutral-100);
+	--bg-surface: var(--nsl-neutral-50);
+	--bg-elevated: var(--nsl-neutral-50);
+	--bg-input: var(--nsl-neutral-100);
 	--text-primary: var(--nsl-base-light-900);
 	--text-secondary: var(--nsl-base-light-700);
 	--text-tertiary: var(--nsl-base-light-400);
 	--text-on-accent: var(--nsl-white);
-	--border-subtle: var(--nsl-base-light-300);
-	--border-default: var(--nsl-base-light-300);
-	--border-strong: var(--nsl-base-light-400);
+	--text-on-brand-bg: var(--nsl-white);
+	/* TODO - this is the same as --border */
+	--border-subtle: var(--nsl-neutral-300);
+	--border-default: var(--nsl-neutral-300);
+	--border-strong: var(--nsl-neutral-400);
 
 	/* Brand — duotone: rain (working) + burgundy (ceremonial) */
 	--brand-primary: var(--nsl-rain-600);
@@ -281,12 +298,11 @@
 	--podium-neutral-chip-text: var(--nsl-base-light-700);
 }
 
-
 body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font);
-	font-size: 15px;
+	font-size: var(--nsl-size-base);
 	line-height: 1.5;
 	min-height: 100vh;
 }
@@ -307,30 +323,13 @@ a:hover {
 	color: var(--accent-hover);
 }
 
-button {
-	cursor: pointer;
-	border: none;
-	border-radius: var(--radius);
-	padding: 8px 16px;
-	font-size: 14px;
-	font-family: var(--font);
-	transition:
-		background 0.15s,
-		opacity 0.15s;
-}
-
-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .btn {
 	display: inline-block;
 	cursor: pointer;
 	border: none;
 	border-radius: var(--radius);
-	padding: 8px 16px;
-	font-size: 14px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-sm);
+	font-size: var(--nsl-size-sm);
 	font-family: var(--font);
 	text-decoration: none;
 	transition:
@@ -377,8 +376,8 @@ button:disabled {
 	color: var(--accent);
 }
 .btn-sm {
-	padding: 4px 10px;
-	font-size: 12px;
+	padding: var(--nsl-space-3xs) var(--nsl-space-2xs);
+	font-size: var(--nsl-size-sm);
 }
 
 /* ── Ceremonial button ────────────────────────────────────────────────────
@@ -414,8 +413,8 @@ textarea {
 	border-radius: var(--radius);
 	color: var(--text);
 	font-family: var(--font);
-	font-size: 14px;
-	padding: 8px 12px;
+	font-size: var(--nsl-size-sm);
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	/* width: 100%; */
 	outline: none;
 	transition: border-color 0.15s;
@@ -429,51 +428,29 @@ textarea:focus {
 
 label {
 	display: block;
-	font-size: 13px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
-	margin-bottom: 4px;
+	margin-bottom: var(--nsl-space-3xs);
 }
 
 /* Inline checkbox/radio label styles live in Checkbox/Checkbox.css. */
 
 .form-group {
-	margin-bottom: 16px;
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .card {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 24px;
-}
-
-.badge {
-	display: inline-block;
-	font-size: 11px;
-	font-weight: 600;
-	padding: 2px 8px;
-	border-radius: 99px;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.badge-admin,
-.badge-owner {
-	background: #ede9fe;
-	color: #6d28d9;
-	border: 1px solid #c4b5fd;
-}
-.badge-user {
-	background: #dbeafe;
-	color: #2563eb;
-	border: 1px solid #93c5fd;
+	padding: var(--nsl-space-md);
 }
 
 .alert {
-	padding: 12px 16px;
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
 	border-radius: var(--radius);
-	font-size: 13px;
-	margin-bottom: 12px;
+	font-size: var(--nsl-size-sm);
+	margin-bottom: var(--nsl-space-xs);
 }
 .alert-error {
 	background: #fef2f2;
@@ -494,13 +471,13 @@ label {
 .data-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 }
 .data-table th {
-	padding: 10px 16px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-semibold);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--text-muted);
@@ -508,7 +485,7 @@ label {
 	white-space: nowrap;
 }
 .data-table td {
-	padding: 10px 16px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	border-bottom: 1px solid var(--border);
 	vertical-align: middle;
 }
@@ -521,7 +498,7 @@ label {
 
 .row-actions {
 	display: flex;
-	gap: 6px;
+	gap: var(--nsl-space-xs);
 	align-items: center;
 	justify-content: flex-end;
 }
@@ -538,23 +515,23 @@ label {
 	flex-direction: column;
 	align-items: center;
 	gap: 0.35rem;
-	padding: 1rem;
+	padding: var(--nsl-space-sm);
 	background: var(--surface2);
 	border-radius: var(--radius);
 	border: 1px solid var(--border);
 }
 
 .score-card__label {
-	font-size: 0.75rem;
+	font-size: var(--nsl-size-sm);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--text-muted);
-	font-weight: 600;
+	font-weight: var(--nsl-weight-semibold);
 }
 
 .score-card__value {
 	font-size: 1.75rem;
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	color: var(--accent);
 }
 
@@ -633,11 +610,11 @@ label {
 
 .password-toggle {
 	position: absolute;
-	right: 8px;
+	right: var(--nsl-space-2xs);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 4px;
+	padding: var(--nsl-space-3xs);
 	border: none;
 	background: transparent;
 	color: var(--text-muted);

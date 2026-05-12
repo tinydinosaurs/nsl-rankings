@@ -6,6 +6,6 @@
 
 .edit-result-form__actions {
 	display: flex;
-	gap: 8px;
-	margin-top: 4px;
+	gap: var(--nsl-space-2xs);
+	margin-top: var(--nsl-space-3xs);
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import IdentityStrip from '../../components/shared/IdentityStrip/IdentityStrip.jsx';
+import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import '../../styles/podium.css';
 import './AdminPage.css';
 
@@ -52,13 +52,7 @@ export default function AdminPage() {
 
 	return (
 		<div className="admin-page">
-			<IdentityStrip />
-			<header className="admin-hero">
-				<p className="admin-kicker">National Slingshot League</p>
-				<h1 className="admin-hero__title">
-					Admin Dashboard<em>.</em>
-				</h1>
-			</header>
+			<PageHeader title="Admin Dashboard" />
 
 			{/* ── Stat Cards ── */}
 			<div className="stat-grid">
@@ -95,7 +89,7 @@ export default function AdminPage() {
 			</div>
 
 			{/* ── Quick Actions ── */}
-			<section className="dashboard-section">
+			<section className="dashboard-section quick-actions">
 				<h2 className="section-heading">Quick Actions</h2>
 				<div className="action-grid">
 					<button
@@ -125,7 +119,7 @@ export default function AdminPage() {
 			{/* ── Two-column panel ── */}
 			<div className="dashboard-columns">
 				{/* Recent Tournaments */}
-				<section className="dashboard-section">
+				<section className="dashboard-section recent-tournaments">
 					<div className="section-row">
 						<h2 className="section-heading">Recent Tournaments</h2>
 						<Link to="/admin/tournaments" className="section-link">
@@ -159,7 +153,7 @@ export default function AdminPage() {
 				</section>
 
 				{/* Top 5 Snapshot */}
-				<section className="dashboard-section">
+				<section className="dashboard-section top-five">
 					<div className="section-row">
 						<h2 className="section-heading">Top 5</h2>
 						<Link to="/" className="section-link">

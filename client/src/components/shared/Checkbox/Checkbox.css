@@ -5,8 +5,8 @@
 .checkbox-label {
 	display: inline-flex;
 	align-items: center;
-	gap: 12px;
-	font-size: 14px;
+	gap: var(--nsl-space-xs);
+	font-size: var(--nsl-size-sm);
 	color: var(--text);
 	margin-bottom: 0;
 	cursor: pointer;
@@ -36,9 +36,9 @@
 
 .checkbox-description {
 	display: block;
-	margin-top: 4px;
+	margin-top: var(--nsl-space-3xs);
 	color: var(--text-muted);
-	font-size: 12px;
+	font-size: var(--nsl-size-xs);
 	/* Indent so the description aligns with the label text, not the box. */
-	padding-left: 24px;
+	padding-left: var(--nsl-space-md);
 }

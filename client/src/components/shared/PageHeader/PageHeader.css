@@ -1,25 +1,67 @@
+/* Mirrors the AdminPage hero pattern (kicker + display title + em accent).
+   Use this for every page-level header so brand treatment stays consistent. */
+
 .page-header {
 	display: flex;
 	justify-content: space-between;
-	align-items: flex-start;
-	margin-bottom: 24px;
-	gap: 16px;
+	align-items: flex-end;
+	gap: var(--nsl-space-sm);
+	padding: var(--nsl-space-md) 0 var(--nsl-space-lg);
 }
 
-.page-title {
-	display: flex;
-	align-items: baseline;
-	gap: 12px;
+.page-header__text {
+	min-width: 0; /* allow long titles to truncate without forcing layout */
 }
 
-.page-title h1 {
-	font-size: 24px;
+.page-header__kicker {
+	font-family: var(--nsl-font-mono);
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-medium);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+	margin: 0 0 var(--nsl-space-2xs);
+}
+
+.page-header__kicker::before {
+	content: '';
+	display: inline-block;
+	width: 0.45em;
+	height: 0.45em;
+	margin-right: 0.55em;
+	border-radius: 50%;
+	background: var(--brand-primary);
+	transform: translateY(-0.1em);
+}
+
+.page-header__title {
+	font-family: var(--nsl-font-display);
+	font-weight: var(--nsl-weight-black);
+	font-stretch: 110%;
+	font-size: clamp(2rem, 4vw, 2.75rem);
+	line-height: 1.02;
+	letter-spacing: -0.025em;
+	color: var(--text);
 	margin: 0;
 }
 
+.page-header__title em {
+	font-style: normal;
+	color: var(--brand-primary);
+}
+
 .page-subtitle {
+	margin: var(--nsl-space-2xs) 0 0;
 	color: var(--text-muted);
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
+}
+
+.page-header__meta {
+	margin-top: var(--nsl-space-2xs);
+}
+
+.page-header__action {
+	flex-shrink: 0;
 }
 
 @media (max-width: 768px) {

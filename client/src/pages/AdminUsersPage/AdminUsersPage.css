@@ -1,13 +1,13 @@
 .users-create-card {
-	margin-bottom: 24px;
+	margin-bottom: var(--nsl-space-md);
 }
 
 .users-create-fields {
 	display: flex;
-	gap: 16px;
+	gap: var(--nsl-space-sm);
 	flex-wrap: wrap;
 	align-items: flex-end;
-	margin-bottom: 16px;
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .users-create-fields .form-group {
@@ -17,12 +17,12 @@
 }
 
 .user-username {
-	font-weight: 500;
+	font-weight: var(--nsl-weight-medium);
 }
 
 .row-actions {
 	display: flex;
-	gap: 8px;
+	gap: var(--nsl-space-2xs);
 	justify-content: flex-end;
 }
 
@@ -35,14 +35,14 @@
 }
 
 .field-optional {
-	font-size: 12px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
-	font-weight: 400;
+	font-weight: var(--nsl-weight-regular);
 }
 
 .field-hint {
-	font-size: 13px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
 	margin-top: -8px;
-	margin-bottom: 16px;
+	margin-bottom: var(--nsl-space-sm);
 }

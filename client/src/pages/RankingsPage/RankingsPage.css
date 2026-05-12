@@ -1,51 +1,9 @@
-/* ── Hero ─────────────────────────────────────────────────────────────── */
-.rankings-hero {
-	padding: var(--nsl-space-md) 0 var(--nsl-space-lg);
-	margin-bottom: var(--nsl-space-md);
-	border-bottom: 1px solid var(--border-subtle);
-}
-
-.rankings-kicker {
-	font-family: var(--nsl-font-mono);
-	font-size: var(--nsl-size-sm);
-	letter-spacing: 0.18em;
-	text-transform: uppercase;
-	color: var(--brand-primary);
-	margin: 0 0 var(--nsl-space-xs);
-	display: flex;
-	align-items: center;
-	gap: var(--nsl-space-2xs);
-}
-.rankings-kicker::before {
-	content: '';
-	display: inline-block;
-	width: 6px;
-	height: 6px;
-	background: var(--brand-primary);
-	border-radius: var(--nsl-radius-full);
-}
-
-.rankings-hero__title {
-	font-family: var(--nsl-font-display);
-	font-weight: 900;
-	font-stretch: 110%;
-	font-size: var(--nsl-size-2xl);
-	line-height: 1.02;
-	letter-spacing: -0.025em;
-	color: var(--text-primary);
-	margin: 0 0 var(--nsl-space-xs);
-}
-.rankings-hero__title em {
-	font-style: normal;
-	color: var(--brand-primary);
-}
-
+/* ── Hero meta (passed into PageHeader's `meta` slot) ─────────────────── */
 .rankings-meta {
 	display: flex;
 	gap: var(--nsl-space-sm);
 	align-items: baseline;
 	flex-wrap: wrap;
-	margin-top: var(--nsl-space-2xs);
 }
 .meta-stat {
 	color: var(--text-secondary);
@@ -122,7 +80,7 @@
 
 .rank-num {
 	font-family: var(--nsl-font-display);
-	font-weight: 900;
+	font-weight: var(--nsl-weight-black);
 	font-variant-numeric: tabular-nums;
 	font-feature-settings: 'tnum';
 	color: var(--text-tertiary);

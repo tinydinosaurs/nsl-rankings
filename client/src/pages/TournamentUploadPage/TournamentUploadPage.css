@@ -14,5 +14,5 @@
 
 .tournament-upload-page .meta-summary strong {
 	color: var(--text);
-	font-weight: 500;
+	font-weight: var(--nsl-weight-medium);
 }

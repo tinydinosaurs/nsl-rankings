@@ -31,18 +31,18 @@
 
 .modal-header h3 {
 	margin: 0;
-	font-size: 18px;
+	font-size: var(--nsl-size-md);
 }
 
 .modal-close {
 	background: none;
 	border: none;
-	font-size: 24px;
+	font-size: var(--nsl-size-lg);
 	cursor: pointer;
 	color: var(--text-muted);
 	padding: 0;
-	width: 24px;
-	height: 24px;
+	width: var(--nsl-space-md);
+	height: var(--nsl-space-md);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -59,8 +59,8 @@
 .modal-actions {
 	display: flex;
 	justify-content: flex-end;
-	gap: 12px;
-	margin-top: 24px;
-	padding-top: 16px;
+	gap: var(--nsl-space-xs);
+	margin-top: var(--nsl-space-md);
+	padding-top: var(--nsl-space-sm);
 	border-top: 1px solid var(--border);
 }

@@ -1,60 +1,73 @@
 .badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
+	display: inline-block;
+	padding: var(--nsl-space-px) var(--nsl-space-2xs);
+	border-radius: 99px;
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-medium);
+	text-transform: uppercase;
+	letter-spacing: 0.025em;
+	/* letter-spacing: 0.05em; */
+}
+
+.badge-admin,
+.badge-owner {
+	background: #ede9fe;
+	color: #6d28d9;
+	border: 1px solid #c4b5fd;
+}
+.badge-user {
+	background: #dbeafe;
+	color: #2563eb;
+	border: 1px solid #93c5fd;
 }
 
 .badge-success {
-  background: #f0fdf4;
-  color: #15803d;
-  border: 1px solid #16a34a;
+	background: #f0fdf4;
+	color: #15803d;
+	border: 1px solid #16a34a;
 }
 
 .badge-warning {
-  background: #fffbeb;
-  color: #92400e;
-  border: 1px solid #d97706;
+	background: #fffbeb;
+	color: #92400e;
+	border: 1px solid #d97706;
 }
 
 .badge-info {
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #3b82f6;
+	background: #eff6ff;
+	color: #1d4ed8;
+	border: 1px solid #3b82f6;
 }
 
 .badge-neutral {
-  background: #f9fafb;
-  color: #374151;
-  border: 1px solid #9ca3af;
+	background: #f9fafb;
+	color: #374151;
+	border: 1px solid #9ca3af;
 }
 
 /* ── Event-themed badge variants ──────────────────────────────────────────
    Tinted bg + event-rule border + event-text color. Pairs the tournament
    list "events held" badges with the same identity colors used elsewhere. */
 .badge-knockdowns {
-  background: var(--event-knockdowns-tint);
-  color: var(--event-knockdowns-text);
-  border: 1px solid var(--event-knockdowns-rule);
+	background: var(--event-knockdowns-tint);
+	color: var(--event-knockdowns-text);
+	border: 1px solid var(--event-knockdowns-rule);
 }
 
 .badge-distance {
-  background: var(--event-distance-tint);
-  color: var(--event-distance-text);
-  border: 1px solid var(--event-distance-rule);
+	background: var(--event-distance-tint);
+	color: var(--event-distance-text);
+	border: 1px solid var(--event-distance-rule);
 }
 
 .badge-speed {
-  background: var(--event-speed-tint);
-  color: var(--event-speed-text);
-  border: 1px solid var(--event-speed-rule);
+	background: var(--event-speed-tint);
+	color: var(--event-speed-text);
+	border: 1px solid var(--event-speed-rule);
 }
 
 .badge-woods {
-  background: var(--event-woods-tint);
-  color: var(--event-woods-text);
-  border: 1px solid var(--event-woods-rule);
+	background: var(--event-woods-tint);
+	color: var(--event-woods-text);
+	border: 1px solid var(--event-woods-rule);
 }
