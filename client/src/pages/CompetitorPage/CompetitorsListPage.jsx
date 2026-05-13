@@ -132,7 +132,7 @@ export default function CompetitorsListPage() {
 				header: 'Actions',
 				cell: (info) => (
 					<button
-						className="btn-sm btn-danger"
+						className="btn btn-sm btn-danger"
 						onClick={() => handleDelete(info.row.original)}
 					>
 						Delete

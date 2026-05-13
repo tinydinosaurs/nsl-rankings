@@ -1,18 +1,18 @@
 .tournament-upload-page {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: var(--nsl-space-md);
 }
 
 .tournament-upload-page .meta-summary {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 1rem 2rem;
+	gap: var(--nsl-space-sm) var(--nsl-space-lg);
 	color: var(--text-muted);
 	font-size: 0.9rem;
 }
 
 .tournament-upload-page .meta-summary strong {
 	color: var(--text);
-	font-weight: 500;
+	font-weight: var(--nsl-weight-medium);
 }

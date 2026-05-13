@@ -7,218 +7,314 @@
 }
 
 :root {
+	/* ============================================================== *
+	 * NSL BRAND PRIMITIVES                                            *
+	 * --------------------------------------------------------------- *
+	 * Hand-translated from notes/base.yaml + notes/missing-tokens.yaml *
+	 * + docs/tokens.yaml. Prefixed `--nsl-*` to keep them clearly      *
+	 * separate from the legacy palette below during migration.        *
+	 * Nothing in the app consumes these yet — Phase 2 of the brand    *
+	 * tokens plan rebinds the semantic layer to point here.           *
+	 * See notes/BRAND_TOKENS_PLAN.md                                  *
+	 * ============================================================== */
+
+	/* ── Color: neutral base (light surfaces — warm-white, papery) ── */
+	--nsl-base-light-50: oklch(98% 0.01 80);
+	--nsl-base-light-100: oklch(96% 0.01 80);
+	--nsl-base-light-200: oklch(93% 0.02 80);
+	--nsl-base-light-300: oklch(88% 0.02 80);
+	--nsl-base-light-400: oklch(72% 0.02 80);
+	--nsl-base-light-700: oklch(38% 0.02 80);
+	--nsl-base-light-900: oklch(22% 0.02 80);
+
+	/* ── Color: neutral (full-range grey scale) ── */
+	--nsl-neutral-50: oklch(100% 0 0); /* true white — page bg */
+	--nsl-neutral-100: oklch(98% 0 0); /* cards, tables */
+	--nsl-neutral-200: oklch(95% 0 0); /* elevated surfaces, inputs */
+	--nsl-neutral-300: oklch(88% 0 0); /* borders subtle */
+	--nsl-neutral-400: oklch(72% 0 0); /* borders strong, text tertiary */
+	--nsl-neutral-500: oklch(55% 0 0); /* mid grey — available if needed */
+	--nsl-neutral-700: oklch(38% 0 0); /* text secondary / muted */
+	--nsl-neutral-900: oklch(18% 0 0); /* text primary — near black */
+
+	/* ── Color: rain (calm-blue — working primary, CTAs/links/focus) ── */
+	--nsl-rain-50: oklch(94% 0.03 240);
+	--nsl-rain-200: oklch(78% 0.08 240);
+	--nsl-rain-400: oklch(65% 0.11 240);
+	--nsl-rain-600: oklch(46% 0.12 240);
+
+	/* ── Color: burgundy (NSL identity — ceremonial, knockdowns rule) ── */
+	--nsl-burgundy-50: oklch(94% 0.025 18);
+	--nsl-burgundy-100: oklch(86% 0.055 18);
+	--nsl-burgundy-200: oklch(76% 0.085 18);
+	--nsl-burgundy-400: oklch(58% 0.115 18);
+	--nsl-burgundy-600: oklch(46% 0.13 18);
+	--nsl-burgundy-700: oklch(38% 0.13 18);
+	--nsl-burgundy-800: oklch(28% 0.09 18);
+	--nsl-burgundy-900: oklch(20% 0.05 18);
+
+	/* ── Color: gold (podium #1) ── */
+	--nsl-gold-50: oklch(96% 0.04 90);
+	--nsl-gold-100: oklch(91% 0.08 90);
+	/* gold-600 below is the NSL brief value (lighter, reads as "trophy gold"
+	   on a 4px rule). Differs from base.yaml's gold.600 (oklch(52% 0.12 90))
+	   which is olive-leaning. NSL needs the brighter trophy reading. */
+	--nsl-gold-600: oklch(72% 0.14 90);
+	--nsl-gold-800: oklch(36% 0.06 90);
+
+	/* ── Color: amber (warning, podium accent) ── */
+	--nsl-amber-50: oklch(94% 0.03 55);
+	--nsl-amber-100: oklch(84% 0.08 55);
+	--nsl-amber-600: oklch(44% 0.12 55);
+	--nsl-amber-800: oklch(22% 0.05 55);
+
+	/* ── Color: green (success, woods event) ── */
+	--nsl-green-50: oklch(94% 0.04 145);
+	--nsl-green-600: oklch(44% 0.12 145);
+
+	/* ── Color: red (error/danger) ── */
+	--nsl-red-50: oklch(93% 0.02 25);
+	--nsl-red-600: oklch(40% 0.13 25);
+
+	/* ── Color: violet (speed event) ──
+	   NSL brief uses a punchier violet (oklch(48% 0.18 300)) than the base
+	   ramp's violet.600 (oklch(42% 0.14 300)) so speed reads at equal
+	   weight against burgundy/rain/green. Keep base untouched; override here. */
+	--nsl-violet-50: oklch(94% 0.03 300);
+	--nsl-violet-600: oklch(48% 0.18 300);
+
+	/* ── Color: utility ── */
+	--nsl-white: oklch(100% 0 0);
+	--nsl-black: oklch(0% 0 0);
+	--nsl-overlay-medium: oklch(0% 0 0 / 0.32);
+	--nsl-overlay-strong: oklch(0% 0 0 / 0.5);
+
+	/* ── Typography: families ── */
+	--nsl-font-sans-ui:
+		'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+	/* Display — Archivo (variable; use weight + font-stretch for hero
+	   treatment per design brief). Archivo Black retained as a fallback
+	   for browsers without variable-font support. */
+	--nsl-font-display:
+		'Archivo', 'Archivo Black', 'Helvetica Neue', Arial, sans-serif;
+	--nsl-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+	/* ── Typography: 1.25 scale anchored at 16px ── */
+	--nsl-size-xs: 10px;
+	--nsl-size-sm: 13px;
+	--nsl-size-base: 16px;
+	--nsl-size-md: 20px;
+	--nsl-size-lg: 25px;
+	--nsl-size-xl: 31px;
+	--nsl-size-2xl: 39px;
+	--nsl-size-3xl: 49px;
+
+	/* ── Typography: weights ── */
+	--nsl-weight-thin: 100;
+	--nsl-weight-extralight: 200;
+	--nsl-weight-light: 300;
+	--nsl-weight-regular: 400;
+	--nsl-weight-medium: 500;
+	--nsl-weight-semibold: 600;
+	--nsl-weight-bold: 700;
+	--nsl-weight-extrabold: 800;
+	--nsl-weight-black: 900;
+
+	/* ── Border radius ── */
+	--nsl-radius-sm: 2px;
+	--nsl-radius-md: 4px;
+	--nsl-radius-lg: 8px;
+	--nsl-radius-full: 9999px;
+
+	/* ── Spacing (4px base, 8px rhythm; sm/md are workhorses) ── */
+	--nsl-space-px: 1px;
+	--nsl-space-3xs: 4px;
+	--nsl-space-2xs: 8px;
+	--nsl-space-xs: 12px;
+	--nsl-space-sm: 16px;
+	--nsl-space-md: 24px;
+	--nsl-space-lg: 32px;
+	--nsl-space-xl: 48px;
+	--nsl-space-2xl: 64px;
+	--nsl-space-3xl: 96px;
+
+	/* ── Border width ── */
+	--nsl-border-hairline: 0.5px;
+	--nsl-border-base: 1px;
+	--nsl-border-thick: 2px;
+
+	/* ── Motion: durations ── */
+	--nsl-duration-instant: 80ms;
+	--nsl-duration-fast: 120ms;
+	--nsl-duration-base: 200ms;
+	--nsl-duration-moderate: 300ms;
+
+	/* ── Motion: easings ── */
+	--nsl-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--nsl-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+	/* ── Shadow ── */
+	--nsl-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+	--nsl-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
+
+	/* ============================================================== *
+	 * LEGACY PALETTE (below)                                          *
+	 * --------------------------------------------------------------- *
+	 * Everything from `--radius` down is the pre-brand palette. It    *
+	 * still drives the entire app. Phase 2 will rebind the semantic   *
+	 * layer to the `--nsl-*` tokens above; Phase 4 will delete what's *
+	 * unused.                                                         *
+	 * ============================================================== */
+
 	/* ── Constants ───────────────────────────────────────────────────────── */
 	--radius: 8px;
-	--font: 'Inter', system-ui, sans-serif;
-
-	/* ── Palette — raw named colors, never used directly in components ───── */
-
-	/* Neutrals */
-	--white: #ffffff;
-	--gray-50: #f5f6fa;
-	--gray-100: #eef1f7;
-	--gray-200: #d1d6e4;
-	--gray-300: #b0b8d0;
-	--gray-800: #1a1d27;
-	--gray-600: #5c6378;
-	--black: #0f1117;
-
-	/* Dark-mode surface neutrals */
-	--dark-surface: #1a1d27;
-	--dark-surface2: #22263a;
-	--dark-border: #2e3250;
-	--dark-text-muted: #a0a7d1;
-	--dark-text: #e8eaf6;
-
-	/* Blues */
-	--blue-400: #6b93ff;
-	--blue-500: #4f7ef8;
-	--blue-600: #3d6ae6;
-	--blue-700: #2d5ad4;
-	--blue-800: #1d4ac2;
-	--blue-900: #1a2340; /* dark tint bg */
-	--blue-tint-bg: #eef2fd;
-	--blue-tint-border: #b3c4f5;
-
-	/* Teals */
-	--teal-300: #2dd4bf;
-	--teal-400: #14b8a6;
-	--teal-600: #0d8a80;
-	--teal-700: #0a6e66;
-	--teal-tint-bg: #eef8f7;
-	--teal-tint-border: #8dd4ce;
-	--dark-teal-tint-bg: #0a1e1d;
-	--dark-teal-tint-border: #124e4a;
-
-	/* Indigos */
-	--indigo-300: #a78bfa;
-	--indigo-500: #7c6ae6;
-	--indigo-600: #5b3dcc;
-	--indigo-700: #4527a8;
-	--indigo-tint-bg: #f0eefb;
-	--indigo-tint-border: #c0b0ef;
-	--dark-indigo-tint-bg: #16102e;
-	--dark-indigo-tint-border: #352870;
-
-	/* Greens */
-	--green-400: #4caf82;
-	--green-600: #16a34a;
-	--green-700: #166534;
-	--green-tint-bg: #eef8f3;
-	--green-tint-border: #a3d5ba;
-	--dark-green-tint-bg: #0a1a10;
-	--dark-green-tint-border: #1a4428;
-
-	/* Reds */
-	--red-400: #e05252;
-	--red-600: #dc2626;
-
-	/* Bronzes */
-	--bronze-400: #c8874f;
-	--bronze-800: #7c3f0e;
-	--bronze-tint-bg: #fdf3e7;
-	--bronze-tint-border: #d4a47a;
-	--dark-bronze-tint-bg: #1e1208;
-	--dark-bronze-tint-border: #5a3210;
-
-	/* Ambers / Oranges */
-	--amber-400: #e0a84f;
-	--amber-600: #d97706;
-	--amber-800: #92400e;
-	--amber-tint-bg: #fdf8ee;
-	--amber-tint-border: #e4cc90;
-	--dark-amber-tint-bg: #1e1508;
-	--dark-amber-tint-border: #4a3208;
+	/* Phase 2: rebound to NSL primary UI face so existing `var(--font)`
+	   consumers (body, button, .btn, input) pick up IBM Plex Sans without
+	   per-component edits. The constant name stays for compat; Phase 4
+	   replaces consumers with var(--nsl-font-sans-ui) directly. */
+	--font: var(--nsl-font-sans-ui);
 
 	/* ── Light theme (default) ───────────────────────────────────────────── */
-	--bg: var(--gray-50);
-	--surface: var(--white);
-	--surface2: var(--gray-100);
-	--border: var(--gray-200);
-	--text: var(--gray-800);
-	--text-muted: var(--gray-600);
+	/* ============================================================== *
+	 * NSL SEMANTIC LAYER                                              *
+	 * --------------------------------------------------------------- *
+	 * Bindings from the NSL primitives above to role-based names.     *
+	 * Existing global semantic vars (--bg, --surface, --text, etc.)   *
+	 * are rebound here so the whole app picks up the new palette      *
+	 * without touching component CSS. New role tokens (event-*,       *
+	 * podium-*, status-*, brand-identity, brand-gradient) are added   *
+	 * for Phase 3 component sweeps.                                   *
+	 *                                                                 *
+	 * Legacy semantic names below this block (--tint-*, --brand-     *
+	 * secondary/tertiary) are intentionally kept as light aliases     *
+	 * to avoid breaking consumers; Phase 3/4 sweeps and removes them. *
+	 * ============================================================== */
 
-	--accent: var(--blue-600);
-	--accent-hover: var(--blue-700);
-	--danger: var(--red-600);
-	--success: var(--green-600);
-	--warn: var(--amber-600);
+	/* Surfaces — warm-white papery hue (80°).
+	   Page is the lightest tier; cards/elevated step DOWN in lightness so
+	   surfaces feel inset against the page (per design brief). */
+	--bg: var(--nsl-neutral-100);
+	--surface: var(--nsl-neutral-50);
+	--surface2: var(--nsl-neutral-50);
+	--border: var(--nsl-neutral-300);
+	--text: var(--nsl-base-light-900);
+	--text-muted: var(--nsl-base-light-700);
 
-	--brand-primary: var(--blue-600);
-	--brand-secondary: var(--teal-600);
-	--brand-tertiary: var(--indigo-600);
+	/* New semantic surface names (preferred for Phase 3+) */
+	--bg-page: var(--nsl-neutral-100);
+	--bg-surface: var(--nsl-neutral-50);
+	--bg-elevated: var(--nsl-neutral-50);
+	--bg-input: var(--nsl-neutral-100);
+	--text-primary: var(--nsl-base-light-900);
+	--text-secondary: var(--nsl-base-light-700);
+	--text-tertiary: var(--nsl-base-light-400);
+	--text-on-accent: var(--nsl-white);
+	--text-on-brand-bg: var(--nsl-white);
+	/* TODO - this is the same as --border */
+	--border-subtle: var(--nsl-neutral-300);
+	--border-default: var(--nsl-neutral-300);
+	--border-strong: var(--nsl-neutral-400);
 
-	--tint-blue-bg: var(--blue-tint-bg);
-	--tint-blue-border: var(--blue-tint-border);
-	--tint-blue-fg: var(--blue-700);
+	/* Brand — duotone: rain (working) + burgundy (ceremonial) */
+	--brand-primary: var(--nsl-rain-600);
+	--brand-primary-mid: var(--nsl-rain-400);
+	--brand-primary-light: var(--nsl-rain-200);
+	--brand-primary-tint: var(--nsl-rain-50);
+	--brand-identity: var(--nsl-burgundy-700);
+	--brand-identity-mid: var(--nsl-burgundy-600);
+	--brand-identity-light: var(--nsl-burgundy-200);
+	--brand-identity-tint: var(--nsl-burgundy-50);
+	--brand-identity-deep: var(--nsl-burgundy-800);
+	--brand-gradient: linear-gradient(
+		135deg,
+		var(--nsl-burgundy-700),
+		var(--nsl-rain-600)
+	);
 
-	--tint-teal-bg: var(--teal-tint-bg);
-	--tint-teal-border: var(--teal-tint-border);
-	--tint-teal-fg: var(--teal-700);
+	/* Action colors */
+	--accent: var(--brand-primary);
+	--accent-hover: var(--nsl-rain-400);
+	--danger: var(--nsl-red-600);
+	--success: var(--nsl-green-600);
+	--warn: var(--nsl-amber-600);
 
-	--tint-amber-bg: var(--amber-tint-bg);
-	--tint-amber-border: var(--amber-tint-border);
-	--tint-amber-fg: var(--amber-800);
+	/* Status — bg/text/tint/border quartets */
+	--status-info-bg: var(--nsl-rain-50);
+	--status-info-text: var(--nsl-rain-600);
+	--status-info-tint: var(--nsl-rain-50);
+	--status-info-border: var(--nsl-rain-600);
 
-	--tint-green-bg: var(--green-tint-bg);
-	--tint-green-border: var(--green-tint-border);
-	--tint-green-fg: var(--green-700);
+	--status-success-bg: var(--nsl-green-50);
+	--status-success-text: var(--nsl-green-600);
+	--status-success-tint: var(--nsl-green-50);
+	--status-success-border: var(--nsl-green-600);
 
-	--tint-indigo-bg: var(--indigo-tint-bg);
-	--tint-indigo-border: var(--indigo-tint-border);
-	--tint-indigo-fg: var(--indigo-700);
+	--status-warning-bg: var(--nsl-amber-50);
+	--status-warning-text: var(--nsl-amber-600);
+	--status-warning-tint: var(--nsl-amber-50);
+	--status-warning-border: var(--nsl-amber-600);
 
-	--tint-bronze-bg: var(--bronze-tint-bg);
-	--tint-bronze-border: var(--bronze-tint-border);
-	--tint-bronze-fg: var(--bronze-800);
+	--status-error-bg: var(--nsl-red-50);
+	--status-error-text: var(--nsl-red-600);
+	--status-error-tint: var(--nsl-red-50);
+	--status-error-border: var(--nsl-red-600);
 
-	/* TYPOGRAPHY */
-	--tint-text-high-contrast: var(--blue-900);
-}
+	/* Event identity — equal weight, used as 3px left rule on chips/badges
+	   (NEVER as full card backgrounds — see audit finding 01) */
+	--event-knockdowns-rule: var(--nsl-burgundy-700);
+	--event-knockdowns-tint: var(--nsl-burgundy-50);
+	--event-knockdowns-text: var(--nsl-burgundy-700);
 
-@media (prefers-color-scheme: dark) {
-	:root {
-		/* ── Dark theme overrides ─────────────────────────────────────────── */
-		--bg: var(--black);
-		--surface: var(--dark-surface);
-		--surface2: var(--dark-surface2);
-		--border: var(--dark-border);
-		--text: var(--dark-text);
-		--text-muted: var(--dark-text-muted);
+	--event-distance-rule: var(--nsl-rain-600);
+	--event-distance-tint: var(--nsl-rain-50);
+	--event-distance-text: var(--nsl-rain-600);
 
-		--accent: var(--blue-500);
-		--accent-hover: var(--blue-400);
-		--danger: var(--red-400);
-		--success: var(--green-400);
-		--warn: var(--amber-400);
+	--event-speed-rule: var(--nsl-violet-600);
+	--event-speed-tint: var(--nsl-violet-50);
+	--event-speed-text: var(--nsl-violet-600);
 
-		--brand-primary: var(--blue-500);
-		--brand-secondary: var(--teal-400);
-		--brand-tertiary: var(--indigo-500);
+	--event-woods-rule: var(--nsl-green-600);
+	--event-woods-tint: var(--nsl-green-50);
+	--event-woods-text: var(--nsl-green-600);
 
-		--tint-blue-bg: var(--blue-900);
-		--tint-blue-border: #253d80;
-		--tint-blue-fg: var(--blue-400);
+	/* Podium — softened (50-tier tints + 4px inset rule).
+	   Bronze reuses amber (no separate bronze ramp). */
+	--podium-gold-row-bg: var(--nsl-gold-50);
+	--podium-gold-rule: var(--nsl-gold-600);
+	--podium-gold-chip-bg: var(--nsl-gold-100);
+	--podium-gold-chip-text: var(--nsl-gold-800);
 
-		--tint-teal-bg: var(--dark-teal-tint-bg);
-		--tint-teal-border: var(--dark-teal-tint-border);
-		--tint-teal-fg: var(--teal-300);
+	--podium-silver-row-bg: var(--nsl-base-light-100);
+	--podium-silver-rule: var(--nsl-base-light-400);
+	--podium-silver-chip-bg: var(--nsl-base-light-200);
+	--podium-silver-chip-text: var(--nsl-base-light-700);
 
-		--tint-amber-bg: var(--dark-amber-tint-bg);
-		--tint-amber-border: var(--dark-amber-tint-border);
-		--tint-amber-fg: var(--amber-400);
+	--podium-bronze-row-bg: var(--nsl-amber-50);
+	--podium-bronze-rule: var(--nsl-amber-600);
+	--podium-bronze-chip-bg: var(--nsl-amber-100);
+	--podium-bronze-chip-text: var(--nsl-amber-800);
 
-		--tint-green-bg: var(--dark-green-tint-bg);
-		--tint-green-border: var(--dark-green-tint-border);
-		--tint-green-fg: var(--green-400);
-
-		--tint-indigo-bg: var(--dark-indigo-tint-bg);
-		--tint-indigo-border: var(--dark-indigo-tint-border);
-		--tint-indigo-fg: var(--indigo-300);
-
-		--tint-bronze-bg: var(--dark-bronze-tint-bg);
-		--tint-bronze-border: var(--dark-bronze-tint-border);
-		--tint-bronze-fg: var(--bronze-400);
-
-		/* TYPOGRAPHY */
-		--tint-text-high-contrast: var(--blue-tint-bg);
-	}
-
-	.badge-admin {
-		background: #4f3aaa33;
-		color: var(--indigo-300);
-		border: 1px solid #7c3aed44;
-	}
-	.badge-user {
-		background: #1a3a5533;
-		color: var(--blue-400);
-		border: 1px solid #3b82f644;
-	}
-
-	.alert-error {
-		background: #3a1a1a;
-		border: 1px solid var(--danger);
-		color: #fca5a5;
-	}
-	.alert-warn {
-		background: #3a2a10;
-		border: 1px solid var(--warn);
-		color: #fcd34d;
-	}
-	.alert-success {
-		background: #1a3a2a;
-		border: 1px solid var(--success);
-		color: #6ee7b7;
-	}
+	--podium-neutral-row-bg: var(--bg-surface);
+	--podium-neutral-rule: var(--border-subtle);
+	--podium-neutral-chip-bg: var(--nsl-base-light-200);
+	--podium-neutral-chip-text: var(--nsl-base-light-700);
 }
 
 body {
 	background: var(--bg);
 	color: var(--text);
 	font-family: var(--font);
-	font-size: 15px;
+	font-size: var(--nsl-size-base);
 	line-height: 1.5;
 	min-height: 100vh;
+}
+
+/* Tabular numerals — apply to ranking/score numbers so columns stay
+   aligned as values change. Plex Sans isn't tabular by default; this
+   enables both the modern and the legacy hint for older engines. */
+.numerals-tabular {
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum';
 }
 
 a {
@@ -229,35 +325,18 @@ a:hover {
 	color: var(--accent-hover);
 }
 
-button {
-	cursor: pointer;
-	border: none;
-	border-radius: var(--radius);
-	padding: 8px 16px;
-	font-size: 14px;
-	font-family: var(--font);
-	transition:
-		background 0.15s,
-		opacity 0.15s;
-}
-
-button:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
 .btn {
 	display: inline-block;
 	cursor: pointer;
 	border: none;
 	border-radius: var(--radius);
-	padding: 8px 16px;
-	font-size: 14px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-sm);
+	font-size: var(--nsl-size-sm);
 	font-family: var(--font);
 	text-decoration: none;
 	transition:
-		background 0.15s,
-		opacity 0.15s;
+		background var(--nsl-duration-fast),
+		opacity var(--nsl-duration-fast);
 }
 
 .btn:disabled,
@@ -268,7 +347,7 @@ button:disabled {
 
 .btn-primary {
 	background: var(--accent);
-	color: #fff;
+	color: var(--text-on-accent);
 }
 .btn-primary:hover:not(:disabled) {
 	background: var(--accent-hover);
@@ -284,7 +363,7 @@ button:disabled {
 }
 .btn-danger {
 	background: var(--danger);
-	color: #fff;
+	color: var(--text-on-accent);
 }
 .btn-danger:hover:not(:disabled) {
 	opacity: 0.85;
@@ -299,8 +378,33 @@ button:disabled {
 	color: var(--accent);
 }
 .btn-sm {
-	padding: 4px 10px;
-	font-size: 12px;
+	padding: var(--nsl-space-3xs) var(--nsl-space-2xs);
+	font-size: var(--nsl-size-sm);
+}
+
+/* ── Ceremonial button ────────────────────────────────────────────────────
+   Burgundy outline → burgundy-tint fill on hover. For archive,
+   record-keeping, or "view full history" affordances — anything that
+   evokes the league/heritage identity. NOT for primary CTAs (use
+   `.btn-primary` for those — keep rain.600 reserved for the rare moment
+   that really earns ceremony).
+   Per design brief discipline: burgundy is the identity color, used
+   sparingly and never on a button that competes with a podium tier. */
+.btn-ceremonial {
+	background: transparent;
+	color: var(--brand-identity);
+	border: 1px solid var(--brand-identity);
+	font-weight: var(--nsl-weight-semibold);
+	letter-spacing: 0.02em;
+}
+.btn-ceremonial:hover:not(:disabled) {
+	background: var(--brand-identity-tint);
+	color: var(--brand-identity-deep);
+	border-color: var(--brand-identity-deep);
+}
+.btn-ceremonial:focus-visible {
+	outline: 2px solid var(--brand-identity);
+	outline-offset: 2px;
 }
 
 input,
@@ -311,11 +415,11 @@ textarea {
 	border-radius: var(--radius);
 	color: var(--text);
 	font-family: var(--font);
-	font-size: 14px;
-	padding: 8px 12px;
+	font-size: var(--nsl-size-sm);
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	/* width: 100%; */
 	outline: none;
-	transition: border-color 0.15s;
+	transition: border-color var(--nsl-duration-fast);
 }
 
 input:focus,
@@ -326,96 +430,56 @@ textarea:focus {
 
 label {
 	display: block;
-	font-size: 13px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
-	margin-bottom: 4px;
+	margin-bottom: var(--nsl-space-3xs);
 }
 
-/* Inline checkbox/radio label — overrides the default block label so the
-   control sits next to its text instead of stacking. Used in modals, filter
-   bars, and form groups across the app. */
-.checkbox-label {
-	display: inline-flex;
-	align-items: center;
-	gap: 12px;
-	font-size: 14px;
-	color: var(--text);
-	margin-bottom: 0;
-	cursor: pointer;
-	user-select: none;
-}
-
-.checkbox-label input[type='checkbox'],
-.checkbox-label input[type='radio'] {
-	margin: 0;
-	width: auto;
-}
+/* Inline checkbox/radio label styles live in Checkbox/Checkbox.css. */
 
 .form-group {
-	margin-bottom: 16px;
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .card {
 	background: var(--surface);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 24px;
-}
-
-.badge {
-	display: inline-block;
-	font-size: 11px;
-	font-weight: 600;
-	padding: 2px 8px;
-	border-radius: 99px;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-.badge-admin,
-.badge-owner {
-	background: #ede9fe;
-	color: #6d28d9;
-	border: 1px solid #c4b5fd;
-}
-.badge-user {
-	background: #dbeafe;
-	color: #2563eb;
-	border: 1px solid #93c5fd;
+	padding: var(--nsl-space-md);
 }
 
 .alert {
-	padding: 12px 16px;
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
 	border-radius: var(--radius);
-	font-size: 13px;
-	margin-bottom: 12px;
+	font-size: var(--nsl-size-sm);
+	margin-bottom: var(--nsl-space-xs);
 }
 .alert-error {
-	background: #fef2f2;
-	border: 1px solid var(--danger);
-	color: #b91c1c;
+	background: var(--status-error-bg);
+	border: 1px solid var(--status-error-border);
+	color: var(--status-error-text);
 }
 .alert-warn {
-	background: #fffbeb;
-	border: 1px solid var(--warn);
-	color: #92400e;
+	background: var(--status-warning-bg);
+	border: 1px solid var(--status-warning-border);
+	color: var(--status-warning-text);
 }
 .alert-success {
-	background: #f0fdf4;
-	border: 1px solid var(--success);
-	color: #15803d;
+	background: var(--status-success-bg);
+	border: 1px solid var(--status-success-border);
+	color: var(--status-success-text);
 }
 
 .data-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 }
 .data-table th {
-	padding: 10px 16px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-semibold);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--text-muted);
@@ -423,7 +487,7 @@ label {
 	white-space: nowrap;
 }
 .data-table td {
-	padding: 10px 16px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	border-bottom: 1px solid var(--border);
 	vertical-align: middle;
 }
@@ -436,7 +500,7 @@ label {
 
 .row-actions {
 	display: flex;
-	gap: 6px;
+	gap: var(--nsl-space-xs);
 	align-items: center;
 	justify-content: flex-end;
 }
@@ -445,7 +509,7 @@ label {
 .score-cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-	gap: 1rem;
+	gap: var(--nsl-space-sm);
 }
 
 .score-card {
@@ -453,72 +517,72 @@ label {
 	flex-direction: column;
 	align-items: center;
 	gap: 0.35rem;
-	padding: 1rem;
+	padding: var(--nsl-space-sm);
 	background: var(--surface2);
 	border-radius: var(--radius);
 	border: 1px solid var(--border);
 }
 
 .score-card__label {
-	font-size: 0.75rem;
+	font-size: var(--nsl-size-sm);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--text-muted);
-	font-weight: 600;
+	font-weight: var(--nsl-weight-semibold);
 }
 
 .score-card__value {
 	font-size: 1.75rem;
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	color: var(--accent);
 }
 
-.score-card--blue {
-	background: var(--tint-blue-bg);
-	border-color: var(--tint-blue-border);
+/* ── Event-themed score cards ────────────────────────────────────────────
+   Neutral surface + 3px event-rule on the left edge + event-text color
+   on the value. Used on CompetitorDetailPage + TournamentDetailPage.
+   Per design brief: event identity is a *rule*, never a full surface fill. */
+.score-card--knockdowns,
+.score-card--distance,
+.score-card--speed,
+.score-card--woods {
+	border-left-width: 3px;
+	border-left-style: solid;
+	align-items: flex-start;
+	text-align: left;
 }
-.score-card--blue .score-card__value {
-	color: var(--tint-blue-fg);
+.score-card--knockdowns {
+	border-left-color: var(--event-knockdowns-rule);
 }
-
-.score-card--teal {
-	background: var(--tint-teal-bg);
-	border-color: var(--tint-teal-border);
+.score-card--knockdowns .score-card__value {
+	color: var(--event-knockdowns-text);
 }
-.score-card--teal .score-card__value {
-	color: var(--tint-teal-fg);
+.score-card--distance {
+	border-left-color: var(--event-distance-rule);
 }
-
-.score-card--indigo {
-	background: var(--tint-indigo-bg);
-	border-color: var(--tint-indigo-border);
+.score-card--distance .score-card__value {
+	color: var(--event-distance-text);
 }
-.score-card--indigo .score-card__value {
-	color: var(--tint-indigo-fg);
+.score-card--speed {
+	border-left-color: var(--event-speed-rule);
 }
-
-.score-card--green {
-	background: var(--tint-green-bg);
-	border-color: var(--tint-green-border);
+.score-card--speed .score-card__value {
+	color: var(--event-speed-text);
 }
-.score-card--green .score-card__value {
-	color: var(--tint-green-fg);
+.score-card--woods {
+	border-left-color: var(--event-woods-rule);
 }
-
-.score-card--amber {
-	background: var(--tint-amber-bg);
-	border-color: var(--tint-amber-border);
-}
-.score-card--amber .score-card__value {
-	color: var(--tint-amber-fg);
+.score-card--woods .score-card__value {
+	color: var(--event-woods-text);
 }
 
-.score-card--bronze {
-	background: var(--tint-bronze-bg);
-	border-color: var(--tint-bronze-border);
+/* Total / overall — neutral with brand-primary value (the "summary" cards). */
+.score-card--total,
+.score-card--overall {
+	background: var(--bg-elevated);
 }
-.score-card--bronze .score-card__value {
-	color: var(--tint-bronze-fg);
+.score-card--total .score-card__value,
+.score-card--overall .score-card__value {
+	color: var(--brand-primary);
 }
 
 /* ── Accessibility utilities ── */
@@ -548,16 +612,16 @@ label {
 
 .password-toggle {
 	position: absolute;
-	right: 8px;
+	right: var(--nsl-space-2xs);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 4px;
+	padding: var(--nsl-space-3xs);
 	border: none;
 	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
-	border-radius: 4px;
+	border-radius: var(--nsl-radius-md);
 	line-height: 0;
 }
 

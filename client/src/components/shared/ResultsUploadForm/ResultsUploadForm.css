@@ -2,19 +2,19 @@
 .ruf-preview {
 	display: flex;
 	flex-direction: column;
-	gap: 16px;
+	gap: var(--nsl-space-sm);
 }
 
 .ruf-hint {
 	color: var(--text-muted);
-	font-size: 13px;
+	font-size: var(--nsl-size-sm);
 }
 
 .ruf-selected-file {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	margin-top: 4px;
+	gap: var(--nsl-space-2xs);
+	margin-top: var(--nsl-space-3xs);
 }
 
 .ruf-clear-btn {
@@ -23,7 +23,7 @@
 	cursor: pointer;
 	color: var(--text-muted);
 	font-size: 0.8rem;
-	padding: 0 2px;
+	padding: 0 var(--nsl-space-px);
 	line-height: 1;
 }
 
@@ -33,7 +33,7 @@
 
 .ruf-actions {
 	display: flex;
-	gap: 12px;
+	gap: var(--nsl-space-xs);
 	align-items: center;
 }
 
@@ -44,27 +44,27 @@
 }
 
 .ruf-preview-header h3 {
-	font-size: 15px;
-	font-weight: 600;
+	font-size: var(--nsl-size-base);
+	font-weight: var(--nsl-weight-semibold);
 }
 
 .ruf-meta {
 	display: flex;
 	flex-direction: column;
-	gap: 0.4rem;
-	padding: 0.75rem 1rem;
+	gap: var(--nsl-space-2xs);
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
 	background: var(--surface2);
 	border-radius: var(--radius);
-	font-size: 0.875rem;
+	font-size: var(--nsl-size-sm);
 }
 
 .ruf-meta-row {
 	display: flex;
-	gap: 1rem;
+	gap: var(--nsl-space-sm);
 }
 
 .ruf-meta-label {
-	font-weight: 600;
+	font-weight: var(--nsl-weight-semibold);
 	min-width: 4rem;
 	color: var(--text-muted);
 }
@@ -76,14 +76,14 @@
 .ruf-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 }
 
 .ruf-table th {
-	padding: 10px 12px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-semibold);
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: var(--text-muted);
@@ -91,7 +91,7 @@
 }
 
 .ruf-table td {
-	padding: 10px 12px;
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	border-bottom: 1px solid var(--border);
 }
 
@@ -100,27 +100,13 @@
 }
 
 .ruf-badge-new {
-	background: #dcfce7;
-	color: #15803d;
+	background: var(--status-success-bg);
+	color: var(--status-success-text);
 	border: 1px solid var(--success);
 }
 
 .ruf-badge-update {
-	background: #dbeafe;
-	color: #2563eb;
+	background: var(--status-info-bg);
+	color: var(--status-info-text);
 	border: 1px solid var(--accent);
-}
-
-@media (prefers-color-scheme: dark) {
-	.ruf-badge-new {
-		background: #052e16;
-		color: var(--success);
-		border-color: #166534;
-	}
-
-	.ruf-badge-update {
-		background: #1e3a5f;
-		color: var(--accent);
-		border-color: #1d4ed8;
-	}
 }

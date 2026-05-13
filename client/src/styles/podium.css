@@ -1,55 +1,38 @@
 /* ── Podium styles ───────────────────────────────────────────────────────
    Shared across any page that uses data-rank="1|2|3" on a row element.
-   Covers resting backgrounds and rank number / badge text colors only.
-   Each page is responsible for its own hover overrides (specificity varies
-   by component structure).
+   Post-brand-tokens treatment: soft 50-tier tinted backgrounds + a 4px
+   inset rule on the leading edge. Visual weight follows rank, not row
+   saturation. Bronze reuses amber (no separate bronze ramp).
+   Each page is responsible for its own hover overrides (specificity
+   varies by component structure).
    ─────────────────────────────────────────────────────────────────────── */
 
-/* Resting row backgrounds */
+/* Resting row backgrounds + 4px inset rule via box-shadow so it doesn't
+   shift table-cell layout (border-left would). */
 [data-rank='1'] {
-	background: var(--tint-amber-border);
+	background: var(--podium-gold-row-bg);
+	box-shadow: inset 4px 0 0 0 var(--podium-gold-rule);
 }
 [data-rank='2'] {
-	background: var(--gray-200);
+	background: var(--podium-silver-row-bg);
+	box-shadow: inset 4px 0 0 0 var(--podium-silver-rule);
 }
 [data-rank='3'] {
-	background: var(--tint-bronze-border);
+	background: var(--podium-bronze-row-bg);
+	box-shadow: inset 4px 0 0 0 var(--podium-bronze-rule);
 }
 
-/* Rank number / badge colors — targets both .top-rank (dashboard) and
-   .rank-num (leaderboard) so the same data-rank drives both. */
-/* [data-rank='1'] .top-rank,
-[data-rank='1'] .rank-num { color: var(--amber-800); }
-
+/* Rank number color picks up the chip-text token. Targets both .top-rank
+   (dashboard) and .rank-num (leaderboard) so one data-rank drives both. */
+[data-rank='1'] .top-rank,
+[data-rank='1'] .rank-num {
+	color: var(--podium-gold-chip-text);
+}
 [data-rank='2'] .top-rank,
-[data-rank='2'] .rank-num { color: var(--gray-600); }
-
+[data-rank='2'] .rank-num {
+	color: var(--podium-silver-chip-text);
+}
 [data-rank='3'] .top-rank,
-[data-rank='3'] .rank-num { color: var(--bronze-800); } */
-
-@media (prefers-color-scheme: dark) {
-	[data-rank='1'] {
-		background: var(--tint-amber-border);
-	}
-	[data-rank='2'] {
-		background: var(--dark-border);
-	}
-	[data-rank='3'] {
-		background: var(--tint-bronze-border);
-	}
-
-	[data-rank='1'] .top-rank,
-	[data-rank='1'] .rank-num {
-		color: var(--amber-400);
-	}
-
-	[data-rank='2'] .top-rank,
-	[data-rank='2'] .rank-num {
-		color: var(--gray-300);
-	}
-
-	[data-rank='3'] .top-rank,
-	[data-rank='3'] .rank-num {
-		color: var(--bronze-400);
-	}
+[data-rank='3'] .rank-num {
+	color: var(--podium-bronze-chip-text);
 }
