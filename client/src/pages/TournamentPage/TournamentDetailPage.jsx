@@ -26,6 +26,7 @@ export default function TournamentDetailPage() {
 	const [deleteTournamentOpen, setDeleteTournamentOpen] = useState(false);
 	const [editTournamentOpen, setEditTournamentOpen] = useState(false);
 	const [addResultOpen, setAddResultOpen] = useState(false);
+	const [removeResultsOpen, setRemoveResultsOpen] = useState(false);
 	const [sortKey, setSortKey] = useState('competitor_name');
 	const [sortDir, setSortDir] = useState('asc');
 
@@ -65,6 +66,17 @@ export default function TournamentDetailPage() {
 		} catch (err) {
 			setError(err.response?.data?.error || 'Failed to delete tournament');
 			setDeleteTournamentOpen(false);
+		}
+	};
+
+	const handleRemoveAllResults = async () => {
+		try {
+			await api.delete(`/rankings/tournaments/${id}/results`);
+			setRemoveResultsOpen(false);
+			load();
+		} catch (err) {
+			setError(err.response?.data?.error || 'Failed to remove results');
+			setRemoveResultsOpen(false);
 		}
 	};
 
@@ -232,12 +244,10 @@ export default function TournamentDetailPage() {
 								Add Competitor
 							</button>
 							<button
-								className="btn btn-sm btn-secondary"
-								onClick={() =>
-									navigate(`/admin/tournaments/${tournament.id}/upload`)
-								}
+								className="btn btn-sm btn-danger"
+								onClick={() => setRemoveResultsOpen(true)}
 							>
-								Upload Results
+								Remove All Results
 							</button>
 						</div>
 					)}
@@ -402,6 +412,16 @@ export default function TournamentDetailPage() {
 				variant="danger"
 				onConfirm={handleDeleteTournament}
 				onCancel={() => setDeleteTournamentOpen(false)}
+			/>
+
+			<ConfirmDialog
+				isOpen={removeResultsOpen}
+				title="Remove All Results"
+				message={`Remove all ${participants.length} result(s) from "${tournament.name || 'this tournament'}"? The tournament itself will remain so you can upload a new file or add competitors individually. This cannot be undone.`}
+				confirmLabel="Remove All Results"
+				variant="danger"
+				onConfirm={handleRemoveAllResults}
+				onCancel={() => setRemoveResultsOpen(false)}
 			/>
 
 			<EditTournamentModal
