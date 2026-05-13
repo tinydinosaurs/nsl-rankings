@@ -55,7 +55,7 @@ export default function AdminPage() {
 			<PageHeader title="Admin Dashboard" />
 
 			{/* ── Stat Cards ── */}
-			<div className="stat-grid">
+			<section className="stat-grid">
 				<StatCard
 					label="Competitors"
 					value={competitors?.length ?? '—'}
@@ -86,7 +86,7 @@ export default function AdminPage() {
 					}
 					to={leader ? `/admin/competitors/${leader.id}` : null}
 				/>
-			</div>
+			</section>
 
 			{/* ── Quick Actions ── */}
 			<section className="dashboard-section quick-actions">

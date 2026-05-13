@@ -87,6 +87,7 @@
 	--nsl-white: oklch(100% 0 0);
 	--nsl-black: oklch(0% 0 0);
 	--nsl-overlay-medium: oklch(0% 0 0 / 0.32);
+	--nsl-overlay-strong: oklch(0% 0 0 / 0.5);
 
 	/* ── Typography: families ── */
 	--nsl-font-sans-ui:
@@ -154,6 +155,7 @@
 
 	/* ── Shadow ── */
 	--nsl-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+	--nsl-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
 
 	/* ============================================================== *
 	 * LEGACY PALETTE (below)                                          *
@@ -333,8 +335,8 @@ a:hover {
 	font-family: var(--font);
 	text-decoration: none;
 	transition:
-		background 0.15s,
-		opacity 0.15s;
+		background var(--nsl-duration-fast),
+		opacity var(--nsl-duration-fast);
 }
 
 .btn:disabled,
@@ -345,7 +347,7 @@ a:hover {
 
 .btn-primary {
 	background: var(--accent);
-	color: #fff;
+	color: var(--text-on-accent);
 }
 .btn-primary:hover:not(:disabled) {
 	background: var(--accent-hover);
@@ -361,7 +363,7 @@ a:hover {
 }
 .btn-danger {
 	background: var(--danger);
-	color: #fff;
+	color: var(--text-on-accent);
 }
 .btn-danger:hover:not(:disabled) {
 	opacity: 0.85;
@@ -417,7 +419,7 @@ textarea {
 	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
 	/* width: 100%; */
 	outline: none;
-	transition: border-color 0.15s;
+	transition: border-color var(--nsl-duration-fast);
 }
 
 input:focus,
@@ -453,19 +455,19 @@ label {
 	margin-bottom: var(--nsl-space-xs);
 }
 .alert-error {
-	background: #fef2f2;
-	border: 1px solid var(--danger);
-	color: #b91c1c;
+	background: var(--status-error-bg);
+	border: 1px solid var(--status-error-border);
+	color: var(--status-error-text);
 }
 .alert-warn {
-	background: #fffbeb;
-	border: 1px solid var(--warn);
-	color: #92400e;
+	background: var(--status-warning-bg);
+	border: 1px solid var(--status-warning-border);
+	color: var(--status-warning-text);
 }
 .alert-success {
-	background: #f0fdf4;
-	border: 1px solid var(--success);
-	color: #15803d;
+	background: var(--status-success-bg);
+	border: 1px solid var(--status-success-border);
+	color: var(--status-success-text);
 }
 
 .data-table {
@@ -507,7 +509,7 @@ label {
 .score-cards {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-	gap: 1rem;
+	gap: var(--nsl-space-sm);
 }
 
 .score-card {
@@ -619,7 +621,7 @@ label {
 	background: transparent;
 	color: var(--text-muted);
 	cursor: pointer;
-	border-radius: 4px;
+	border-radius: var(--nsl-radius-md);
 	line-height: 0;
 }
 

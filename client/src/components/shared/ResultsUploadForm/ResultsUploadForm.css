@@ -13,7 +13,7 @@
 .ruf-selected-file {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
+	gap: var(--nsl-space-2xs);
 	margin-top: var(--nsl-space-3xs);
 }
 
@@ -100,13 +100,13 @@
 }
 
 .ruf-badge-new {
-	background: #dcfce7;
-	color: #15803d;
+	background: var(--status-success-bg);
+	color: var(--status-success-text);
 	border: 1px solid var(--success);
 }
 
 .ruf-badge-update {
-	background: #dbeafe;
-	color: #2563eb;
+	background: var(--status-info-bg);
+	color: var(--status-info-text);
 	border: 1px solid var(--accent);
 }

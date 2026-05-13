@@ -1,7 +1,7 @@
 .edit-result-form {
 	display: flex;
 	flex-direction: column;
-	gap: 14px;
+	gap: var(--nsl-space-sm);
 }
 
 .edit-result-form__actions {

@@ -1,7 +1,7 @@
 .badge {
 	display: inline-block;
 	padding: var(--nsl-space-px) var(--nsl-space-2xs);
-	border-radius: 99px;
+	border-radius: var(--nsl-radius-full);
 	font-size: var(--nsl-size-xs);
 	font-weight: var(--nsl-weight-medium);
 	text-transform: uppercase;
@@ -11,38 +11,38 @@
 
 .badge-admin,
 .badge-owner {
-	background: #ede9fe;
-	color: #6d28d9;
-	border: 1px solid #c4b5fd;
+	background: var(--nsl-violet-50);
+	color: var(--nsl-violet-600);
+	border: 1px solid var(--nsl-violet-600);
 }
 .badge-user {
-	background: #dbeafe;
-	color: #2563eb;
-	border: 1px solid #93c5fd;
+	background: var(--brand-primary-tint);
+	color: var(--brand-primary);
+	border: 1px solid var(--brand-primary);
 }
 
 .badge-success {
-	background: #f0fdf4;
-	color: #15803d;
-	border: 1px solid #16a34a;
+	background: var(--status-success-bg);
+	color: var(--status-success-text);
+	border: 1px solid var(--status-success-border);
 }
 
 .badge-warning {
-	background: #fffbeb;
-	color: #92400e;
-	border: 1px solid #d97706;
+	background: var(--status-warning-bg);
+	color: var(--status-warning-text);
+	border: 1px solid var(--status-warning-border);
 }
 
 .badge-info {
-	background: #eff6ff;
-	color: #1d4ed8;
-	border: 1px solid #3b82f6;
+	background: var(--status-info-bg);
+	color: var(--status-info-text);
+	border: 1px solid var(--status-info-border);
 }
 
 .badge-neutral {
-	background: #f9fafb;
-	color: #374151;
-	border: 1px solid #9ca3af;
+	background: var(--nsl-neutral-100);
+	color: var(--nsl-neutral-700);
+	border: 1px solid var(--nsl-neutral-400);
 }
 
 /* ── Event-themed badge variants ──────────────────────────────────────────

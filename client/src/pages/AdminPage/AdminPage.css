@@ -41,13 +41,17 @@
 	color: var(--brand-primary);
 }
 
+.admin-page section {
+	margin-bottom: var(--nsl-space-lg);
+}
+
 /* ── Stat Cards ─────────────────────────────────────────────────────────── */
 
 .stat-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: var(--nsl-space-xs);
-	margin-bottom: 28px;
+	/* margin-bottom: 28px; */
 }
 
 .stat-card-link {
@@ -61,7 +65,7 @@
 	border: 1px solid var(--border-subtle);
 	border-radius: var(--radius);
 	padding: 18px 20px;
-	transition: border-color 0.15s;
+	transition: border-color var(--nsl-duration-fast);
 	flex: 1;
 	text-align: center;
 }
@@ -104,7 +108,7 @@
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	padding: 20px;
-	margin-bottom: var(--nsl-space-sm);
+	/* margin-bottom: var(--nsl-space-sm); */
 }
 
 .section-heading {
@@ -118,7 +122,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 14px;
+	margin-bottom: var(--nsl-space-xs);
 }
 
 .section-link {
@@ -143,12 +147,12 @@
 	background: var(--surface2);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 14px 12px;
+	padding: var(--nsl-space-sm);
 	text-align: center;
 	cursor: pointer;
 	transition:
-		border-color 0.15s,
-		background 0.15s;
+		border-color var(--nsl-duration-fast),
+		background var(--nsl-duration-fast);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -199,7 +203,7 @@
 	border-radius: calc(var(--radius) - 2px);
 	text-decoration: none;
 	color: var(--text);
-	transition: background 0.12s;
+	transition: background var(--nsl-duration-fast);
 }
 
 .panel-row:hover {
@@ -226,7 +230,7 @@
 	width: 28px;
 	flex-shrink: 0;
 	text-align: center;
-	border-radius: 4px;
+	border-radius: var(--nsl-radius-md);
 	padding: var(--nsl-space-px) var(--nsl-space-3xs);
 }
 

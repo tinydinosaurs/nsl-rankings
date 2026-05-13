@@ -1,7 +1,7 @@
 /* .tournament-list-page {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: var(--nsl-space-md);
 } */
 
 /* Event badges in table */

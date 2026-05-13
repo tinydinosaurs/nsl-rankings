@@ -31,13 +31,13 @@
 }
 
 .nav-link {
-	padding: 6px 14px;
+	padding: var(--nsl-space-3xs) var(--nsl-space-xs);
 	border-radius: var(--radius);
 	color: var(--text-muted);
 	font-size: var(--nsl-size-sm);
 	transition:
-		color 0.15s,
-		background 0.15s;
+		color var(--nsl-duration-fast),
+		background var(--nsl-duration-fast);
 }
 
 .nav-link:hover {
@@ -52,7 +52,7 @@
 .navbar-user {
 	display: flex;
 	align-items: center;
-	gap: 10px;
+	gap: var(--nsl-space-xs);
 	margin-left: auto;
 }
 .username {
@@ -91,7 +91,7 @@
 	width: 100%;
 	height: 2px;
 	background: var(--text);
-	border-radius: 2px;
+	border-radius: var(--nsl-radius-sm);
 }
 
 /* Mobile menu panel — hidden on desktop */
@@ -127,7 +127,7 @@
 	}
 
 	.mobile-menu .nav-link {
-		padding: 10px 14px;
+		padding: var(--nsl-space-xs) var(--nsl-space-sm);
 		font-size: var(--nsl-size-base);
 	}
 
@@ -135,7 +135,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 10px;
+		gap: var(--nsl-space-2xs);
 		margin-top: var(--nsl-space-2xs);
 		padding-top: var(--nsl-space-xs);
 		border-top: 1px solid var(--border);

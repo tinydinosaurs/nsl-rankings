@@ -13,10 +13,10 @@
 
 .login-card h1 {
 	font-size: var(--nsl-size-md);
-	margin-bottom: 4px;
+	margin-bottom: var(--nsl-space-3xs);
 }
 .login-subtitle {
 	color: var(--text-muted);
 	font-size: var(--nsl-size-sm);
-	margin-bottom: 24px;
+	margin-bottom: var(--nsl-space-md);
 }

@@ -1,15 +1,15 @@
 /* .tournament-new-page {
 	display: flex;
 	flex-direction: column;
-	gap: 1.5rem;
+	gap: var(--nsl-space-md);
 	max-width: 720px;
 } */
 
 .tournament-new-page .section-hint {
 	color: var(--text-muted);
 	font-size: 0.9rem;
-	margin-top: 0.25rem;
-	margin-bottom: 1rem;
+	margin-top: var(--nsl-space-3xs);
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .tournament-new-page .form-row {
@@ -27,8 +27,8 @@
 .tournament-new-page .event-grid {
 	display: grid;
 	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-	gap: 0.75rem 1.5rem;
-	margin-bottom: 1rem;
+	gap: var(--nsl-space-xs) var(--nsl-space-md);
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .tournament-new-page .points-grid {
@@ -40,7 +40,7 @@
 .tournament-new-page .file-row {
 	display: flex;
 	align-items: center;
-	gap: 0.75rem;
+	gap: var(--nsl-space-xs);
 	flex-wrap: wrap;
 }
 
@@ -59,7 +59,7 @@
 
 .tournament-new-page .button-row {
 	display: flex;
-	gap: 0.75rem;
+	gap: var(--nsl-space-xs);
 	justify-content: flex-end;
 	flex-wrap: wrap;
 }
