@@ -4,6 +4,13 @@
 	gap: 1.5rem;
 }
 
+.results-actions {
+	display: flex;
+	gap: var(--nsl-space-2xs);
+	flex-wrap: wrap;
+	align-items: center;
+}
+
 /* Events section */
 .tournament-detail__events {
 	display: flex;

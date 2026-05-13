@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
 import EditTournamentModal from '../../components/shared/EditTournamentModal/EditTournamentModal.jsx';
+import AddResultModal from '../../components/shared/AddResultModal/AddResultModal.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import { formatScore as fmt } from '../../utils/formatScore.js';
@@ -24,6 +25,7 @@ export default function TournamentDetailPage() {
 	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteTournamentOpen, setDeleteTournamentOpen] = useState(false);
 	const [editTournamentOpen, setEditTournamentOpen] = useState(false);
+	const [addResultOpen, setAddResultOpen] = useState(false);
 	const [sortKey, setSortKey] = useState('competitor_name');
 	const [sortDir, setSortDir] = useState('asc');
 
@@ -222,14 +224,22 @@ export default function TournamentDetailPage() {
 						<span className="section-count">({participants.length})</span>
 					</h2>
 					{participants.length > 0 && (
-						<button
-							className="btn btn-sm btn-secondary"
-							onClick={() =>
-								navigate(`/admin/tournaments/${tournament.id}/upload`)
-							}
-						>
-							Upload Results
-						</button>
+						<div className="results-actions">
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() => setAddResultOpen(true)}
+							>
+								Add Competitor
+							</button>
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() =>
+									navigate(`/admin/tournaments/${tournament.id}/upload`)
+								}
+							>
+								Upload Results
+							</button>
+						</div>
 					)}
 				</div>
 				{participants.length === 0 && (
@@ -242,15 +252,26 @@ export default function TournamentDetailPage() {
 							gap: '0.75rem',
 						}}
 					>
-						<span>No results yet. Upload a results file to get started.</span>
-						<button
-							className="btn btn-primary"
-							onClick={() =>
-								navigate(`/admin/tournaments/${tournament.id}/upload`)
-							}
-						>
-							Upload Results
-						</button>
+						<span>
+							No results yet. Upload a results file or add one manually to get
+							started.
+						</span>
+						<div className="results-actions">
+							<button
+								className="btn btn-primary"
+								onClick={() =>
+									navigate(`/admin/tournaments/${tournament.id}/upload`)
+								}
+							>
+								Upload Results
+							</button>
+							<button
+								className="btn btn-secondary"
+								onClick={() => setAddResultOpen(true)}
+							>
+								Add Competitor
+							</button>
+						</div>
 					</div>
 				)}
 				{participants.length > 0 && (
@@ -387,10 +408,24 @@ export default function TournamentDetailPage() {
 				isOpen={editTournamentOpen}
 				tournament={tournament}
 				onClose={() => setEditTournamentOpen(false)}
-				onSaved={(updated) =>
-					setTournament((t) => ({ ...t, ...updated }))
-				}
+				onSaved={(updated) => setTournament((t) => ({ ...t, ...updated }))}
 			/>
+
+			{addResultOpen && (
+				<AddResultModal
+					tournamentId={tournament.id}
+					existingCompetitorIds={participants.map((p) => p.competitor_id)}
+					helperText={
+						<>
+							Select an existing competitor from the list. To add a brand-new
+							competitor to the system, head to the{' '}
+							<Link to="/admin/competitors">Competitors page</Link> first.
+						</>
+					}
+					onClose={() => setAddResultOpen(false)}
+					onSaved={load}
+				/>
+			)}
 		</div>
 	);
 }
