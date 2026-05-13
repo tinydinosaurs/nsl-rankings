@@ -4,13 +4,6 @@
 	gap: 1.5rem;
 }
 
-/* Details section */
-.tournament-detail__meta {
-	display: flex;
-	flex-direction: column;
-	gap: var(--nsl-space-xs);
-}
-
 /* Events section */
 .tournament-detail__events {
 	display: flex;
@@ -40,47 +33,6 @@
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
-}
-
-/* Events inline edit form */
-.events-edit-actions {
-	display: flex;
-	gap: var(--nsl-space-2xs);
-	margin-bottom: var(--nsl-space-2xs);
-}
-
-.event-edit-row {
-	display: flex;
-	align-items: center;
-	gap: var(--nsl-space-md);
-	padding: var(--nsl-space-3xs) 0;
-}
-
-.event-edit-toggle {
-	min-width: 7rem;
-}
-
-.event-edit-points {
-	display: flex;
-	align-items: center;
-	gap: var(--nsl-space-2xs);
-	font-size: var(--nsl-size-sm);
-	color: var(--text-muted);
-}
-
-.event-points-input {
-	width: 5rem;
-	padding: var(--nsl-space-3xs) var(--nsl-space-2xs);
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font-size: var(--nsl-size-sm);
-}
-
-.events-edit-error {
-	color: var(--danger);
-	font-size: var(--nsl-size-sm);
 }
 
 /* Top Finishers podium */

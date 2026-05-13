@@ -1,0 +1,43 @@
+.edit-tournament-events {
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
+	margin: var(--nsl-space-sm) 0;
+}
+
+.edit-tournament-events legend {
+	padding: 0 var(--nsl-space-2xs);
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-medium);
+	color: var(--text-muted);
+}
+
+.edit-tournament-events__row {
+	display: flex;
+	align-items: center;
+	gap: var(--nsl-space-md);
+	padding: var(--nsl-space-3xs) 0;
+	flex-wrap: wrap;
+}
+
+.edit-tournament-events__toggle {
+	min-width: 7rem;
+}
+
+.edit-tournament-events__points {
+	display: flex;
+	align-items: center;
+	gap: var(--nsl-space-2xs);
+	font-size: var(--nsl-size-sm);
+	color: var(--text-muted);
+}
+
+.edit-tournament-events__points input {
+	width: 5rem;
+	padding: var(--nsl-space-3xs) var(--nsl-space-2xs);
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	font-size: var(--nsl-size-sm);
+}
