@@ -516,9 +516,7 @@ describe('NSL Rankings Integration Tests', () => {
 			expect(response.body).toBeInstanceOf(Array);
 
 			// Check enhanced fields are present
-			const competitor = response.body.find(
-				(c) => c.name === 'Alice Nguyen',
-			);
+			const competitor = response.body.find((c) => c.name === 'Alice Nguyen');
 			expect(competitor).toBeDefined();
 			expect(competitor).toHaveProperty('id');
 			expect(competitor).toHaveProperty('name');
@@ -764,9 +762,7 @@ describe('NSL Rankings Integration Tests', () => {
 
 			expect(deleteResponse.status).toBe(200);
 			expect(deleteResponse.body.success).toBe(true);
-			expect(deleteResponse.body.deleted).toHaveProperty(
-				'competitor_name',
-			);
+			expect(deleteResponse.body.deleted).toHaveProperty('competitor_name');
 
 			// Verify the result is gone by checking tournament detail
 			const verifyResponse = await request(app)
@@ -780,9 +776,7 @@ describe('NSL Rankings Integration Tests', () => {
 
 			// Clean up test competitor (this will cascade delete any remaining results)
 			await request(app)
-				.delete(
-					`/api/rankings/competitors/${competitorResponse.body.id}`,
-				)
+				.delete(`/api/rankings/competitors/${competitorResponse.body.id}`)
 				.set('Authorization', `Bearer ${adminToken}`);
 		});
 
@@ -912,9 +906,9 @@ describe('NSL Rankings Integration Tests', () => {
 				.set('Authorization', `Bearer ${adminToken}`);
 			expect(members.status).toBe(200);
 			expect(members.body.every((c) => c.is_member === true)).toBe(true);
-			expect(members.body.some((c) => c.email === 'filter.member@example.com')).toBe(
-				true,
-			);
+			expect(
+				members.body.some((c) => c.email === 'filter.member@example.com'),
+			).toBe(true);
 
 			const nonMembers = await request(app)
 				.get('/api/rankings/competitors?filter=non-members')
@@ -924,6 +918,78 @@ describe('NSL Rankings Integration Tests', () => {
 			expect(
 				nonMembers.body.some((c) => c.email === 'filter.non@example.com'),
 			).toBe(true);
+		});
+
+		it('should remove all results for a tournament but keep the tournament intact', async () => {
+			// Create a tournament
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({ name: 'Bulk Delete Test', date: '2024-04-01' });
+			const tournamentId = tournamentResponse.body.id;
+
+			// Add two competitors with results
+			const c1 = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({ name: 'Bulk One', email: 'bulk.one@example.com' });
+			const c2 = await request(app)
+				.post('/api/rankings/competitors')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({ name: 'Bulk Two', email: 'bulk.two@example.com' });
+
+			for (const competitorId of [c1.body.id, c2.body.id]) {
+				await request(app)
+					.post('/api/rankings/results')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						competitor_id: competitorId,
+						tournament_id: tournamentId,
+						knockdowns_earned: 100,
+						distance_earned: 90,
+						speed_earned: 110,
+						woods_earned: 80,
+					});
+			}
+
+			// Confirm results exist
+			const before = await request(app)
+				.get(`/api/rankings/tournaments/${tournamentId}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(before.body.participants).toHaveLength(2);
+
+			// Remove all results
+			const deleteResponse = await request(app)
+				.delete(`/api/rankings/tournaments/${tournamentId}/results`)
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(deleteResponse.status).toBe(200);
+			expect(deleteResponse.body).toEqual({ success: true, deleted: 2 });
+
+			// Tournament still exists, but with zero participants
+			const after = await request(app)
+				.get(`/api/rankings/tournaments/${tournamentId}`)
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(after.status).toBe(200);
+			expect(after.body.tournament.id).toBe(tournamentId);
+			expect(after.body.participants).toEqual([]);
+		});
+
+		it('should return 404 when removing results for a non-existent tournament', async () => {
+			const response = await request(app)
+				.delete('/api/rankings/tournaments/99999/results')
+				.set('Authorization', `Bearer ${adminToken}`);
+			expect(response.status).toBe(404);
+		});
+
+		it('should reject removing all results without admin auth', async () => {
+			const tournamentResponse = await request(app)
+				.post('/api/rankings/tournaments')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({ name: 'Auth Guard Test', date: '2024-04-02' });
+			const response = await request(app).delete(
+				`/api/rankings/tournaments/${tournamentResponse.body.id}/results`,
+			);
+			expect(response.status).toBe(401);
 		});
 	});
 });
