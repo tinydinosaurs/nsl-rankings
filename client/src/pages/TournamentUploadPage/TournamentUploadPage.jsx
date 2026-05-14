@@ -15,6 +15,7 @@ export default function TournamentUploadPage() {
 	const [tournament, setTournament] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
+	const [commitResult, setCommitResult] = useState(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -90,18 +91,70 @@ export default function TournamentUploadPage() {
 				</div>
 			</div>
 
-			<div className="card">
-				<ResultsUploadForm
-					activeEvents={activeEventKeys}
-					totalPoints={totalPoints}
-					tournamentId={tournament.id}
-					tournamentName={tournament.name || ''}
-					tournamentDate={tournament.date || ''}
-					initialFile={stagedFile}
-					onBack={() => navigate(`/admin/tournaments/${tournament.id}`)}
-					onBackLabel="Cancel"
-					onSuccess={() => navigate(`/admin/tournaments/${tournament.id}`)}
+			{commitResult ? (
+				<UploadSuccessCard
+					tournament={tournament}
+					result={commitResult}
+					onGoToTournament={() =>
+						navigate(`/admin/tournaments/${tournament.id}`)
+					}
 				/>
+			) : (
+				<div className="card">
+					<ResultsUploadForm
+						activeEvents={activeEventKeys}
+						totalPoints={totalPoints}
+						tournamentId={tournament.id}
+						tournamentName={tournament.name || ''}
+						tournamentDate={tournament.date || ''}
+						initialFile={stagedFile}
+						onBack={() => navigate(`/admin/tournaments/${tournament.id}`)}
+						onBackLabel="Cancel"
+						onSuccess={(data) => setCommitResult(data)}
+					/>
+				</div>
+			)}
+		</div>
+	);
+}
+
+function UploadSuccessCard({ tournament, result, onGoToTournament }) {
+	const added = result.new_competitors?.length ?? 0;
+	const updated = result.updated_competitors?.length ?? 0;
+	const total = added + updated;
+	const tournamentLabel = tournament.name || 'this tournament';
+	const competitorNames = [
+		...(result.new_competitors ?? []),
+		...(result.updated_competitors ?? []),
+	];
+
+	return (
+		<div className="card upload-success">
+			<div className="upload-success__header">
+				<h2 className="upload-success__title">Results saved</h2>
+				<p className="upload-success__summary">
+					<strong>{total}</strong> result{total === 1 ? '' : 's'} imported
+					into <strong>{tournamentLabel}</strong>.
+				</p>
+			</div>
+
+			{competitorNames.length > 0 && (
+				<details className="upload-success__list">
+					<summary>
+						Show competitors ({competitorNames.length})
+					</summary>
+					<ul>
+						{competitorNames.map((name) => (
+							<li key={name}>{name}</li>
+						))}
+					</ul>
+				</details>
+			)}
+
+			<div className="upload-success__actions">
+				<button className="btn btn-primary" onClick={onGoToTournament}>
+					Go to tournament
+				</button>
 			</div>
 		</div>
 	);
