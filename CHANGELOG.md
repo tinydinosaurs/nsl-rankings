@@ -10,6 +10,20 @@ visiting the leaderboard — so user-facing changes are anything those folks
 would notice. Internal refactors, test changes, and tooling updates can be
 noted under `Changed` only when they meaningfully affect contributors.
 
+## [0.2.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.1.0...v0.2.0) (2026-05-14)
+
+
+### Added
+
+* add shared Checkbox component and migrate 6 call sites ([ba0abdd](https://github.com/tinydinosaurs/nsl-rankings/commit/ba0abdd42fe979c709d7459cc4a7a6062747e276))
+* **auth:** add Account page and self-service password change ([#10](https://github.com/tinydinosaurs/nsl-rankings/issues/10)) ([5db06d7](https://github.com/tinydinosaurs/nsl-rankings/commit/5db06d78b3df04924d2588a12282773bdb9be36f))
+* **upload:** show confirmation summary after committing results ([#9](https://github.com/tinydinosaurs/nsl-rankings/issues/9)) ([2a20177](https://github.com/tinydinosaurs/nsl-rankings/commit/2a201779db619411bbbff3c52e55086085b972e6))
+
+
+### Changed
+
+* **tournament-detail:** consolidate metadata editing, add per-row Add Competitor and Remove All Results ([#8](https://github.com/tinydinosaurs/nsl-rankings/issues/8)) ([adce1a1](https://github.com/tinydinosaurs/nsl-rankings/commit/adce1a1d48489d891b5b7a8413d34fe4830a0a16))
+
 ## [Unreleased]
 
 ### Added
