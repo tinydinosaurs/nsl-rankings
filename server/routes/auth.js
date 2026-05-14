@@ -47,6 +47,44 @@ function createAuthRouter(db) {
 		}),
 	);
 
+	// PUT /api/auth/me/password — any authenticated user changes their own password
+	router.put(
+		'/me/password',
+		authenticate,
+		validateBody({
+			currentPassword: ['required', 'string'],
+			newPassword: ['required', 'string', 'password'],
+		}),
+		asyncHandler((req, res) => {
+			const { currentPassword, newPassword } = req.body;
+
+			const user = db
+				.prepare('SELECT id, password_hash FROM users WHERE id = ?')
+				.get(req.user.id);
+			if (!user) {
+				throw new AuthenticationError('User no longer exists');
+			}
+
+			if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+				throw new AuthenticationError('Current password is incorrect');
+			}
+
+			if (currentPassword === newPassword) {
+				throw new ValidationError(
+					'New password must be different from current password',
+				);
+			}
+
+			const newHash = bcrypt.hashSync(newPassword, 10);
+			db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(
+				newHash,
+				user.id,
+			);
+
+			res.json({ success: true });
+		}),
+	);
+
 	// POST /api/auth/users — owner creates new users
 	router.post(
 		'/users',
@@ -82,12 +120,17 @@ function createAuthRouter(db) {
 	);
 
 	// GET /api/auth/users — owner lists all users
-	router.get('/users', authenticate, requireOwner, asyncHandler((req, res) => {
-		const users = db
-			.prepare('SELECT id, username, role, created_at FROM users')
-			.all();
-		res.json(users);
-	}));
+	router.get(
+		'/users',
+		authenticate,
+		requireOwner,
+		asyncHandler((req, res) => {
+			const users = db
+				.prepare('SELECT id, username, role, created_at FROM users')
+				.all();
+			res.json(users);
+		}),
+	);
 
 	// PUT /api/auth/users/:id — owner updates an existing user
 	router.put(
@@ -98,7 +141,9 @@ function createAuthRouter(db) {
 			const { id } = req.params;
 			const { username, password, role } = req.body;
 
-			const user = db.prepare('SELECT id, username, role FROM users WHERE id = ?').get(id);
+			const user = db
+				.prepare('SELECT id, username, role FROM users WHERE id = ?')
+				.get(id);
 			if (!user) throw new NotFoundError('User');
 
 			if (role !== undefined && parseInt(id) === req.user.id) {
@@ -121,11 +166,15 @@ function createAuthRouter(db) {
 			const newHash = password ? bcrypt.hashSync(password, 10) : null;
 
 			if (newHash) {
-				db.prepare('UPDATE users SET username = ?, role = ?, password_hash = ? WHERE id = ?')
-					.run(newUsername, newRole, newHash, id);
+				db.prepare(
+					'UPDATE users SET username = ?, role = ?, password_hash = ? WHERE id = ?',
+				).run(newUsername, newRole, newHash, id);
 			} else {
-				db.prepare('UPDATE users SET username = ?, role = ? WHERE id = ?')
-					.run(newUsername, newRole, id);
+				db.prepare('UPDATE users SET username = ?, role = ? WHERE id = ?').run(
+					newUsername,
+					newRole,
+					id,
+				);
 			}
 
 			res.json({ id: parseInt(id), username: newUsername, role: newRole });

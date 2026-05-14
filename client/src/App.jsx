@@ -10,6 +10,7 @@ import TournamentNewPage from './pages/TournamentNewPage/TournamentNewPage.jsx';
 import TournamentUploadPage from './pages/TournamentUploadPage/TournamentUploadPage.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage/AdminUsersPage.jsx';
+import AccountPage from './pages/AccountPage/AccountPage.jsx';
 import Layout from './components/shared/Layout/Layout.jsx';
 
 function RequireAuth({ children }) {
@@ -112,6 +113,14 @@ export default function App() {
 								<RequireOwner>
 									<AdminUsersPage />
 								</RequireOwner>
+							}
+						/>
+						<Route
+							path="/admin/account"
+							element={
+								<RequireAuth>
+									<AccountPage />
+								</RequireAuth>
 							}
 						/>
 					</Route>

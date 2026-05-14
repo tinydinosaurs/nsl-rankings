@@ -55,9 +55,15 @@
 	gap: var(--nsl-space-xs);
 	margin-left: auto;
 }
-.username {
+.username-link {
 	font-size: var(--nsl-size-sm);
-	color: var(--text-muted);
+	color: var(--text);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.username-link:hover,
+.username-link:focus-visible {
+	color: var(--accent);
 }
 
 .main-content {

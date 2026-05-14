@@ -11,11 +11,13 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    // Skip the auto-redirect for the login request itself — a 401 there means
+    // "wrong username or password" and the login form needs to show the error.
+    const isLoginRequest =
+      err.config?.url === '/auth/login' || err.config?.url?.endsWith('/auth/login');
+    if (err.response?.status === 401 && !isLoginRequest) {
       // Hard redirect — intentionally simple for an admin tool.
       // Tradeoff: loses React Router state (e.g. mid-flow pages).
-      // Also fires on failed login attempts, which is harmless today
-      // but could break ?redirect= flows if added in future.
       // Long-term: coordinate with useAuth context for a soft redirect.
       localStorage.removeItem('token');
       localStorage.removeItem('user');
