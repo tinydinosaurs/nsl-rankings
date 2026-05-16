@@ -226,8 +226,30 @@ You can increase disk size from the dashboard but **cannot decrease it**.
 
 `GET /api/health` → `{"status":"ok"}` (no auth required).
 
-Render uses this internally for its own health monitoring. UptimeRobot (or
-equivalent external monitor) can also hit it; see ROADMAP item #8.
+Render uses this internally for its own health monitoring. UptimeRobot also
+hits it; see below.
+
+---
+
+## External uptime monitoring (UptimeRobot)
+
+A UptimeRobot keyword monitor watches the production health endpoint and
+emails the maintainer if it fails. Free tier; sufficient for this scale.
+
+- **Monitor name:** `NSL Rankings — health`
+- **Type:** Keyword monitor
+- **URL:** `https://nsl-rankings.onrender.com/api/health`
+- **Keyword:** `ok` (alert if missing)
+- **Interval:** 5 minutes
+- **Alert channel:** email
+- **Public status page:** https://stats.uptimerobot.com/OydHksXG89
+
+**When the production URL changes** (e.g. cutover to the custom domain):
+
+1. UptimeRobot dashboard → edit the monitor → update the URL field to the
+   new `/api/health` path. No need to recreate.
+2. Confirm the monitor flips back to "Up" within one check interval.
+3. The public status page URL stays the same.
 
 ---
 
