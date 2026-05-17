@@ -1,0 +1,87 @@
+/*
+ * HelpPage styling.
+ *
+ * Layout: single column, generous reading width, anchored sections.
+ * The `scroll-margin-top` on sections keeps anchored jumps from hiding the
+ * heading behind the sticky app nav.
+ *
+ * When/if we upgrade to a sticky sidebar TOC (see notes/ROADMAP.md #5), the
+ * `.help-toc` rule is the one to swap — turn it into a `position: sticky;
+ * float: left` (or grid) sidebar and add a `<details>` wrapper for mobile.
+ * No JSX changes needed.
+ */
+
+.help-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-md);
+}
+
+.help-toc ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-2xs);
+}
+
+.help-toc a {
+	color: var(--text);
+	text-decoration: none;
+	border-bottom: 1px dotted var(--border);
+	padding-bottom: 1px;
+}
+
+.help-toc a:hover,
+.help-toc a:focus {
+	color: var(--accent);
+	border-bottom-color: var(--accent);
+}
+
+.help-section {
+	scroll-margin-top: 5rem;
+}
+
+.help-section h2 {
+	margin-top: 0;
+}
+
+.help-section h3 {
+	margin-top: var(--nsl-space-md);
+	margin-bottom: var(--nsl-space-2xs);
+	font-size: var(--nsl-size-md);
+	font-weight: var(--nsl-weight-semibold);
+}
+
+.help-section p,
+.help-section ul,
+.help-section ol {
+	line-height: 1.6;
+}
+
+.help-section ul,
+.help-section ol {
+	padding-left: 1.5rem;
+}
+
+.help-section li + li {
+	margin-top: var(--nsl-space-2xs);
+}
+
+.help-section code {
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	border-radius: 3px;
+	padding: 0 4px;
+	font-size: 0.9em;
+}
+
+.help-note {
+	background: var(--bg-input);
+	border-left: 3px solid var(--border);
+	padding: var(--nsl-space-sm);
+	margin: var(--nsl-space-sm) 0;
+	color: var(--text-muted);
+	font-size: var(--nsl-size-sm);
+}

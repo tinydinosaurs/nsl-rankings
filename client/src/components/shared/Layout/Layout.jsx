@@ -60,6 +60,9 @@ export default function Layout() {
 										Users
 									</NavLink>
 								)}
+								<NavLink to="/admin/help" className={navLinkClass}>
+									Help
+								</NavLink>
 							</>
 						)}
 						<NavLink to="/" end className={navLinkClass}>
@@ -129,6 +132,13 @@ export default function Layout() {
 										Users
 									</NavLink>
 								)}
+								<NavLink
+									to="/admin/help"
+									className={navLinkClass}
+									onClick={closeMenu}
+								>
+									Help
+								</NavLink>
 							</>
 						)}
 						<NavLink to="/" end className={navLinkClass} onClick={closeMenu}>

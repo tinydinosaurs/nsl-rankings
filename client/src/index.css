@@ -18,15 +18,6 @@
 	 * See notes/BRAND_TOKENS_PLAN.md                                  *
 	 * ============================================================== */
 
-	/* ── Color: neutral base (light surfaces — warm-white, papery) ── */
-	--nsl-base-light-50: oklch(98% 0.01 80);
-	--nsl-base-light-100: oklch(96% 0.01 80);
-	--nsl-base-light-200: oklch(93% 0.02 80);
-	--nsl-base-light-300: oklch(88% 0.02 80);
-	--nsl-base-light-400: oklch(72% 0.02 80);
-	--nsl-base-light-700: oklch(38% 0.02 80);
-	--nsl-base-light-900: oklch(22% 0.02 80);
-
 	/* ── Color: neutral (full-range grey scale) ── */
 	--nsl-neutral-50: oklch(100% 0 0); /* true white — page bg */
 	--nsl-neutral-100: oklch(98% 0 0); /* cards, tables */
@@ -165,6 +156,15 @@
 	 * layer to the `--nsl-*` tokens above; Phase 4 will delete what's *
 	 * unused.                                                         *
 	 * ============================================================== */
+
+	/* ── Color: neutral base (light surfaces — warm-white, papery) ── */
+	--nsl-base-light-50: oklch(98% 0.01 80);
+	--nsl-base-light-100: oklch(96% 0.01 80);
+	--nsl-base-light-200: oklch(93% 0.02 80);
+	--nsl-base-light-300: oklch(88% 0.02 80);
+	--nsl-base-light-400: oklch(72% 0.02 80);
+	--nsl-base-light-700: oklch(38% 0.02 80);
+	--nsl-base-light-900: oklch(22% 0.02 80);
 
 	/* ── Constants ───────────────────────────────────────────────────────── */
 	--radius: 8px;

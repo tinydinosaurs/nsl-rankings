@@ -5,6 +5,8 @@ const { EVENTS } = require('../constants/events');
 const { generatePlaceholderEmail } = require('../utils/competitorUtils');
 
 // Aliases: maps various human-entered column names to canonical event names
+// NOTE: if you add or change aliases here, also update the "CSV format" section
+// in client/src/pages/HelpPage/HelpPage.jsx so the admin help docs stay in sync.
 const COLUMN_ALIASES = {
 	knockdowns: [
 		'knockdowns',
