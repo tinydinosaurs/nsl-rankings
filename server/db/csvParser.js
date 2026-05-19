@@ -51,11 +51,28 @@ const COLUMN_ALIASES = {
 };
 
 // Known non-score designations — treated as null (not scored/not penalized), not 0
-const NON_SCORE_VALUES = new Set(['dns', 'dq', 'dnf', 'scratch', 'n/a', '-', 'wd', 'disqualified']);
+const NON_SCORE_VALUES = new Set([
+	'dns',
+	'dq',
+	'dnf',
+	'scratch',
+	'n/a',
+	'-',
+	'wd',
+	'disqualified',
+]);
 
 // Boolean parsing for the membership column. Returns true, false, or null (unknown).
 const MEMBER_TRUTHY = new Set(['true', 't', 'yes', 'y', '1', 'member']);
-const MEMBER_FALSY = new Set(['false', 'f', 'no', 'n', '0', 'non-member', 'nonmember']);
+const MEMBER_FALSY = new Set([
+	'false',
+	'f',
+	'no',
+	'n',
+	'0',
+	'non-member',
+	'nonmember',
+]);
 
 function parseMemberValue(raw) {
 	if (raw === undefined || raw === null) return null;
