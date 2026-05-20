@@ -7,8 +7,34 @@ const allEvents = {
 	totalPoints: { knockdowns: 120, distance: 120, speed: 120, woods: 120 },
 };
 
-// Helpers to build minimal CSVs
+// Helpers to build minimal CSVs.
+// Most tests don't care about membership, so `csv()` auto-injects a `member`
+// column (and a `yes` value per row) when no row already declares one. Tests
+// that exercise the "missing membership column" error path use `csvNoMember()`
+// to opt out.
 function csv(...rows) {
+	if (rows.length === 0) return '';
+	if (rows.some((r) => /\b(member|members|membership)\b/i.test(r))) {
+		return rows.join('\n');
+	}
+	// Find the header row (the one that mentions a name-like column) so we
+	// inject `member` into the header and `yes` into the data rows below it.
+	// Rows above the header (junk title rows) and rows that aren't full data
+	// rows (single-cell title rows) are passed through unchanged.
+	const headerIdx = rows.findIndex((r) =>
+		/\b(name|competitor|athlete|player|participant)\b/i.test(r),
+	);
+	if (headerIdx === -1) return rows.join('\n');
+	return rows
+		.map((r, i) => {
+			if (i < headerIdx) return r;
+			if (i === headerIdx) return r + ',member';
+			return r + ',yes';
+		})
+		.join('\n');
+}
+
+function csvNoMember(...rows) {
 	return rows.join('\n');
 }
 
@@ -277,17 +303,16 @@ describe('csvParser', () => {
 	});
 
 	describe('membership column', () => {
-		it('treats all rows as members and warns when the column is missing', () => {
-			const text = csv(
+		it('errors and skips parsing when the membership column is missing', () => {
+			const text = csvNoMember(
 				'name,email,knockdowns,distance,speed,woods',
 				'Alice,alice@example.com,100,90,110,80',
 				'Bob,bob@example.com,95,105,88,110',
 			);
-			const { competitors, warnings } = parseCSV(text, allEvents);
-			expect(competitors).toHaveLength(2);
-			expect(competitors.every((c) => c.is_member === true)).toBe(true);
+			const { competitors, errors } = parseCSV(text, allEvents);
+			expect(competitors).toHaveLength(0);
 			expect(
-				warnings.some((w) => w.includes('No membership column found')),
+				errors.some((e) => e.includes('No membership column found')),
 			).toBe(true);
 		});
 
@@ -360,16 +385,23 @@ describe('csvParser', () => {
 			).toBe(true);
 		});
 
-		it('treats blank membership cells as non-member with a warning', () => {
+		it('treats blank membership cells as non-member and aggregates them into one warning', () => {
 			const text = csv(
 				'name,email,member,knockdowns,distance,speed,woods',
 				'Alice,alice@example.com,,100,90,110,80',
+				'Bob,bob@example.com,,95,105,88,110',
+				'Carol,carol@example.com,yes,80,80,80,80',
 			);
 			const { competitors, warnings } = parseCSV(text, allEvents);
 			expect(competitors[0].is_member).toBe(false);
-			expect(
-				warnings.some((w) => w.includes('Unrecognized membership value')),
-			).toBe(true);
+			expect(competitors[1].is_member).toBe(false);
+			expect(competitors[2].is_member).toBe(true);
+			// Single aggregated warning with the count, not per-row noise.
+			const blankWarnings = warnings.filter((w) =>
+				w.includes('had no membership value'),
+			);
+			expect(blankWarnings).toHaveLength(1);
+			expect(blankWarnings[0]).toContain('2 row(s)');
 		});
 	});
 });

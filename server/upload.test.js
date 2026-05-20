@@ -138,7 +138,7 @@ describe('Upload Route', () => {
 
 		it('parses a clean CSV and returns enriched competitors', async () => {
 			const csv =
-				'name,email,knockdowns,distance,speed,woods\nAlice,alice@example.com,100,90,110,80';
+				'name,email,knockdowns,distance,speed,woods,member\nAlice,alice@example.com,100,90,110,80,yes';
 			const res = await request(app)
 				.post('/api/upload/preview')
 				.set('Authorization', `Bearer ${adminToken}`)
@@ -162,7 +162,7 @@ describe('Upload Route', () => {
 		describe('rebuildPlaceholderWarnings', () => {
 			it('warns for a new no-email competitor', async () => {
 				const csv =
-					'name,knockdowns,distance,speed,woods\nNo Email Person,100,90,110,80';
+					'name,knockdowns,distance,speed,woods,member\nNo Email Person,100,90,110,80,yes';
 				const res = await request(app)
 					.post('/api/upload/preview')
 					.set('Authorization', `Bearer ${adminToken}`)
@@ -190,7 +190,7 @@ describe('Upload Route', () => {
 				);
 
 				const csv =
-					'name,knockdowns,distance,speed,woods\nNo Email Person,100,90,110,80';
+					'name,knockdowns,distance,speed,woods,member\nNo Email Person,100,90,110,80,yes';
 				const res = await request(app)
 					.post('/api/upload/preview')
 					.set('Authorization', `Bearer ${adminToken}`)
@@ -220,9 +220,9 @@ describe('Upload Route', () => {
 				);
 
 				const csv = [
-					'name,knockdowns,distance,speed,woods',
-					'Returning Person,100,90,110,80',
-					'Brand New Person,95,85,105,75',
+					'name,knockdowns,distance,speed,woods,member',
+					'Returning Person,100,90,110,80,yes',
+					'Brand New Person,95,85,105,75,yes',
 				].join('\n');
 
 				const res = await request(app)
