@@ -16,16 +16,16 @@ const createUploadRouter = require('./routes/upload.js');
 const { errorHandler, notFoundHandler } = require('./middleware/errors.js');
 
 // Mock CSV data for testing
-const cleanCsvData = `name,knockdowns,distance,speed,woods
-Alice Nguyen,108,95,112,88
-Bob Travers,120,110,100,115
-Carmen Reyes,72,80,90,60`;
+const cleanCsvData = `name,knockdowns,distance,speed,woods,member
+Alice Nguyen,108,95,112,88,yes
+Bob Travers,120,110,100,115,yes
+Carmen Reyes,72,80,90,60,yes`;
 
-const secondTournamentData = `name,knockdowns,distance,speed,woods
-Alice Nguyen,95,100,105,92
-Bob Travers,130,105,95,120
-Carmen Reyes,80,85,85,65
-David Park,115,105,118,102`;
+const secondTournamentData = `name,knockdowns,distance,speed,woods,member
+Alice Nguyen,95,100,105,92,yes
+Bob Travers,130,105,95,120,yes
+Carmen Reyes,80,85,85,65,yes
+David Park,115,105,118,102,yes`;
 
 function createIntegrationApp(db) {
 	const app = express();

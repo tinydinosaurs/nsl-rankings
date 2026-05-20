@@ -170,12 +170,13 @@ function parseCSV(csvText, tournamentSettings) {
 		return { competitors: [], warnings, errors };
 	}
 
-	// Warn (once) if no membership column was found — all rows will default to member.
-	const memberColumnPresent = colMap.is_member !== undefined;
-	if (!memberColumnPresent) {
-		warnings.push(
-			'No membership column found (e.g. "member" or "NSL member"). All rows will be treated as members.',
+	// Membership column is required: it gates inclusion on the public leaderboard,
+	// so a missing column must fail loudly rather than silently default everyone to member.
+	if (colMap.is_member === undefined) {
+		errors.push(
+			'No membership column found (e.g. "member" or "NSL member"). Add the column and re-upload. Use "yes"/"no" — blank cells will be treated as non-members.',
 		);
+		return { competitors: [], warnings, errors };
 	}
 
 	// Warn about active events with no matching column
@@ -191,6 +192,7 @@ function parseCSV(csvText, tournamentSettings) {
 	const dataRows = rows.slice(headerRowIndex + 1);
 	const competitors = [];
 	const competitorsWithoutEmail = [];
+	const blankMembershipRows = [];
 	const seenEmails = new Set();
 
 	dataRows.forEach((row, rowIndex) => {
@@ -222,21 +224,24 @@ function parseCSV(csvText, tournamentSettings) {
 
 		const competitor = { name: rawName, email: rawEmail };
 
-		// Membership: default true when the column is absent (backward compat).
-		// When the column is present, parse each row; unrecognized values warn and fall back to false.
-		if (memberColumnPresent) {
-			const rawMember = row[colMap.is_member]?.toString();
+		// Membership column is guaranteed present here (missing column errors out above).
+		// Blank cells default to non-member and are aggregated into a single warning.
+		// Unrecognized values warn per-row so the admin can find and fix them.
+		const rawMember = row[colMap.is_member]?.toString();
+		const trimmedMember = (rawMember ?? '').trim();
+		if (trimmedMember === '') {
+			competitor.is_member = false;
+			blankMembershipRows.push(rawName);
+		} else {
 			const parsed = parseMemberValue(rawMember);
 			if (parsed === null) {
 				warnings.push(
-					`Row ${lineNum} (${rawName}): Unrecognized membership value "${rawMember ?? ''}" — treated as non-member.`,
+					`Row ${lineNum} (${rawName}): Unrecognized membership value "${rawMember}" — treated as non-member.`,
 				);
 				competitor.is_member = false;
 			} else {
 				competitor.is_member = parsed;
 			}
-		} else {
-			competitor.is_member = true;
 		}
 
 		for (const event of EVENTS) {
@@ -295,6 +300,13 @@ function parseCSV(csvText, tournamentSettings) {
 	if (competitorsWithoutEmail.length > 0) {
 		warnings.push(
 			`The following competitors had no email address — placeholder emails were generated. Update these in the admin panel: [${competitorsWithoutEmail.join(', ')}]`,
+		);
+	}
+
+	// Aggregate blank membership cells into a single count warning.
+	if (blankMembershipRows.length > 0) {
+		warnings.push(
+			`${blankMembershipRows.length} row(s) had no membership value and will be saved as non-members.`,
 		);
 	}
 
