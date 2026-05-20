@@ -159,6 +159,28 @@ describe('Upload Route', () => {
 			expect(res.body.errors).toHaveLength(0);
 		});
 
+		it('returns 422 with details.errors when membership column is missing', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,woods\nAlice,alice@example.com,100,90,110,80';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(422);
+			expect(res.body.error).toBe('CSV parsing failed');
+			expect(Array.isArray(res.body.details?.errors)).toBe(true);
+			expect(res.body.details.errors[0]).toMatch(/membership column/i);
+		});
+
 		describe('rebuildPlaceholderWarnings', () => {
 			it('warns for a new no-email competitor', async () => {
 				const csv =
