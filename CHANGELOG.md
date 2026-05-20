@@ -10,6 +10,15 @@ visiting the leaderboard — so user-facing changes are anything those folks
 would notice. Internal refactors, test changes, and tooling updates can be
 noted under `Changed` only when they meaningfully affect contributors.
 
+## [0.3.1](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.3.0...v0.3.1) (2026-05-20)
+
+
+### Fixed
+
+* csv preview error handling ([#17](https://github.com/tinydinosaurs/nsl-rankings/issues/17)) ([b62ed1a](https://github.com/tinydinosaurs/nsl-rankings/commit/b62ed1aca1a40286eb99f5174dde5f3077238b14))
+* rankings empty state + require CSV membership column ([#14](https://github.com/tinydinosaurs/nsl-rankings/issues/14)) ([d3d2bf0](https://github.com/tinydinosaurs/nsl-rankings/commit/d3d2bf0e7a8e94c71314657f72b9a0be9fc5c2fe))
+* surface CSV parser errors and prevent orphaned tournaments ([#16](https://github.com/tinydinosaurs/nsl-rankings/issues/16)) ([918c854](https://github.com/tinydinosaurs/nsl-rankings/commit/918c8545c34f3620e783d566cd41a394fa3b42d5))
+
 ## [0.3.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.2.0...v0.3.0) (2026-05-20)
 
 
