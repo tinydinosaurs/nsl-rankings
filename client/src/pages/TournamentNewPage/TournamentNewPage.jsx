@@ -61,9 +61,9 @@ export default function TournamentNewPage() {
 			setError('Date is required');
 			return;
 		}
-		const activeEventKeys = EVENTS
-			.map(({ key }) => key)
-			.filter((key) => events[`has_${key}`]);
+		const activeEventKeys = EVENTS.map(({ key }) => key).filter(
+			(key) => events[`has_${key}`],
+		);
 		if (activeEventKeys.length === 0) {
 			setError('Select at least one event');
 			return;
@@ -71,6 +71,39 @@ export default function TournamentNewPage() {
 
 		setSubmitting(true);
 		try {
+			// If a file is attached, validate it via /upload/preview BEFORE
+			// creating the tournament. This avoids creating an orphaned
+			// tournament when the file fails parsing (e.g. missing membership
+			// column). The upload page will re-run preview after navigation;
+			// the duplicate parse is cheap and keeps the components decoupled.
+			if (resultsFile) {
+				const formData = new FormData();
+				formData.append('csv', resultsFile);
+				formData.append('tournament_name', name.trim());
+				formData.append('tournament_date', date);
+				activeEventKeys.forEach((key) => formData.append(`has_${key}`, 'true'));
+				EVENTS.forEach(({ key }) =>
+					formData.append(
+						`total_points_${key}`,
+						points[`total_points_${key}`] ?? 120,
+					),
+				);
+				try {
+					await api.post('/upload/preview', formData, {
+						headers: { 'Content-Type': 'multipart/form-data' },
+					});
+				} catch (err) {
+					const d = err.response?.data;
+					setError(
+						d?.details?.errors?.join(' • ') ||
+							d?.errors?.join(' • ') ||
+							d?.error ||
+							'Could not parse the results file. Fix the file and try again.',
+					);
+					return;
+				}
+			}
+
 			const { data: created } = await api.post('/rankings/tournaments', {
 				name: name.trim(),
 				date,
@@ -92,7 +125,12 @@ export default function TournamentNewPage() {
 			if (err.response?.status === 409 && d?.details?.tournament_id) {
 				setConflictTournamentId(d.details.tournament_id);
 			}
-			setError(d?.error || 'Failed to add tournament');
+			setError(
+				d?.details?.errors?.join(' • ') ||
+					d?.errors?.join(' • ') ||
+					d?.error ||
+					'Failed to add tournament',
+			);
 		} finally {
 			setSubmitting(false);
 		}
@@ -111,7 +149,8 @@ export default function TournamentNewPage() {
 						{error}
 						{conflictTournamentId && (
 							<>
-								{' '}—{' '}
+								{' '}
+								—{' '}
 								<Link to={`/admin/tournaments/${conflictTournamentId}`}>
 									View existing tournament
 								</Link>
@@ -153,7 +192,10 @@ export default function TournamentNewPage() {
 						</div>
 					</div>
 
-					<fieldset className="form-group" style={{ border: 'none', padding: 0 }}>
+					<fieldset
+						className="form-group"
+						style={{ border: 'none', padding: 0 }}
+					>
 						<legend>Events held</legend>
 						<div className="event-grid">
 							{EVENTS.map(({ key, label }) => (
@@ -167,7 +209,10 @@ export default function TournamentNewPage() {
 						</div>
 					</fieldset>
 
-					<fieldset className="form-group" style={{ border: 'none', padding: 0 }}>
+					<fieldset
+						className="form-group"
+						style={{ border: 'none', padding: 0 }}
+					>
 						<legend>Total points per event</legend>
 						<div className="points-grid">
 							{EVENTS.filter(({ key }) => events[`has_${key}`]).map(
@@ -195,9 +240,8 @@ export default function TournamentNewPage() {
 					</h2>
 					<p className="section-hint">
 						Upload a CSV or Excel file with this tournament&apos;s results. You
-						can review and confirm the parsed results on the next page. If
-						you skip this step, you can add results later from the tournament
-						page.
+						can review and confirm the parsed results on the next page. If you
+						skip this step, you can add results later from the tournament page.
 					</p>
 
 					<div className="file-row">

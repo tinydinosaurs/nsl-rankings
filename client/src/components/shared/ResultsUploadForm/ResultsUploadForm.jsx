@@ -66,7 +66,12 @@ export default function ResultsUploadForm({
 			setStep('preview');
 		} catch (err) {
 			const d = err.response?.data;
-			setError(d?.errors?.join(' • ') || d?.error || 'Preview failed');
+			setError(
+				d?.details?.errors?.join(' • ') ||
+					d?.errors?.join(' • ') ||
+					d?.error ||
+					'Preview failed',
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -105,7 +110,9 @@ export default function ResultsUploadForm({
 				setConflictTournamentId(d.details.tournament_id);
 			} else {
 				setError(
-					d?.error ||
+					d?.details?.errors?.join(' • ') ||
+						d?.errors?.join(' • ') ||
+						d?.error ||
 						'Save failed — the data was not changed. You can try again.',
 				);
 			}
@@ -131,8 +138,8 @@ export default function ResultsUploadForm({
 			<form onSubmit={handlePreview} className="ruf-form">
 				{error && <div className="alert alert-error">{error}</div>}
 				<p className="ruf-hint">
-					Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv) files. Columns can
-					be in any order and various spellings are recognized. Blank cells in
+					Accepts Excel (.xlsx, .xls) and CSV (.csv, .tsv) files. Columns can be
+					in any order and various spellings are recognized. Blank cells in
 					active events will be treated as 0.
 				</p>
 				{!selectedFile ? (
@@ -161,11 +168,7 @@ export default function ResultsUploadForm({
 						{loading ? 'Parsing…' : 'Preview Import'}
 					</button>
 					{onBack && (
-						<button
-							type="button"
-							className="btn btn-ghost"
-							onClick={onBack}
-						>
+						<button type="button" className="btn btn-ghost" onClick={onBack}>
 							{onBackLabel}
 						</button>
 					)}
