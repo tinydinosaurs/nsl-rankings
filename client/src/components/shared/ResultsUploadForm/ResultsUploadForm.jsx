@@ -239,6 +239,7 @@ export default function ResultsUploadForm({
 						<tr>
 							<th>Status</th>
 							<th>Name</th>
+							<th>Member</th>
 							{activeEvents.map((e) => (
 								<th key={e}>{EVENT_LABELS[e]}</th>
 							))}
@@ -255,6 +256,7 @@ export default function ResultsUploadForm({
 									</span>
 								</td>
 								<td>{c.name}</td>
+								<td>{c.is_member ? 'Yes' : 'No'}</td>
 								{activeEvents.map((e) => (
 									<td key={e}>{c[`${e}_earned`] ?? '—'}</td>
 								))}
