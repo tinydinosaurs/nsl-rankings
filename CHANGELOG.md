@@ -10,6 +10,13 @@ visiting the leaderboard — so user-facing changes are anything those folks
 would notice. Internal refactors, test changes, and tooling updates can be
 noted under `Changed` only when they meaningfully affect contributors.
 
+## [0.3.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.2.0...v0.3.0) (2026-05-20)
+
+
+### Added
+
+* **admin:** add help page ([#12](https://github.com/tinydinosaurs/nsl-rankings/issues/12)) ([d73183e](https://github.com/tinydinosaurs/nsl-rankings/commit/d73183e8ed10063a037407659c68947387036314))
+
 ## [0.2.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.1.0...v0.2.0) (2026-05-14)
 
 
