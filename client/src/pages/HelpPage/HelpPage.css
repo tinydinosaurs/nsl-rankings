@@ -1,0 +1,129 @@
+/*
+ * HelpPage styling.
+ *
+ * Layout: PageHeader spans full width on top. Below it, `.help-page__body` is
+ * a CSS grid:
+ * - ≥900px: two columns — a 260px sticky TOC sidebar on the left, and a
+ *   content column on the right. Section cards inside the content column are
+ *   capped to ~52rem for readable line length; the extra space sits as
+ *   whitespace to the right, matching the look of MDN / Stripe / GitHub docs.
+ * - <900px: single column. TOC stacks on top of the sections, always visible.
+ *
+ * `scroll-margin-top` on sections keeps anchored jumps from hiding the heading
+ * behind the sticky app nav. The sticky TOC uses the same offset so it sits
+ * just below the nav when scrolled.
+ */
+
+.help-page {
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-md);
+}
+
+.help-page__body {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: var(--nsl-space-md);
+	align-items: start;
+}
+
+.help-page__sections {
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-md);
+	min-width: 0;
+}
+
+@media (min-width: 900px) {
+	.help-page__body {
+		grid-template-columns: 260px minmax(0, 1fr);
+	}
+
+	.help-toc {
+		position: sticky;
+		top: 5rem;
+		align-self: start;
+	}
+
+	.help-section {
+		max-width: 52rem;
+	}
+}
+
+.help-toc nav ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-2xs);
+}
+
+.help-toc a {
+	color: var(--text);
+	text-decoration: none;
+	border-bottom: 1px dotted var(--border);
+	padding-bottom: 1px;
+}
+
+.help-toc a:hover,
+.help-toc a:focus {
+	color: var(--accent);
+	border-bottom-color: var(--accent);
+}
+
+.help-section {
+	scroll-margin-top: 5rem;
+}
+
+.help-section h2 {
+	margin-top: 0;
+	margin-bottom: var(--nsl-space-2xs);
+}
+
+.help-section h3 {
+	margin-top: var(--nsl-space-md);
+	margin-bottom: var(--nsl-space-2xs);
+	font-size: var(--nsl-size-md);
+	font-weight: var(--nsl-weight-semibold);
+}
+
+.help-section p,
+.help-section ul,
+.help-section ol {
+	line-height: 1.6;
+}
+
+.help-section p + p {
+	margin-top: 8px;
+}
+
+.help-section ul,
+.help-section ol {
+	padding-left: 1.5rem;
+	/* Lists are visually denser than paragraphs (each line has a bullet and
+	 * tighter line-height), so they need more block margin than the default
+	 * ~1em to keep surrounding paragraphs from looking crowded. */
+	margin-block: var(--nsl-space-2xs);
+}
+
+.help-section li + li {
+	margin-top: var(--nsl-space-2xs);
+}
+
+.help-section code {
+	background: var(--bg-input);
+	border: 1px solid var(--border);
+	border-radius: 3px;
+	padding: 0 4px;
+	font-size: 0.9em;
+}
+
+.help-note {
+	background: var(--bg-input);
+	border-left: 3px solid var(--border);
+	padding: var(--nsl-space-sm);
+	margin: var(--nsl-space-sm) 0;
+	color: var(--text-muted);
+	font-size: var(--nsl-size-sm);
+}
