@@ -219,9 +219,9 @@ export default function HelpPage() {
 							<li>
 								<strong>Membership</strong>: <code>member</code>,{' '}
 								<code>nsl member</code>, <code>membership</code>. Accepts
-								yes/no, true/false, 1/0. If the cell is empty, the competitor
-								is saved as a non-member and the preview shows a count of how
-								many rows that affected. If the column is missing entirely, the
+								yes/no, true/false, 1/0. If the cell is empty, the competitor is
+								saved as a non-member and the preview shows a count of how many
+								rows that affected. If the column is missing entirely, the
 								upload is rejected — add the column and re-upload.
 							</li>
 						</ul>

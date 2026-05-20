@@ -311,9 +311,9 @@ describe('csvParser', () => {
 			);
 			const { competitors, errors } = parseCSV(text, allEvents);
 			expect(competitors).toHaveLength(0);
-			expect(
-				errors.some((e) => e.includes('No membership column found')),
-			).toBe(true);
+			expect(errors.some((e) => e.includes('No membership column found'))).toBe(
+				true,
+			);
 		});
 
 		it('parses true/false values from a "member" column', () => {
