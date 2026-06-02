@@ -138,16 +138,7 @@ describe('csvParser', () => {
 	});
 
 	describe('NON_SCORE_VALUES', () => {
-		const nonScoreCases = [
-			'DNS',
-			'DQ',
-			'DNF',
-			'Scratch',
-			'N/A',
-			'-',
-			'WD',
-			'Disqualified',
-		];
+		const nonScoreCases = ['DNS', 'DNF', 'Scratch', 'N/A', '-', 'WD'];
 
 		it.each(nonScoreCases)('treats "%s" as null (not 0)', (value) => {
 			const text = csv(
@@ -166,6 +157,60 @@ describe('csvParser', () => {
 			);
 			const { competitors } = parseCSV(text, allEvents);
 			expect(competitors[0].knockdowns_earned).toBeNull();
+		});
+
+		it('aggregates non-score warnings by event+value instead of per-row', () => {
+			const text = csv(
+				'name,email,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,DNS,90,110,80',
+				'Bob,bob@example.com,DNS,90,110,80',
+				'Carol,carol@example.com,DNS,90,110,80',
+			);
+			const { warnings } = parseCSV(text, allEvents);
+			const dnsWarnings = warnings.filter((w) => w.includes('DNS'));
+			expect(dnsWarnings).toHaveLength(1);
+			expect(dnsWarnings[0]).toMatch(/3 row\(s\) marked "DNS"/);
+			expect(dnsWarnings[0]).toMatch(/knockdowns/);
+		});
+
+		it('separates non-score counts per event', () => {
+			const text = csv(
+				'name,email,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,DNS,DNS,110,80',
+				'Bob,bob@example.com,100,DNS,110,80',
+			);
+			const { warnings } = parseCSV(text, allEvents);
+			const dnsWarnings = warnings.filter((w) => w.includes('DNS'));
+			expect(dnsWarnings).toHaveLength(2);
+			expect(dnsWarnings.some((w) => w.includes('knockdowns'))).toBe(true);
+			expect(dnsWarnings.some((w) => w.includes('distance'))).toBe(true);
+		});
+	});
+
+	describe('DQ / disqualified handling', () => {
+		it.each(['DQ', 'dq', 'Disqualified', 'DISQUALIFIED'])(
+			'treats "%s" as 0 (penalty), not null',
+			(value) => {
+				const text = csv(
+					'name,email,knockdowns,distance,speed,woods',
+					`Alice,alice@example.com,${value},90,110,80`,
+				);
+				const { competitors } = parseCSV(text, allEvents);
+				expect(competitors[0].knockdowns_earned).toBe(0);
+			},
+		);
+
+		it('emits an aggregated DQ warning per event', () => {
+			const text = csv(
+				'name,email,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,DQ,90,110,80',
+				'Bob,bob@example.com,DQ,90,110,80',
+			);
+			const { warnings } = parseCSV(text, allEvents);
+			const dqWarnings = warnings.filter((w) => w.includes('DQ'));
+			expect(dqWarnings).toHaveLength(1);
+			expect(dqWarnings[0]).toMatch(/knockdowns: 2 row\(s\) marked DQ/);
+			expect(dqWarnings[0]).toMatch(/counted as 0/);
 		});
 	});
 
