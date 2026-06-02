@@ -682,6 +682,217 @@ describe('Upload Route', () => {
 				expect(result.knockdowns_earned).toBe(100);
 			});
 		});
+
+		describe('tournament_id — metadata updates (slice 1 of upload refactor)', () => {
+			function seedExisting(overrides = {}) {
+				const name = overrides.name ?? 'Spring Cup';
+				const date = overrides.date ?? '2025-07-01';
+				const flags = {
+					has_knockdowns: 1,
+					has_distance: 1,
+					has_speed: 1,
+					has_woods: 1,
+					total_points_knockdowns: 120,
+					total_points_distance: 120,
+					total_points_speed: 120,
+					total_points_woods: 120,
+					...overrides.flags,
+				};
+				return db
+					.prepare(
+						`INSERT INTO tournaments
+						(name, date, has_knockdowns, has_distance, has_speed, has_woods,
+						 total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					)
+					.run(
+						name,
+						date,
+						flags.has_knockdowns,
+						flags.has_distance,
+						flags.has_speed,
+						flags.has_woods,
+						flags.total_points_knockdowns,
+						flags.total_points_distance,
+						flags.total_points_speed,
+						flags.total_points_woods,
+					).lastInsertRowid;
+			}
+
+			function competitorRow(overrides = {}) {
+				return {
+					name: 'Alice Nguyen',
+					email: 'alice@example.com',
+					existing_competitor_id: null,
+					knockdowns_earned: 100,
+					distance_earned: 90,
+					speed_earned: 110,
+					woods_earned: 80,
+					...overrides,
+				};
+			}
+
+			it('updates name, date, events, and totals in the same transaction as results', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Spring Cup (renamed)',
+						tournament_date: '2025-07-15',
+						activeEvents: ['knockdowns', 'distance'],
+						totalPoints: {
+							knockdowns: 150,
+							distance: 100,
+							speed: 120,
+							woods: 120,
+						},
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+				const updated = db
+					.prepare('SELECT * FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(updated.name).toBe('Spring Cup (renamed)');
+				expect(updated.date).toBe('2025-07-15');
+				expect(updated.has_knockdowns).toBe(1);
+				expect(updated.has_distance).toBe(1);
+				expect(updated.has_speed).toBe(0);
+				expect(updated.has_woods).toBe(0);
+				expect(updated.total_points_knockdowns).toBe(150);
+				expect(updated.total_points_distance).toBe(100);
+			});
+
+			it('leaves untouched fields alone when the payload omits them', async () => {
+				const existingId = seedExisting({ name: 'Original' });
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						// no tournament_name / tournament_date / activeEvents / totalPoints
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+				const row = db
+					.prepare('SELECT name, date FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(row.name).toBe('Original');
+				expect(row.date).toBe('2025-07-01');
+			});
+
+			it('returns 409 when renaming would collide with another tournament', async () => {
+				seedExisting({ name: 'Existing Cup', date: '2025-08-01' });
+				const targetId = seedExisting({
+					name: 'Different Name',
+					date: '2025-08-01',
+				});
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: targetId,
+						tournament_name: 'Existing Cup',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(409);
+			});
+
+			it('does not 409 when the unchanged metadata matches the tournament itself', async () => {
+				const existingId = seedExisting({
+					name: 'Spring Cup',
+					date: '2025-07-01',
+				});
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Spring Cup',
+						tournament_date: '2025-07-01',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+			});
+
+			it('returns 400 when tournament_date is explicitly cleared on update', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_date: '',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(400);
+			});
+
+			it('returns 400 when an updated totalPoints value is non-positive', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						totalPoints: {
+							knockdowns: 0,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(400);
+			});
+
+			it('rolls back metadata changes when a later step in the transaction fails', async () => {
+				const existingId = seedExisting({ name: 'Original Name' });
+
+				// Bad competitor payload: negative score triggers ValidationError, but
+				// the inner db.transaction() should have already started — actually
+				// validation happens before the transaction, so to truly test rollback
+				// we need a failure that occurs inside the transaction. Use a duplicate
+				// email between competitors so the second INSERT into competitors
+				// fails on the UNIQUE constraint.
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Renamed In Failing Transaction',
+						competitors: [
+							competitorRow({
+								name: 'Alice',
+								email: 'dup@example.com',
+							}),
+							competitorRow({
+								name: 'Bob',
+								email: 'dup@example.com', // collides with first competitor
+							}),
+						],
+					});
+
+				expect(res.status).toBeGreaterThanOrEqual(400);
+				const row = db
+					.prepare('SELECT name FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(row.name).toBe('Original Name');
+			});
+		});
 	});
 
 	describe('membership flag handling', () => {
