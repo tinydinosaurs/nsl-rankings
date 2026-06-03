@@ -50,17 +50,15 @@ const COLUMN_ALIASES = {
 	],
 };
 
-// Known non-score designations — treated as null (not scored/not penalized), not 0
-const NON_SCORE_VALUES = new Set([
-	'dns',
-	'dq',
-	'dnf',
-	'scratch',
-	'n/a',
-	'-',
-	'wd',
-	'disqualified',
-]);
+// Known non-score designations — treated as null (not scored, not penalized).
+// Excluded from the competitor's average for that event.
+// DQ / disqualified are intentionally NOT in this set: a disqualification is a
+// penalty, not "didn't participate," so it counts as 0 in the average. See
+// `DQ_VALUES` below.
+const NON_SCORE_VALUES = new Set(['dns', 'dnf', 'scratch', 'n/a', '-', 'wd']);
+
+// Disqualification designations — treated as 0 (penalty counts toward average).
+const DQ_VALUES = new Set(['dq', 'disqualified']);
 
 // Boolean parsing for the membership column. Returns true, false, or null (unknown).
 const MEMBER_TRUTHY = new Set(['true', 't', 'yes', 'y', '1', 'member']);
@@ -194,6 +192,10 @@ function parseCSV(csvText, tournamentSettings) {
 	const competitorsWithoutEmail = [];
 	const blankMembershipRows = [];
 	const seenEmails = new Set();
+	// Aggregate non-score values by event + value so admins see
+	// "Distance: 3 row(s) marked DNS" instead of 3 separate per-row warnings.
+	const nonScoreCounts = new Map(); // key: `${event}|${rawLower}` -> count
+	const dqCounts = new Map(); // key: event -> count
 
 	dataRows.forEach((row, rowIndex) => {
 		const lineNum = headerRowIndex + rowIndex + 2; // 1-based, accounting for header
@@ -267,9 +269,12 @@ function parseCSV(csvText, tournamentSettings) {
 			} else if (NON_SCORE_VALUES.has(raw.toLowerCase())) {
 				// Known non-score designation → null (excluded from average, not penalized)
 				competitor[`${event}_earned`] = null;
-				warnings.push(
-					`Row ${lineNum} (${rawName}): "${raw}" in "${event}" treated as not scored (excluded from average).`,
-				);
+				const key = `${event}|${raw.toLowerCase()}`;
+				nonScoreCounts.set(key, (nonScoreCounts.get(key) ?? 0) + 1);
+			} else if (DQ_VALUES.has(raw.toLowerCase())) {
+				// Disqualification → 0 (penalty counts toward average)
+				competitor[`${event}_earned`] = 0;
+				dqCounts.set(event, (dqCounts.get(event) ?? 0) + 1);
 			} else {
 				const val = parseFloat(raw);
 				if (isNaN(val)) {
@@ -307,6 +312,21 @@ function parseCSV(csvText, tournamentSettings) {
 	if (blankMembershipRows.length > 0) {
 		warnings.push(
 			`${blankMembershipRows.length} row(s) had no membership value and will be saved as non-members.`,
+		);
+	}
+
+	// Aggregated non-score warnings (e.g. "Distance: 3 row(s) marked DNS — excluded from average").
+	for (const [key, count] of nonScoreCounts) {
+		const [event, value] = key.split('|');
+		warnings.push(
+			`${event}: ${count} row(s) marked "${value.toUpperCase()}" — not scored (excluded from average).`,
+		);
+	}
+
+	// Aggregated DQ warnings (counts as 0 in the average).
+	for (const [event, count] of dqCounts) {
+		warnings.push(
+			`${event}: ${count} row(s) marked DQ — counted as 0 (penalty applied to average).`,
 		);
 	}
 
