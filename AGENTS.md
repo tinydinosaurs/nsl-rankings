@@ -106,11 +106,16 @@ nsl-rankings/
 │       │       ├── AddCompetitorModal/
 │       │       ├── AddResultModal/
 │       │       ├── Badge/
+│       │       ├── Checkbox/
 │       │       ├── ConfirmDialog/
+│       │       ├── EditCompetitorModal/
 │       │       ├── EditResultModal/
+│       │       ├── EditTournamentModal/
 │       │       ├── EditableField/
 │       │       ├── EmptyState/
+│       │       ├── EventChip/
 │       │       ├── EyeIcons/           # Shared SVG eye icon components
+│       │       ├── IdentityStrip/
 │       │       ├── Layout/             # Nav + page shell
 │       │       ├── Modal/
 │       │       ├── PageHeader/
@@ -120,9 +125,11 @@ nsl-rankings/
 │       ├── hooks/
 │       │   └── useAuth.jsx            # Auth context + JWT storage
 │       ├── pages/
+│       │   ├── AccountPage/           # /admin/account — profile + change password
 │       │   ├── AdminPage/             # /admin — dashboard
 │       │   ├── AdminUsersPage/        # /admin/users — owner-only user management
 │       │   ├── CompetitorPage/        # /admin/competitors (list + detail)
+│       │   ├── HelpPage/              # /admin/help — admin documentation
 │       │   ├── LoginPage/             # /login
 │       │   ├── RankingsPage/          # / — public leaderboard
 │       │   ├── TournamentNewPage/     # /admin/tournaments/new — create tournament + optional file
@@ -324,6 +331,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | Method | Path | Auth | Description |
 | ------ | ---- | ---- | ----------- |
 | POST | `/api/auth/login` | — | Returns JWT |
+| PUT | `/api/auth/me/password` | authenticated | Change own password (verifies current) |
 | GET | `/api/auth/users` | owner | List all users |
 | POST | `/api/auth/users` | owner | Create a user |
 | PUT | `/api/auth/users/:id` | owner | Update username/password/role |
@@ -341,6 +349,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | POST | `/api/rankings/tournaments` | admin | Create a tournament |
 | PUT | `/api/rankings/tournaments/:id` | admin | Edit tournament metadata |
 | DELETE | `/api/rankings/tournaments/:id` | admin | Delete tournament + all results |
+| DELETE | `/api/rankings/tournaments/:id/results` | admin | Remove all results from a tournament (keeps the tournament row) |
 | POST | `/api/rankings/results` | admin | Add or upsert a single result |
 | PUT | `/api/rankings/results/:id` | admin | Edit a result |
 | DELETE | `/api/rankings/results/:id` | admin | Delete a result |
@@ -356,7 +365,10 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 - Scans first 5 rows for the header row (spreadsheets often have junk rows at the top)
 - Column names are matched via aliases — see `COLUMN_ALIASES` in `csvParser.js`
 - Blank cells in **active** events → `0` (competitor participated, scored nothing)
-- Missing event column for an **active** event → `0` with a warning
+- Missing event column for an **active** event → `0` with a warning (this behavior is slated to change — see ROADMAP #19; the unified-preview UX will warn-and-remediate instead)
+- **Non-score values** in `NON_SCORE_VALUES` (`dns`, `dnf`, `scratch`, `n/a`, `-`, `wd`) → `null` (excluded from the competitor's average for that event)
+- **DQ / disqualified** → `0` (penalty counts toward the average — a disqualification is a result, not "didn't participate")
+- Non-score and DQ warnings are **aggregated by event + value** (e.g. `knockdowns: 3 row(s) marked "DNS"`) rather than emitted per row
 - Competitors with no email → generate placeholder, warn, **do not skip**
 - Duplicate email within one CSV → warning, skip the second row, continue parsing
 - Values exceeding `total_points` → warning, accept the value, continue
@@ -379,6 +391,8 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, delete tournament. "Upload Results" button navigates to the upload page. |
 | `/admin/tournaments/:id/upload` | `TournamentUploadPage` | Admin | Preview + confirm a results file for an existing tournament. Used both as step 2 of the new-tournament flow (file passed via router state, auto-previews) and for adding/replacing results on an existing tournament. |
 | `/admin/users`             | `AdminUsersPage`       | Owner | Create/edit/delete admin and owner accounts           |
+| `/admin/account`           | `AccountPage`          | Admin | Profile (username + role) and self-service password change |
+| `/admin/help`              | `HelpPage`             | Admin | Admin documentation — upload flow, CSV format, scoring math |
 
 React Router v6 is already configured in `client/src/App.jsx`. Add new routes there — do not create a new router.
 
