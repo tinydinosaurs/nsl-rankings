@@ -119,7 +119,6 @@ nsl-rankings/
 │       │       ├── Layout/             # Nav + page shell
 │       │       ├── Modal/
 │       │       ├── PageHeader/
-│       │       └── ResultsUploadForm/  # Shared file → preview → commit form (used by TournamentNewPage, TournamentUploadPage, TournamentDetailPage)
 │       ├── constants/
 │       │   └── events.js              # Event definitions (client copy)
 │       ├── hooks/
@@ -132,9 +131,8 @@ nsl-rankings/
 │       │   ├── HelpPage/              # /admin/help — admin documentation
 │       │   ├── LoginPage/             # /login
 │       │   ├── RankingsPage/          # / — public leaderboard
-│       │   ├── TournamentNewPage/     # /admin/tournaments/new — create tournament + optional file
-│       │   ├── TournamentPage/        # /admin/tournaments (list + detail)
-│       │   └── TournamentUploadPage/  # /admin/tournaments/:id/upload — preview + commit results
+│       │   ├── TournamentDraftPage/   # /admin/tournaments/new + /admin/tournaments/:id/upload — unified draft-until-commit page (TournamentUploadWrapper hydrates the update-mode case)
+│       │   └── TournamentPage/        # /admin/tournaments (list + detail)
 │       ├── styles/
 │       │   └── podium.css       ├── test/
        │   └── setup.js               # Vitest client test setup (jsdom)│       └── utils/
@@ -387,9 +385,9 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | `/admin/competitors`       | `CompetitorsListPage`  | Admin | List, search, filter, add, delete competitors         |
 | `/admin/competitors/:id`   | `CompetitorDetailPage` | Admin | Edit name/email, view history, delete results         |
 | `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments. "Add Tournament" navigates to `/admin/tournaments/new` |
-| `/admin/tournaments/new`   | `TournamentNewPage`    | Admin | Create a tournament. Single page with metadata + optional file picker. If a file is attached, navigates to the upload page on save; otherwise navigates to the tournament detail page. |
+| `/admin/tournaments/new`   | `TournamentDraftPage`  | Admin | Create a tournament. Single-page draft — metadata, file picker, and inline preview on one screen. Draft is held in sessionStorage; **nothing is written to the DB until Commit**. With a file: posts to `/api/upload/commit`. Without a file: posts to `/api/rankings/tournaments` (metadata-only "shell" tournament). |
 | `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, delete tournament. "Upload Results" button navigates to the upload page. |
-| `/admin/tournaments/:id/upload` | `TournamentUploadPage` | Admin | Preview + confirm a results file for an existing tournament. Used both as step 2 of the new-tournament flow (file passed via router state, auto-previews) and for adding/replacing results on an existing tournament. |
+| `/admin/tournaments/:id/upload` | `TournamentUploadWrapper` → `TournamentDraftPage` (`mode="update"`) | Admin | Add results to an existing tournament. Wrapper loads the tournament and seeds the draft page's initial metadata; metadata is editable inline and lands in the same transaction as the results via `/api/upload/commit` with `tournament_id` set. No sessionStorage draft layer in update mode. |
 | `/admin/users`             | `AdminUsersPage`       | Owner | Create/edit/delete admin and owner accounts           |
 | `/admin/account`           | `AccountPage`          | Admin | Profile (username + role) and self-service password change |
 | `/admin/help`              | `HelpPage`             | Admin | Admin documentation — upload flow, CSV format, scoring math |
