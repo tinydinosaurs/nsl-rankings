@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 vi.mock('../../utils/api.js', () => ({
 	default: {
 		post: vi.fn(),
+		get: vi.fn(),
 	},
 }));
 
@@ -43,6 +44,7 @@ beforeEach(() => {
 	vi.useFakeTimers({ shouldAdvanceTime: true });
 	sessionStorage.clear();
 	api.post.mockReset();
+	api.get.mockReset();
 });
 
 afterEach(() => {
@@ -243,5 +245,139 @@ describe('draftStorage', () => {
 			JSON.stringify({ version: 99, metadata: defaultMetadata() }),
 		);
 		expect(loadDraft()).toBeNull();
+	});
+});
+
+describe('TournamentDraftPage — update mode', () => {
+	const seededMeta = {
+		name: 'Spring Open 2026',
+		date: '2026-04-12',
+		events: {
+			has_knockdowns: true,
+			has_distance: true,
+			has_speed: false,
+			has_woods: true,
+		},
+		points: {
+			total_points_knockdowns: 100,
+			total_points_distance: 120,
+			total_points_speed: 120,
+			total_points_woods: 80,
+		},
+	};
+
+	const renderUpdate = () =>
+		render(
+			<MemoryRouter>
+				<TournamentDraftPage
+					mode="update"
+					tournamentId={42}
+					initialMetadata={seededMeta}
+					pageTitle="Add results to Spring Open 2026"
+					pageSubtitle="..."
+					cancelTo="/admin/tournaments/42"
+				/>
+			</MemoryRouter>,
+		);
+
+	it('hydrates from initialMetadata and does not touch sessionStorage', async () => {
+		renderUpdate();
+		expect(screen.getByLabelText(/Name/i)).toHaveValue('Spring Open 2026');
+		expect(screen.getByLabelText(/Date/i)).toHaveValue('2026-04-12');
+
+		// Edit something to confirm we still don't write to sessionStorage.
+		fireEvent.change(screen.getByLabelText(/Name/i), {
+			target: { value: 'Renamed' },
+		});
+		await act(async () => {
+			vi.advanceTimersByTime(500);
+		});
+		expect(sessionStorage.getItem('nsl:draft:tournament')).toBeNull();
+	});
+
+	it('disables Commit until a file is staged', () => {
+		renderUpdate();
+		const commit = screen.getByRole('button', {
+			name: /Choose a file to add results/i,
+		});
+		expect(commit).toBeDisabled();
+	});
+
+	it('commits with tournament_id and edited metadata', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 42 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderUpdate();
+
+		// Tweak the name inline.
+		fireEvent.change(screen.getByLabelText(/Name/i), {
+			target: { value: 'Spring Open 2026 (revised)' },
+		});
+
+		const file = new File(['name,email\nAlice,alice@example.com'], 't.csv', {
+			type: 'text/csv',
+		});
+		const fileInput = document.getElementById('results-file');
+		await act(async () => {
+			fireEvent.change(fileInput, { target: { files: [file] } });
+			vi.advanceTimersByTime(400);
+		});
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		const commit = screen.getByRole('button', { name: /Confirm & Save/i });
+		await act(async () => {
+			fireEvent.click(commit);
+		});
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(
+				'/upload/commit',
+				expect.objectContaining({
+					tournament_id: 42,
+					tournament_name: 'Spring Open 2026 (revised)',
+					competitors: expect.any(Array),
+				}),
+			),
+		);
+	});
+
+	it('never falls back to POST /rankings/tournaments in update mode', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 42 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderUpdate();
+
+		const file = new File(['name,email\nAlice,alice@example.com'], 't.csv', {
+			type: 'text/csv',
+		});
+		const fileInput = document.getElementById('results-file');
+		await act(async () => {
+			fireEvent.change(fileInput, { target: { files: [file] } });
+			vi.advanceTimersByTime(400);
+		});
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		await waitFor(() => {
+			const urls = api.post.mock.calls.map(([url]) => url);
+			expect(urls).not.toContain('/rankings/tournaments');
+		});
 	});
 });
