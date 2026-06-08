@@ -69,13 +69,14 @@ export default function HelpPage() {
 							</li>
 							<li>
 								Fill in the tournament name and date, attach the results file
-								(CSV, XLSX, XLS, or ODS), and click <strong>Save</strong>.
+								(CSV, XLSX, XLS, or ODS). A preview of the parsed results
+								appears below the file picker.
 							</li>
 							<li>
-								You'll be taken to a preview page. Look it over — every row,
-								every score. If the app detects issues, such as missing data or
-								malformed cells, you'll see a warning. If everything looks
-								right, click <strong>Commit</strong>. Done.
+								Look the preview over — every row, every score. If the parser
+								flagged anything, you'll see warnings above the table. When
+								you're happy, click <strong>Confirm & Save Results</strong>.
+								Nothing is written to the database until you do.
 							</li>
 						</ol>
 						<p>
@@ -104,43 +105,39 @@ export default function HelpPage() {
 							</li>
 							<li>
 								In the "Tournament Information" section, fill in the tournament
-								name and date, select which events were held and the max points
-								for each event.
+								name and date, select which events were held, and set the max
+								points for each event.
 							</li>
 							<li>
 								In the "Results" section, attach the results file (CSV, XLSX,
-								XLS, or ODS) and click{' '}
-								<strong>Save & continue to preview</strong>.
+								XLS, or ODS). A preview of the parsed competitors and scores
+								appears below the file picker; it re-runs automatically if you
+								change the file or any tournament details.
 							</li>
 							<li>
-								You will be taken to a preview page. This page includes
-								warnings, if there are any, tournament details, and a preview of
-								all competitors and their scores. Review all the information.
-								Warnings will not prevent you from uploading results, but you
-								should make a note of them in the event you need to make
-								corrections later.
+								Review the preview. Warnings (if any) appear above the table.
+								They won't block you from saving, but make a note of them in
+								case you need to follow up later.
 							</li>
 							<li>
-								If everything looks correct, click{' '}
-								<strong>Confirm & Save Results</strong>.
+								When everything looks correct, click{' '}
+								<strong>Confirm & Save Results</strong>. The tournament and all
+								results are written together in a single transaction.
 							</li>
 							<li>
-								If you want to address warnings or make changes to the files
-								before saving results, click cancel to return to the tournament
-								upload page. You can re-upload a file and update tournament
-								details from this page.
+								If you want to start over, click <strong>Cancel</strong>.
+								Nothing has been saved yet, so there's nothing to clean up.
 							</li>
 						</ul>
 						<p className="help-note">
-							Clicking <strong>Save & continue to preview</strong> will
-							automatically create the tournament with whatever details you
-							provided. To start completely over, you'll need to delete the
-							tournament first.
+							Your in-progress draft is held in your browser until you commit
+							or cancel — refreshing the page preserves the tournament details
+							(but you'll need to re-attach the file).
 						</p>
 						<h3>Upload Results Later</h3>
 						<p>
 							You can save a tournament from the <strong>Add Tournament</strong>{' '}
-							page without a results file. This will add the tournament to the
+							page without a results file. This adds the tournament to the
 							database without any competitor scores. To add them later:
 						</p>
 						<ul>
@@ -149,15 +146,15 @@ export default function HelpPage() {
 								and click on the tournament you want to add results to.
 							</li>
 							<li>
-								You'll be taken to that tournament's details page. Click the{' '}
-								<strong>Upload Results</strong> button in results section at the
-								bottom of the page. This will take you to a page where you can
-								upload your results file.
+								On that tournament's detail page, click the{' '}
+								<strong>Upload Results</strong> button in the Results section.
+								The upload page is pre-filled with the tournament's current
+								details — you can adjust them inline if needed.
 							</li>
 							<li>
-								The remaining steps are the same as the "Upload During
-								Tournament Creation" flow: review the preview page, then confirm
-								to save results or cancel to make changes and re-upload.
+								Attach the file, review the preview, then click{' '}
+								<strong>Confirm & Save Results</strong>. As with the
+								create-tournament flow, nothing is saved until you confirm.
 							</li>
 						</ul>
 						<h3>Add Scores Individually</h3>
