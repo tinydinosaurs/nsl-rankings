@@ -7,7 +7,7 @@ import CompetitorsListPage from './pages/CompetitorPage/CompetitorsListPage.jsx'
 import TournamentListPage from './pages/TournamentPage/TournamentListPage.jsx';
 import TournamentDetailPage from './pages/TournamentPage/TournamentDetailPage.jsx';
 import TournamentDraftPage from './pages/TournamentDraftPage/TournamentDraftPage.jsx';
-import TournamentUploadPage from './pages/TournamentUploadPage/TournamentUploadPage.jsx';
+import TournamentUploadWrapper from './pages/TournamentDraftPage/TournamentUploadWrapper.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage/AdminUsersPage.jsx';
 import AccountPage from './pages/AccountPage/AccountPage.jsx';
@@ -72,7 +72,7 @@ export default function App() {
 							path="admin/tournaments/:id/upload"
 							element={
 								<RequireAdmin>
-									<TournamentUploadPage />
+									<TournamentUploadWrapper />
 								</RequireAdmin>
 							}
 						/>

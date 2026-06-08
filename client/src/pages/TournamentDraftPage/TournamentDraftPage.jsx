@@ -17,21 +17,50 @@ import './TournamentDraftPage.css';
 const DRAFT_SAVE_DEBOUNCE_MS = 250;
 const PREVIEW_DEBOUNCE_MS = 300;
 
-export default function TournamentDraftPage() {
+/**
+ * Owns the new/update-tournament flow for both entry points:
+ *
+ *   /admin/tournaments/new           → mode="create" (sessionStorage draft)
+ *   /admin/tournaments/:id/upload    → mode="update" (hydrated from DB)
+ *
+ * In create mode, metadata is held in a sessionStorage draft and survives
+ * refresh within the tab. In update mode, the DB is the source of truth and
+ * no draft layer is used; commit requires a staged file (metadata-only edits
+ * live on the tournament detail page's edit modal).
+ */
+export default function TournamentDraftPage({
+	mode = 'create',
+	tournamentId = null,
+	initialMetadata = null,
+	pageTitle = 'Add Tournament',
+	pageSubtitle = 'Enter tournament details and optionally upload a results file. Nothing is saved until you confirm.',
+	cancelTo = '/admin/tournaments',
+}) {
 	const navigate = useNavigate();
+	const isUpdate = mode === 'update';
 
-	// On mount, check for an existing draft. If non-empty, defer rendering the
-	// form until the user resolves the resume prompt.
+	// On mount, choose the initial metadata source. In create mode, check
+	// sessionStorage for an existing draft and defer rendering the form if a
+	// non-empty one exists. In update mode, hydrate from props.
 	const initialDraftRef = useRef(null);
 	if (initialDraftRef.current === null) {
-		const existing = loadDraft();
-		initialDraftRef.current = {
-			metadata: existing?.metadata ?? defaultMetadata(),
-			hasResumePrompt:
-				existing !== null && !isEmptyMetadata(existing.metadata),
-			wasRehydrated: existing !== null,
-			rehydratedHadFile: existing?.hadFile === true,
-		};
+		if (isUpdate) {
+			initialDraftRef.current = {
+				metadata: initialMetadata ?? defaultMetadata(),
+				hasResumePrompt: false,
+				wasRehydrated: false,
+				rehydratedHadFile: false,
+			};
+		} else {
+			const existing = loadDraft();
+			initialDraftRef.current = {
+				metadata: existing?.metadata ?? defaultMetadata(),
+				hasResumePrompt:
+					existing !== null && !isEmptyMetadata(existing.metadata),
+				wasRehydrated: existing !== null,
+				rehydratedHadFile: existing?.hadFile === true,
+			};
+		}
 	}
 
 	const [metadata, setMetadata] = useState(initialDraftRef.current.metadata);
@@ -61,18 +90,18 @@ export default function TournamentDraftPage() {
 
 	const fileRef = useRef(null);
 
-	// Debounced sessionStorage write on metadata change. Skip while the resume
-	// prompt is open so we don't overwrite the pending draft before the user
-	// decides. Persist whether a file is currently attached so we can decide
-	// whether to show the "re-attach your file" banner after a refresh.
+	// Debounced sessionStorage write on metadata change. Create mode only —
+	// in update mode the DB is the source of truth and there is no draft to
+	// persist (and persisting one would risk a stale-vs-DB collision).
 	useEffect(() => {
+		if (isUpdate) return;
 		if (resumePrompt) return;
 		const id = setTimeout(
 			() => saveDraft(metadata, { hadFile: file !== null }),
 			DRAFT_SAVE_DEBOUNCE_MS,
 		);
 		return () => clearTimeout(id);
-	}, [metadata, file, resumePrompt]);
+	}, [metadata, file, resumePrompt, isUpdate]);
 
 	// Auto re-preview when (file, metadata) changes. Debounced so toggling
 	// events doesn't fire N requests. AbortController cancels in-flight
@@ -189,32 +218,41 @@ export default function TournamentDraftPage() {
 	};
 
 	// ─── cancel / commit ────────────────────────────────────
-	const draftIsDirty = !isEmptyMetadata(metadata) || file !== null;
+	// In update mode the draft layer doesn't apply, so dirtiness is just
+	// whether anything has changed since hydration. Tracking a full diff for
+	// the confirmation prompt is heavier than the value it adds for a single
+	// admin tool, so we treat a staged file as the dirty signal and otherwise
+	// cancel without confirmation.
+	const draftIsDirty = isUpdate
+		? file !== null
+		: !isEmptyMetadata(metadata) || file !== null;
 
 	const handleCancelClick = () => {
 		if (draftIsDirty) {
 			setCancelOpen(true);
 		} else {
-			clearDraft();
-			navigate('/admin/tournaments');
+			if (!isUpdate) clearDraft();
+			navigate(cancelTo);
 		}
 	};
 	const handleCancelConfirm = () => {
-		clearDraft();
+		if (!isUpdate) clearDraft();
 		setCancelOpen(false);
-		navigate('/admin/tournaments');
+		navigate(cancelTo);
 	};
 
-	// Commit is allowed when the form is valid. If a file is staged we wait
-	// for a successful preview; if not, we save the tournament metadata only
-	// (admins can add results later from the tournament detail page).
+	// Commit is allowed when the form is valid. Create mode allows a
+	// metadata-only save (no file); update mode requires a staged file
+	// (metadata-only edits live on the tournament detail page's edit modal).
 	const metadataValid =
 		metadata.name.trim() !== '' &&
 		!!metadata.date &&
 		activeEventKeys.length > 0;
-	const canCommit = file
-		? metadataValid && !!preview && !previewing && !previewError
-		: metadataValid && !previewing;
+	const canCommit = isUpdate
+		? metadataValid && !!file && !!preview && !previewing && !previewError
+		: file
+			? metadataValid && !!preview && !previewing && !previewError
+			: metadataValid && !previewing;
 
 	const handleCommit = async () => {
 		setCommitError('');
@@ -226,9 +264,22 @@ export default function TournamentDraftPage() {
 				totalPoints[k] = metadata.points[`total_points_${k}`] ?? 120;
 			});
 
-			let tournamentId;
-			if (file && preview) {
-				// File-and-results path — single transaction on the server.
+			let finalTournamentId;
+			if (isUpdate) {
+				// Update path — uses the slice-1 server contract: include the
+				// tournament_id plus optional metadata fields, all applied in one
+				// transaction with the inserts.
+				const { data } = await api.post('/upload/commit', {
+					tournament_id: tournamentId,
+					tournament_name: metadata.name.trim(),
+					tournament_date: metadata.date,
+					activeEvents: activeEventKeys,
+					totalPoints,
+					competitors: preview.competitors,
+				});
+				finalTournamentId = data.tournament_id;
+			} else if (file && preview) {
+				// Create + results path — single transaction on the server.
 				const { data } = await api.post('/upload/commit', {
 					tournament_name: metadata.name.trim(),
 					tournament_date: metadata.date,
@@ -236,9 +287,9 @@ export default function TournamentDraftPage() {
 					totalPoints,
 					competitors: preview.competitors,
 				});
-				tournamentId = data.tournament_id;
+				finalTournamentId = data.tournament_id;
 			} else {
-				// Metadata-only path — admin will add results later.
+				// Create + metadata-only path — admin will add results later.
 				const { data } = await api.post('/rankings/tournaments', {
 					name: metadata.name.trim(),
 					date: metadata.date,
@@ -251,11 +302,11 @@ export default function TournamentDraftPage() {
 					total_points_speed: metadata.points.total_points_speed,
 					total_points_woods: metadata.points.total_points_woods,
 				});
-				tournamentId = data.id;
+				finalTournamentId = data.id;
 			}
 
-			clearDraft();
-			navigate(`/admin/tournaments/${tournamentId}`);
+			if (!isUpdate) clearDraft();
+			navigate(`/admin/tournaments/${finalTournamentId}`);
 		} catch (err) {
 			const d = err.response?.data;
 			if (err.response?.status === 409 && d?.details?.tournament_id) {
@@ -321,10 +372,7 @@ export default function TournamentDraftPage() {
 
 	return (
 		<div className="tournament-draft-page">
-			<PageHeader
-				title="Add Tournament"
-				subtitle="Enter tournament details and optionally upload a results file. Nothing is saved until you confirm."
-			/>
+			<PageHeader title={pageTitle} subtitle={pageSubtitle} />
 
 			{/* ─── Region 1: tournament metadata ──────────── */}
 			<section className="card">
@@ -404,12 +452,15 @@ export default function TournamentDraftPage() {
 			)}
 			<section className="card file-section">
 				<h2>
-					Results <span className="optional">(optional)</span>
+					Results{' '}
+					<span className="optional">
+						{isUpdate ? '(required)' : '(optional)'}
+					</span>
 				</h2>
 				<p className="section-hint">
-					Upload a CSV or Excel file. Accepted formats: .csv, .tsv, .xlsx,
-					.xls, .ods. You can change the file at any time — the preview will
-					re-run.
+					{isUpdate
+						? 'Upload a CSV or Excel file with the results to add to this tournament. Accepted formats: .csv, .tsv, .xlsx, .xls, .ods.'
+						: 'Upload a CSV or Excel file. Accepted formats: .csv, .tsv, .xlsx, .xls, .ods. You can change the file at any time — the preview will re-run.'}
 				</p>
 				<div className="file-row">
 					{!file ? (
@@ -507,15 +558,21 @@ export default function TournamentDraftPage() {
 						? 'Saving…'
 						: file && preview
 							? `Confirm & Save ${preview.competitors.length} Results`
-							: 'Save tournament'}
+							: isUpdate
+								? 'Choose a file to add results'
+								: 'Save tournament'}
 				</button>
 			</div>
 
 			<ConfirmDialog
 				isOpen={cancelOpen}
-				title="Discard this draft?"
-				message="Your in-progress tournament draft will be discarded. This can't be undone."
-				confirmLabel="Discard draft"
+				title={isUpdate ? 'Discard your changes?' : 'Discard this draft?'}
+				message={
+					isUpdate
+						? 'Your staged file and any unsaved metadata changes will be discarded.'
+						: "Your in-progress tournament draft will be discarded. This can't be undone."
+				}
+				confirmLabel={isUpdate ? 'Discard changes' : 'Discard draft'}
 				variant="danger"
 				onConfirm={handleCancelConfirm}
 				onCancel={() => setCancelOpen(false)}
