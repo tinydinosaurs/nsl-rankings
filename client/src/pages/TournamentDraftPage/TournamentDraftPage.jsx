@@ -260,7 +260,13 @@ export default function TournamentDraftPage({
 
 	// Rename the executor; the user-facing handler decides whether to open
 	// the confirm modal first or commit directly. See `commitNeedsConfirm`.
-	const doCommit = async () => {
+	// `mode` is one of:
+	//   - 'upsert'  (default) — server keeps existing results that aren't in
+	//     the payload; matching emails overwrite, new ones insert
+	//   - 'replace' — server deletes every existing result for this
+	//     tournament inside the same transaction, then inserts from the
+	//     payload. Only meaningful on the update-with-file path.
+	const doCommit = async (mode = 'upsert') => {
 		setCommitError('');
 		setConflictId(null);
 		setCommitting(true);
@@ -274,7 +280,9 @@ export default function TournamentDraftPage({
 			if (isUpdate) {
 				// Update path — uses the slice-1 server contract: include the
 				// tournament_id plus optional metadata fields, all applied in one
-				// transaction with the inserts.
+				// transaction with the inserts. When `mode === 'replace'`, the
+				// transaction also wipes the tournament's existing result rows
+				// before inserting from the payload.
 				const { data } = await api.post('/upload/commit', {
 					tournament_id: tournamentId,
 					tournament_name: metadata.name.trim(),
@@ -282,6 +290,7 @@ export default function TournamentDraftPage({
 					activeEvents: activeEventKeys,
 					totalPoints,
 					competitors: preview.competitors,
+					replace_mode: mode === 'replace',
 				});
 				finalTournamentId = data.tournament_id;
 			} else if (file && preview) {
@@ -347,13 +356,13 @@ export default function TournamentDraftPage({
 		if (commitNeedsConfirm) {
 			setCommitConfirmOpen(true);
 		} else {
-			doCommit();
+			doCommit('upsert');
 		}
 	};
 
-	const handleConfirmCommit = () => {
+	const handleConfirmCommit = (mode) => {
 		setCommitConfirmOpen(false);
-		doCommit();
+		doCommit(mode);
 	};
 
 	// Banner action: scroll the events fieldset into view and focus its
@@ -692,7 +701,6 @@ export default function TournamentDraftPage({
 				missingEventColumns={missingEventColumns}
 				willReplaceExistingResults={willReplaceExistingResults}
 				existingResultCount={existingResultCount}
-				competitorCount={preview?.competitors?.length ?? 0}
 			/>
 		</div>
 	);

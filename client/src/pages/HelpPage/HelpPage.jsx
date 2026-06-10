@@ -138,6 +138,18 @@ export default function HelpPage() {
 							extra click.
 						</p>
 						<p className="help-note">
+							When you upload a results file to a tournament that already has
+							results, the confirmation step asks you to pick one of two modes:{' '}
+							<strong>Update existing results</strong> overwrites any competitor
+							in your file, adds new ones, and leaves other existing results
+							alone — use this for partial files or single-score fixes.{' '}
+							<strong>Replace all results</strong> wipes every existing result
+							on the tournament and then saves just what's in your file — use
+							this when the previous upload was wrong, or when a competitor
+							needs to be removed entirely. Replacing can't be undone in one
+							click.
+						</p>
+						<p className="help-note">
 							Your in-progress draft is held in your browser until you commit or
 							cancel — refreshing the page preserves the tournament details (but
 							you'll need to re-attach the file).

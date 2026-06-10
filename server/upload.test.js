@@ -1051,4 +1051,193 @@ describe('Upload Route', () => {
 			expect(row.is_member).toBe(1);
 		});
 	});
+
+	// Replace-mode commit (replace-mode follow-up to slice 5).
+	// When `replace_mode: true` is supplied alongside an existing
+	// `tournament_id`, all existing tournament_results rows for that
+	// tournament are deleted inside the same transaction before the
+	// payload's competitors are inserted. Without `replace_mode`, the
+	// default UPSERT behavior preserves competitors not present in the
+	// payload.
+	describe('POST /api/upload/commit — replace_mode', () => {
+		// Helper to seed a tournament with N competitors and their results.
+		// Returns the tournament id.
+		function seedExisting() {
+			const t = db
+				.prepare(
+					`INSERT INTO tournaments
+				   (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+				    total_points_knockdowns, total_points_distance,
+				    total_points_speed, total_points_woods)
+				   VALUES (?, ?, 1, 1, 1, 1, 120, 120, 120, 120)`,
+				)
+				.run('Existing Tournament', '2025-07-01');
+			const tournamentId = t.lastInsertRowid;
+
+			const seedCompetitor = (name, email) => {
+				const c = db
+					.prepare(
+						'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, 1)',
+					)
+					.run(name, email);
+				db.prepare(
+					`INSERT INTO tournament_results
+					   (competitor_id, tournament_id, knockdowns_earned,
+					    distance_earned, speed_earned, woods_earned)
+					   VALUES (?, ?, ?, ?, ?, ?)`,
+				).run(c.lastInsertRowid, tournamentId, 50, 50, 50, 50);
+				return c.lastInsertRowid;
+			};
+
+			const aliceId = seedCompetitor('Alice Original', 'alice@example.com');
+			const bobId = seedCompetitor('Bob Original', 'bob@example.com');
+			return { tournamentId, aliceId, bobId };
+		}
+
+		it('default (no replace_mode) preserves competitors not in the upload', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: 99,
+								distance_earned: 99,
+								speed_earned: 99,
+								woods_earned: 99,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(201);
+			expect(res.body.replace_mode).toBe(false);
+			expect(res.body.replaced_count).toBe(0);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id, knockdowns_earned FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			expect(rows).toHaveLength(2);
+			// Alice's score was overwritten…
+			expect(
+				rows.find((r) => r.competitor_id === aliceId).knockdowns_earned,
+			).toBe(99);
+			// …and Bob (not in the payload) was left untouched.
+			expect(
+				rows.find((r) => r.competitor_id === bobId).knockdowns_earned,
+			).toBe(50);
+		});
+
+		it('replace_mode wipes existing rows and inserts only those in the upload', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						replace_mode: true,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: 77,
+								distance_earned: 77,
+								speed_earned: 77,
+								woods_earned: 77,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(201);
+			expect(res.body.replace_mode).toBe(true);
+			expect(res.body.replaced_count).toBe(2);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id, knockdowns_earned FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			// Only Alice remains — Bob was wiped because he wasn't in the payload.
+			expect(rows).toHaveLength(1);
+			expect(rows[0].competitor_id).toBe(aliceId);
+			expect(rows[0].knockdowns_earned).toBe(77);
+
+			// Competitor records themselves are NOT deleted — only their results.
+			const bobRow = db
+				.prepare('SELECT id FROM competitors WHERE id = ?')
+				.get(bobId);
+			expect(bobRow).toBeDefined();
+		});
+
+		it('rejects replace_mode without tournament_id (only valid on existing tournaments)', async () => {
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						replace_mode: true,
+					}),
+				);
+			expect(res.status).toBe(400);
+		});
+
+		it('rolls back the DELETE when a later insert in the same transaction fails', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			// Force a validation failure during the insert loop by sending a
+			// competitor with an invalid score. The DELETE must roll back, so
+			// the original two results are still present afterward.
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						replace_mode: true,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: -1, // invalid — will throw inside the txn
+								distance_earned: 50,
+								speed_earned: 50,
+								woods_earned: 50,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(400);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			expect(rows).toHaveLength(2);
+			expect(rows.map((r) => r.competitor_id).sort()).toEqual(
+				[aliceId, bobId].sort(),
+			);
+		});
+	});
 });
