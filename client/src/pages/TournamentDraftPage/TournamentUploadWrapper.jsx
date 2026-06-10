@@ -15,6 +15,7 @@ import TournamentDraftPage from './TournamentDraftPage.jsx';
 export default function TournamentUploadWrapper() {
 	const { id } = useParams();
 	const [tournament, setTournament] = useState(null);
+	const [participantCount, setParticipantCount] = useState(0);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState('');
 
@@ -23,7 +24,10 @@ export default function TournamentUploadWrapper() {
 		(async () => {
 			try {
 				const { data } = await api.get(`/rankings/tournaments/${id}`);
-				if (!cancelled) setTournament(data.tournament);
+				if (!cancelled) {
+					setTournament(data.tournament);
+					setParticipantCount(data.participant_count ?? 0);
+				}
 			} catch (err) {
 				if (cancelled) return;
 				if (err.response?.status === 404) {
@@ -87,6 +91,7 @@ export default function TournamentUploadWrapper() {
 			mode="update"
 			tournamentId={Number(id)}
 			initialMetadata={initialMetadata}
+			existingResultCount={participantCount}
 			pageTitle={`Add results to ${tournament.name || 'tournament'}`}
 			pageSubtitle="Upload a results file. You can adjust tournament details inline if needed — nothing is saved until you confirm."
 			cancelTo={`/admin/tournaments/${id}`}

@@ -130,9 +130,17 @@ export default function HelpPage() {
 							</li>
 						</ul>
 						<p className="help-note">
-							Your in-progress draft is held in your browser until you commit
-							or cancel — refreshing the page preserves the tournament details
-							(but you'll need to re-attach the file).
+							A second confirmation step appears if the upload would change a
+							competitor's <strong>membership status</strong>, if you marked an
+							event as held but the file has no column for it, or if you're
+							replacing results that already exist on a tournament. Routine
+							warnings (placeholder emails, DNS rows, etc.) commit without an
+							extra click.
+						</p>
+						<p className="help-note">
+							Your in-progress draft is held in your browser until you commit or
+							cancel — refreshing the page preserves the tournament details (but
+							you'll need to re-attach the file).
 						</p>
 						<h3>Upload Results Later</h3>
 						<p>

@@ -239,6 +239,14 @@ export default function TournamentDetailPage() {
 						<div className="results-actions">
 							<button
 								className="btn btn-sm btn-secondary"
+								onClick={() =>
+									navigate(`/admin/tournaments/${tournament.id}/upload`)
+								}
+							>
+								Upload Results
+							</button>
+							<button
+								className="btn btn-sm btn-secondary"
 								onClick={() => setAddResultOpen(true)}
 							>
 								Add Competitor

@@ -91,3 +91,85 @@
 	font-size: 0.9rem;
 	margin: var(--nsl-space-xs) 0 var(--nsl-space-md);
 }
+
+/* Preview block. Class names are kept as `ruf-*` ("results upload form")
+   to match the originals that lived in the deleted ResultsUploadForm.css. */
+.tournament-draft-page .ruf-preview {
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-sm);
+}
+
+.tournament-draft-page .ruf-preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.tournament-draft-page .ruf-preview-header h3 {
+	font-size: var(--nsl-size-base);
+	font-weight: var(--nsl-weight-semibold);
+}
+
+.tournament-draft-page .ruf-meta {
+	display: flex;
+	flex-direction: column;
+	gap: var(--nsl-space-2xs);
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
+	background: var(--surface2);
+	border-radius: var(--radius);
+	font-size: var(--nsl-size-sm);
+}
+
+.tournament-draft-page .ruf-meta-row {
+	display: flex;
+	gap: var(--nsl-space-sm);
+}
+
+.tournament-draft-page .ruf-meta-label {
+	font-weight: var(--nsl-weight-semibold);
+	min-width: 4rem;
+	color: var(--text-muted);
+}
+
+.tournament-draft-page .ruf-table-wrapper {
+	overflow-x: auto;
+}
+
+.tournament-draft-page .ruf-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--nsl-size-sm);
+}
+
+.tournament-draft-page .ruf-table th {
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
+	text-align: left;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-semibold);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--text-muted);
+	border-bottom: 1px solid var(--border);
+}
+
+.tournament-draft-page .ruf-table td {
+	padding: var(--nsl-space-2xs) var(--nsl-space-xs);
+	border-bottom: 1px solid var(--border);
+}
+
+.tournament-draft-page .ruf-table tr:last-child td {
+	border-bottom: none;
+}
+
+.tournament-draft-page .ruf-badge-new {
+	background: var(--status-success-bg);
+	color: var(--status-success-text);
+	border: 1px solid var(--success);
+}
+
+.tournament-draft-page .ruf-badge-update {
+	background: var(--status-info-bg);
+	color: var(--status-info-text);
+	border: 1px solid var(--accent);
+}

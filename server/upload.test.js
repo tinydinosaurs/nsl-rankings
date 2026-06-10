@@ -159,6 +159,46 @@ describe('Upload Route', () => {
 			expect(res.body.errors).toHaveLength(0);
 		});
 
+		it('returns missing_event_columns when an active event has no matching CSV column', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,member\nAlice,alice@example.com,100,90,110,yes';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(200);
+			expect(res.body.missing_event_columns).toEqual(['woods']);
+		});
+
+		it('returns an empty missing_event_columns array when all active events have columns', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,woods,member\nAlice,alice@example.com,100,90,110,80,yes';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(200);
+			expect(res.body.missing_event_columns).toEqual([]);
+		});
+
 		it('returns 422 with details.errors when membership column is missing', async () => {
 			const csv =
 				'name,email,knockdowns,distance,speed,woods\nAlice,alice@example.com,100,90,110,80';

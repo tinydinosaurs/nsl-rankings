@@ -29,6 +29,16 @@
 	cursor: not-allowed;
 }
 
+/* Keyboard-only focus ring — needed because the slice-5 missing-event
+   banner's [Edit tournament events] action programmatically focuses the
+   first checkbox in the Events fieldset. Without this, the focus move is
+   invisible to the admin. */
+.checkbox-input:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+	border-radius: 2px;
+}
+
 .checkbox-input:disabled + .checkbox-text {
 	opacity: 0.6;
 	cursor: not-allowed;
