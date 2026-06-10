@@ -516,9 +516,7 @@ describe('TournamentDraftPage — slice 5 confirmations', () => {
 		await stageFile();
 
 		await waitFor(() =>
-			expect(
-				screen.getByTestId('missing-required-banner'),
-			).toBeInTheDocument(),
+			expect(screen.getByTestId('missing-required-banner')).toBeInTheDocument(),
 		);
 		// Banner has both action affordances.
 		expect(
@@ -539,7 +537,9 @@ describe('TournamentDraftPage — slice 5 confirmations', () => {
 						data: {
 							error: 'CSV parsing failed',
 							details: {
-								errors: ['Could not parse CSV — check that the file uses comma or tab separators.'],
+								errors: [
+									'Could not parse CSV — check that the file uses comma or tab separators.',
+								],
 							},
 						},
 					},
@@ -552,9 +552,7 @@ describe('TournamentDraftPage — slice 5 confirmations', () => {
 		await stageFile();
 
 		await waitFor(() =>
-			expect(
-				screen.getByText(/Could not parse CSV/i),
-			).toBeInTheDocument(),
+			expect(screen.getByText(/Could not parse CSV/i)).toBeInTheDocument(),
 		);
 		expect(
 			screen.queryByTestId('missing-required-banner'),

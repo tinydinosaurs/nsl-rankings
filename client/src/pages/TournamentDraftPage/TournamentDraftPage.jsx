@@ -601,7 +601,10 @@ export default function TournamentDraftPage({
 								{missingRequiredColumns
 									.map((c) => REQUIRED_COLUMN_LABELS[c] ?? c)
 									.join(' and ')}
-								. {missingRequiredColumns.length === 1 ? 'This column is' : 'These columns are'}{' '}
+								.{' '}
+								{missingRequiredColumns.length === 1
+									? 'This column is'
+									: 'These columns are'}{' '}
 								required — nothing has been saved. Add{' '}
 								{missingRequiredColumns.length === 1 ? 'it' : 'them'} to the
 								header row and re-upload, or open the CSV format guide for
