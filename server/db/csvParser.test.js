@@ -347,8 +347,9 @@ describe('csvParser', () => {
 
 		it('errors when no name-like column is found', () => {
 			const text = csv('score1,score2', '100,90');
-			const { errors } = parseCSV(text, allEvents);
-			expect(errors.some((e) => e.includes('header row'))).toBe(true);
+			const { errors, missing_required_columns } = parseCSV(text, allEvents);
+			expect(errors.some((e) => e.includes('No name column found'))).toBe(true);
+			expect(missing_required_columns).toEqual(['name']);
 		});
 
 		it('errors when there are no data rows after the header', () => {
@@ -376,11 +377,15 @@ describe('csvParser', () => {
 				'Alice,alice@example.com,100,90,110,80',
 				'Bob,bob@example.com,95,105,88,110',
 			);
-			const { competitors, errors } = parseCSV(text, allEvents);
+			const { competitors, errors, missing_required_columns } = parseCSV(
+				text,
+				allEvents,
+			);
 			expect(competitors).toHaveLength(0);
 			expect(errors.some((e) => e.includes('No membership column found'))).toBe(
 				true,
 			);
+			expect(missing_required_columns).toEqual(['is_member']);
 		});
 
 		it('parses true/false values from a "member" column', () => {

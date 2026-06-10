@@ -491,6 +491,76 @@ describe('TournamentDraftPage — slice 5 confirmations', () => {
 		expect(document.activeElement).toBe(firstCheckbox);
 	});
 
+	it('renders the missing-required-column banner when the parser reports missing required columns', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.reject({
+					response: {
+						status: 422,
+						data: {
+							error: 'CSV parsing failed',
+							details: {
+								errors: [
+									'No membership column found (e.g. "member" or "NSL member"). Add the column and re-upload. Use "yes"/"no" — blank cells will be treated as non-members.',
+								],
+								missing_required_columns: ['is_member'],
+							},
+						},
+					},
+				});
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(
+				screen.getByTestId('missing-required-banner'),
+			).toBeInTheDocument(),
+		);
+		// Banner has both action affordances.
+		expect(
+			screen.getByRole('link', { name: /View CSV format guide/i }),
+		).toBeInTheDocument();
+		// The plain previewError alert is suppressed when the banner is showing.
+		expect(
+			screen.queryByText(/No membership column found/i),
+		).not.toBeInTheDocument();
+	});
+
+	it('falls back to the plain preview-error alert when the 422 has no missing_required_columns', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.reject({
+					response: {
+						status: 422,
+						data: {
+							error: 'CSV parsing failed',
+							details: {
+								errors: ['Could not parse CSV — check that the file uses comma or tab separators.'],
+							},
+						},
+					},
+				});
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(
+				screen.getByText(/Could not parse CSV/i),
+			).toBeInTheDocument(),
+		);
+		expect(
+			screen.queryByTestId('missing-required-banner'),
+		).not.toBeInTheDocument();
+	});
+
 	it('opens the commit confirm modal when there are membership flips', async () => {
 		api.post.mockImplementation((url) => {
 			if (url === '/upload/preview')
