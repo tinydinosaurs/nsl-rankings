@@ -105,6 +105,10 @@ function parseCSV(csvText, tournamentSettings) {
 	const { activeEvents, totalPoints } = tournamentSettings;
 	const warnings = [];
 	const errors = [];
+	// Structured list of required columns that were missing from the header
+	// row. Mirrors `missing_event_columns` and drives a warn-and-remediate
+	// banner on the client. Populated below before the required-column bail-out.
+	const missingRequiredColumns = [];
 
 	// Parse with PapaParse — try to detect headers automatically
 	const result = Papa.parse(csvText.trim(), {
@@ -142,9 +146,15 @@ function parseCSV(csvText, tournamentSettings) {
 
 	if (headerRowIndex === -1) {
 		errors.push(
-			'Could not find a header row. Make sure one of your columns is labeled "name", "competitor", "athlete", or similar.',
+			'No name column found in header row. Add a name column (e.g. "Name", "Competitor", or "Athlete") and re-upload.',
 		);
-		return { competitors: [], warnings, errors };
+		missingRequiredColumns.push('name');
+		return {
+			competitors: [],
+			warnings,
+			errors,
+			missing_required_columns: missingRequiredColumns,
+		};
 	}
 
 	if (headerRowIndex > 0) {
@@ -164,8 +174,10 @@ function parseCSV(csvText, tournamentSettings) {
 	});
 
 	if (colMap.name === undefined) {
-		errors.push('No name column found in header row.');
-		return { competitors: [], warnings, errors };
+		errors.push(
+			'No name column found in header row. Add a name column (e.g. "Name", "Competitor", or "Athlete") and re-upload.',
+		);
+		missingRequiredColumns.push('name');
 	}
 
 	// Membership column is required: it gates inclusion on the public leaderboard,
@@ -174,7 +186,19 @@ function parseCSV(csvText, tournamentSettings) {
 		errors.push(
 			'No membership column found (e.g. "member" or "NSL member"). Add the column and re-upload. Use "yes"/"no" — blank cells will be treated as non-members.',
 		);
-		return { competitors: [], warnings, errors };
+		missingRequiredColumns.push('is_member');
+	}
+
+	// If any required column was missing, return early with the structured
+	// `missing_required_columns` array so the client can render a warn-and-
+	// remediate banner instead of a plain error string.
+	if (missingRequiredColumns.length > 0) {
+		return {
+			competitors: [],
+			warnings,
+			errors,
+			missing_required_columns: missingRequiredColumns,
+		};
 	}
 
 	// Warn about active events with no matching column. The structured
@@ -344,6 +368,7 @@ function parseCSV(csvText, tournamentSettings) {
 		warnings,
 		errors,
 		missing_event_columns: missingEventColumns,
+		missing_required_columns: missingRequiredColumns,
 	};
 }
 

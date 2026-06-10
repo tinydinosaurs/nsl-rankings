@@ -96,6 +96,7 @@ function createUploadRouter(db) {
 				warnings,
 				errors,
 				missing_event_columns: missingEventColumns = [],
+				missing_required_columns: missingRequiredColumns = [],
 			} = parseCSV(csvText, {
 				activeEvents,
 				totalPoints,
@@ -105,6 +106,7 @@ function createUploadRouter(db) {
 				throw new FileProcessingError('CSV parsing failed', {
 					errors,
 					warnings,
+					missing_required_columns: missingRequiredColumns,
 				});
 			}
 

@@ -18,6 +18,14 @@ import './TournamentDraftPage.css';
 const DRAFT_SAVE_DEBOUNCE_MS = 250;
 const PREVIEW_DEBOUNCE_MS = 300;
 
+// Human-readable labels for the parser's `missing_required_columns` keys.
+// Used by the missing-required-column banner. Keep keys in sync with the
+// `name` / `is_member` fields in `server/db/csvParser.js`.
+const REQUIRED_COLUMN_LABELS = {
+	name: 'a name column (e.g. "Name" or "Competitor")',
+	is_member: 'a membership column (e.g. "Member" or "NSL member")',
+};
+
 /**
  * Owns the new/update-tournament flow for both entry points:
  *
@@ -83,6 +91,10 @@ export default function TournamentDraftPage({
 	const [preview, setPreview] = useState(null);
 	const [previewing, setPreviewing] = useState(false);
 	const [previewError, setPreviewError] = useState('');
+	// Structured list of required CSV columns the parser couldn't find
+	// (currently `name` and/or `is_member`). When populated we render a
+	// warn-and-remediate banner instead of the plain `previewError` alert.
+	const [missingRequiredColumns, setMissingRequiredColumns] = useState([]);
 
 	const [committing, setCommitting] = useState(false);
 	const [commitError, setCommitError] = useState('');
@@ -114,6 +126,7 @@ export default function TournamentDraftPage({
 		if (!file || resumePrompt) {
 			setPreview(null);
 			setPreviewError('');
+			setMissingRequiredColumns([]);
 			return;
 		}
 		const controller = new AbortController();
@@ -144,6 +157,7 @@ export default function TournamentDraftPage({
 	const runPreview = useCallback(async (theFile, theMeta, signal) => {
 		setPreviewing(true);
 		setPreviewError('');
+		setMissingRequiredColumns([]);
 		try {
 			const formData = new FormData();
 			formData.append('csv', theFile);
@@ -169,6 +183,7 @@ export default function TournamentDraftPage({
 			if (err.name === 'CanceledError' || err.name === 'AbortError') return;
 			const d = err.response?.data;
 			setPreview(null);
+			setMissingRequiredColumns(d?.details?.missing_required_columns ?? []);
 			setPreviewError(
 				d?.details?.errors?.join(' • ') ||
 					d?.errors?.join(' • ') ||
@@ -202,11 +217,13 @@ export default function TournamentDraftPage({
 		setFile(e.target.files?.[0] || null);
 		setPreview(null);
 		setPreviewError('');
+		setMissingRequiredColumns([]);
 	};
 	const handleClearFile = () => {
 		setFile(null);
 		setPreview(null);
 		setPreviewError('');
+		setMissingRequiredColumns([]);
 		if (fileRef.current) fileRef.current.value = '';
 	};
 
@@ -570,7 +587,42 @@ export default function TournamentDraftPage({
 			{file && (
 				<section className="card preview-section">
 					{previewing && <p className="muted">Parsing…</p>}
-					{previewError && (
+					{missingRequiredColumns.length > 0 && (
+						<div
+							className="alert alert-error missing-required-banner"
+							data-testid="missing-required-banner"
+						>
+							<strong>
+								Missing required column
+								{missingRequiredColumns.length === 1 ? '' : 's'} in your file
+							</strong>
+							<p>
+								Your file is missing{' '}
+								{missingRequiredColumns
+									.map((c) => REQUIRED_COLUMN_LABELS[c] ?? c)
+									.join(' and ')}
+								. {missingRequiredColumns.length === 1 ? 'This column is' : 'These columns are'}{' '}
+								required — nothing has been saved. Add{' '}
+								{missingRequiredColumns.length === 1 ? 'it' : 'them'} to the
+								header row and re-upload, or open the CSV format guide for
+								details on accepted column names.
+							</p>
+							<div className="button-row">
+								<label htmlFor="results-file" className="btn btn-secondary">
+									Choose different file
+								</label>
+								<Link
+									to="/admin/help#csv-format"
+									className="btn btn-secondary"
+									target="_blank"
+									rel="noopener"
+								>
+									View CSV format guide
+								</Link>
+							</div>
+						</div>
+					)}
+					{previewError && missingRequiredColumns.length === 0 && (
 						<div className="alert alert-error">{previewError}</div>
 					)}{' '}
 					{preview && missingEventColumns.length > 0 && (

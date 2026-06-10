@@ -219,6 +219,31 @@ describe('Upload Route', () => {
 			expect(res.body.error).toBe('CSV parsing failed');
 			expect(Array.isArray(res.body.details?.errors)).toBe(true);
 			expect(res.body.details.errors[0]).toMatch(/membership column/i);
+			// Structured field for the warn-and-remediate banner.
+			expect(res.body.details.missing_required_columns).toEqual(['is_member']);
+		});
+
+		it('returns 422 with missing_required_columns=["name"] when no name-like column is present', async () => {
+			// No column matches the `name`/`competitor`/`athlete` aliases, so the
+			// header-row scan fails and the parser classifies it as missing-name.
+			const csv = 'score1,score2,member\n100,90,yes\n80,85,no';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(422);
+			expect(res.body.error).toBe('CSV parsing failed');
+			expect(res.body.details.errors[0]).toMatch(/name column/i);
+			expect(res.body.details.missing_required_columns).toEqual(['name']);
 		});
 
 		describe('rebuildPlaceholderWarnings', () => {

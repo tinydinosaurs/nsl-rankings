@@ -351,7 +351,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | POST | `/api/rankings/results` | admin | Add or upsert a single result |
 | PUT | `/api/rankings/results/:id` | admin | Edit a result |
 | DELETE | `/api/rankings/results/:id` | admin | Delete a result |
-| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write). Response shape: `{ competitors, warnings, errors, membership_changes, missing_event_columns }` |
+| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write). Response shape: `{ competitors, warnings, errors, membership_changes, missing_event_columns }`. On parser failure returns 422 with `details: { errors, warnings, missing_required_columns }` where `missing_required_columns` is a structured `string[]` (values: `'name'`, `'is_member'`) used by the client banner. |
 | POST | `/api/upload/commit` | admin | Commit previewed results to DB. Accepts optional `replace_mode: boolean` (only valid with `tournament_id`) — when true, every existing result for that tournament is deleted inside the same transaction before the new rows are inserted. Default behavior (omitted or false) is upsert: matching emails overwrite, new emails insert, untouched results stay. |
 | GET | `/api/health` | — | Health check |
 
@@ -362,6 +362,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 - Accepted file types: `.csv`, `.xlsx`, `.xls`, `.ods` — Excel/ODS files are converted to CSV via SheetJS before parsing
 - Scans first 5 rows for the header row (spreadsheets often have junk rows at the top)
 - Column names are matched via aliases — see `COLUMN_ALIASES` in `csvParser.js`
+- **Required columns:** `name` and `is_member`. Missing either of them aborts parsing — the parser pushes an error message into `errors` and includes the missing key in the structured `missing_required_columns: string[]` field. The preview route surfaces this as a 422 with `details.missing_required_columns`; `TournamentDraftPage` renders a warn-and-remediate banner with `[Choose different file]` / `[View CSV format guide]` actions instead of the plain error alert.
 - Blank cells in **active** events → `0` (competitor participated, scored nothing)
 - Missing event column for an **active** event → `0` with a warning, and the event is included in the parser's structured `missing_event_columns: string[]` field. `TournamentDraftPage` renders a warn-and-remediate banner from that field with `[Choose different file]` / `[Edit tournament events]` actions, and the commit-time confirmation modal surfaces it as an explicit acknowledgement.
 - **Non-score values** in `NON_SCORE_VALUES` (`dns`, `dnf`, `scratch`, `n/a`, `-`, `wd`) → `null` (excluded from the competitor's average for that event)
