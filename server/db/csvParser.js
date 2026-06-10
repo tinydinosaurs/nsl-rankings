@@ -177,9 +177,14 @@ function parseCSV(csvText, tournamentSettings) {
 		return { competitors: [], warnings, errors };
 	}
 
-	// Warn about active events with no matching column
+	// Warn about active events with no matching column. The structured
+	// `missing_event_columns` array drives the slice-5 preview banner with
+	// one-click remediation; the string warning stays for back-compat with
+	// the existing inline warnings list.
+	const missingEventColumns = [];
 	for (const event of activeEvents) {
 		if (colMap[event] === undefined) {
+			missingEventColumns.push(event);
 			warnings.push(
 				`Event "${event}" is marked active but no matching column was found in the CSV. This event will be treated as not held (excluded from scoring).`,
 			);
@@ -334,7 +339,12 @@ function parseCSV(csvText, tournamentSettings) {
 		errors.push('No valid competitor rows found after parsing.');
 	}
 
-	return { competitors, warnings, errors };
+	return {
+		competitors,
+		warnings,
+		errors,
+		missing_event_columns: missingEventColumns,
+	};
 }
 
 module.exports = { parseCSV };

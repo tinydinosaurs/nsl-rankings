@@ -91,7 +91,12 @@ function createUploadRouter(db) {
 				throw new ValidationError('At least one event must be selected');
 			}
 
-			const { competitors, warnings, errors } = parseCSV(csvText, {
+			const {
+				competitors,
+				warnings,
+				errors,
+				missing_event_columns: missingEventColumns = [],
+			} = parseCSV(csvText, {
 				activeEvents,
 				totalPoints,
 			});
@@ -160,6 +165,7 @@ function createUploadRouter(db) {
 				warnings: rebuildPlaceholderWarnings(warnings, enriched),
 				errors: [],
 				membership_changes: membershipChanges,
+				missing_event_columns: missingEventColumns,
 			});
 		}),
 	);
@@ -325,7 +331,11 @@ function createUploadRouter(db) {
 						.prepare(
 							`SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))`,
 						)
-						.get(tournament_date, tournament_name || null, tournament_name || null);
+						.get(
+							tournament_date,
+							tournament_name || null,
+							tournament_name || null,
+						);
 
 					if (duplicate) {
 						throw new ConflictError(

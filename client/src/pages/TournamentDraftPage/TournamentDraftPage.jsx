@@ -5,6 +5,7 @@ import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import Checkbox from '../../components/shared/Checkbox/Checkbox.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import { EVENT_LIST, EVENTS, EVENT_LABELS } from '../../constants/events.js';
+import CommitConfirmModal from './CommitConfirmModal.jsx';
 import {
 	defaultMetadata,
 	isEmptyMetadata,
@@ -32,6 +33,7 @@ export default function TournamentDraftPage({
 	mode = 'create',
 	tournamentId = null,
 	initialMetadata = null,
+	existingResultCount = 0,
 	pageTitle = 'Add Tournament',
 	pageSubtitle = 'Enter tournament details and optionally upload a results file. Nothing is saved until you confirm.',
 	cancelTo = '/admin/tournaments',
@@ -87,8 +89,10 @@ export default function TournamentDraftPage({
 	const [conflictId, setConflictId] = useState(null);
 
 	const [cancelOpen, setCancelOpen] = useState(false);
+	const [commitConfirmOpen, setCommitConfirmOpen] = useState(false);
 
 	const fileRef = useRef(null);
+	const eventsFieldsetRef = useRef(null);
 
 	// Debounced sessionStorage write on metadata change. Create mode only —
 	// in update mode the DB is the source of truth and there is no draft to
@@ -254,7 +258,9 @@ export default function TournamentDraftPage({
 			? metadataValid && !!preview && !previewing && !previewError
 			: metadataValid && !previewing;
 
-	const handleCommit = async () => {
+	// Rename the executor; the user-facing handler decides whether to open
+	// the confirm modal first or commit directly. See `commitNeedsConfirm`.
+	const doCommit = async () => {
 		setCommitError('');
 		setConflictId(null);
 		setCommitting(true);
@@ -323,6 +329,45 @@ export default function TournamentDraftPage({
 		}
 	};
 
+	// Decide whether commit requires the pre-commit confirmation modal.
+	// Triggers (any one suffices):
+	//   - preview contains membership flips
+	//   - preview is missing one or more active-event columns
+	//   - update mode + tournament already has results that will be replaced
+	const membershipChanges = preview?.membership_changes ?? [];
+	const missingEventColumns = preview?.missing_event_columns ?? [];
+	const willReplaceExistingResults =
+		isUpdate && !!file && existingResultCount > 0;
+	const commitNeedsConfirm =
+		membershipChanges.length > 0 ||
+		missingEventColumns.length > 0 ||
+		willReplaceExistingResults;
+
+	const handleCommit = () => {
+		if (commitNeedsConfirm) {
+			setCommitConfirmOpen(true);
+		} else {
+			doCommit();
+		}
+	};
+
+	const handleConfirmCommit = () => {
+		setCommitConfirmOpen(false);
+		doCommit();
+	};
+
+	// Banner action: scroll the events fieldset into view and focus its
+	// first checkbox so the admin can adjust which events are active.
+	const handleFocusEventsFieldset = () => {
+		const node = eventsFieldsetRef.current;
+		if (!node) return;
+		if (typeof node.scrollIntoView === 'function') {
+			node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+		const firstCheckbox = node.querySelector('input[type="checkbox"]');
+		if (firstCheckbox) firstCheckbox.focus();
+	};
+
 	// ─── render ─────────────────────────────────────────────
 
 	if (resumePrompt) {
@@ -378,8 +423,8 @@ export default function TournamentDraftPage({
 			<section className="card">
 				<h2>Tournament information</h2>
 				<p className="section-hint">
-					Edit any field at any time. If a results file is attached, the
-					preview re-runs automatically.
+					Edit any field at any time. If a results file is attached, the preview
+					re-runs automatically.
 				</p>
 
 				<div className="form-row">
@@ -407,7 +452,11 @@ export default function TournamentDraftPage({
 					</div>
 				</div>
 
-				<fieldset className="form-group" style={{ border: 'none', padding: 0 }}>
+				<fieldset
+					ref={eventsFieldsetRef}
+					className="form-group"
+					style={{ border: 'none', padding: 0 }}
+				>
 					<legend>Events held</legend>
 					<div className="event-grid">
 						{EVENT_LIST.map(({ key, label }) => (
@@ -445,7 +494,9 @@ export default function TournamentDraftPage({
 			{/* ─── Region 2: file picker ──────────────────── */}
 			{wasRehydrated && rehydratedHadFile && !file && (
 				<div className="alert alert-warn rehydrate-banner">
-					<strong>Tournament details restored from your previous session.</strong>{' '}
+					<strong>
+						Tournament details restored from your previous session.
+					</strong>{' '}
 					Re-attach your results file to continue. (Files can&apos;t be saved
 					between page refreshes.)
 				</div>
@@ -512,7 +563,62 @@ export default function TournamentDraftPage({
 					{previewing && <p className="muted">Parsing…</p>}
 					{previewError && (
 						<div className="alert alert-error">{previewError}</div>
+					)}{' '}
+					{preview && missingEventColumns.length > 0 && (
+						<div
+							className="alert alert-warn missing-event-banner"
+							data-testid="missing-event-banner"
+						>
+							<strong>
+								Missing column{missingEventColumns.length === 1 ? '' : 's'} in
+								your file
+							</strong>
+							<p>
+								You marked <strong>{missingEventColumns.join(', ')}</strong> as
+								active, but the uploaded file has no matching column. If you
+								save now, those events will be recorded as <em>not held</em> for
+								every competitor in this upload.
+							</p>
+							<div className="button-row">
+								<label htmlFor="results-file" className="btn btn-secondary">
+									Choose different file
+								</label>
+								<button
+									type="button"
+									className="btn btn-secondary"
+									onClick={handleFocusEventsFieldset}
+								>
+									Edit tournament events
+								</button>
+							</div>
+						</div>
 					)}
+					{preview && membershipChanges.length > 0 && (
+						<div
+							className="alert alert-info membership-flip-callout"
+							data-testid="membership-flip-callout"
+						>
+							<strong>
+								Membership status change
+								{membershipChanges.length === 1 ? '' : 's'} (
+								{membershipChanges.length})
+							</strong>
+							<p>
+								The following competitor
+								{membershipChanges.length === 1 ? "'s" : "s'"} membership status
+								differs from their previous record. Saving will update it.
+							</p>
+							<ul>
+								{membershipChanges.map((c) => (
+									<li key={c.email}>
+										<strong>{c.name}</strong>:{' '}
+										{c.before ? 'Member' : 'Non-member'} →{' '}
+										{c.after ? 'Member' : 'Non-member'}
+									</li>
+								))}
+							</ul>
+						</div>
+					)}{' '}
 					{preview && (
 						<PreviewSection
 							preview={preview}
@@ -576,6 +682,17 @@ export default function TournamentDraftPage({
 				variant="danger"
 				onConfirm={handleCancelConfirm}
 				onCancel={() => setCancelOpen(false)}
+			/>
+
+			<CommitConfirmModal
+				isOpen={commitConfirmOpen}
+				onConfirm={handleConfirmCommit}
+				onCancel={() => setCommitConfirmOpen(false)}
+				membershipChanges={membershipChanges}
+				missingEventColumns={missingEventColumns}
+				willReplaceExistingResults={willReplaceExistingResults}
+				existingResultCount={existingResultCount}
+				competitorCount={preview?.competitors?.length ?? 0}
 			/>
 		</div>
 	);

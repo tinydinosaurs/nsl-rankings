@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+	render,
+	screen,
+	fireEvent,
+	waitFor,
+	act,
+} from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock the api module before importing the page.
@@ -233,7 +239,11 @@ describe('draftStorage', () => {
 	it('clearDraft removes the entry', () => {
 		sessionStorage.setItem(
 			'nsl:draft:tournament',
-			JSON.stringify({ version: 1, updatedAt: 'x', metadata: defaultMetadata() }),
+			JSON.stringify({
+				version: 1,
+				updatedAt: 'x',
+				metadata: defaultMetadata(),
+			}),
 		);
 		clearDraft();
 		expect(sessionStorage.getItem('nsl:draft:tournament')).toBeNull();
@@ -379,5 +389,277 @@ describe('TournamentDraftPage — update mode', () => {
 			const urls = api.post.mock.calls.map(([url]) => url);
 			expect(urls).not.toContain('/rankings/tournaments');
 		});
+	});
+});
+
+describe('TournamentDraftPage — slice 5 confirmations', () => {
+	const stageFile = async () => {
+		const file = new File(['name,email\nAlice,alice@example.com'], 't.csv', {
+			type: 'text/csv',
+		});
+		const fileInput = document.getElementById('results-file');
+		await act(async () => {
+			fireEvent.change(fileInput, { target: { files: [file] } });
+			vi.advanceTimersByTime(400);
+		});
+	};
+
+	const fillCreateMetadata = () => {
+		fireEvent.change(screen.getByLabelText(/Name/i), {
+			target: { value: 'Some Tournament' },
+		});
+		fireEvent.change(screen.getByLabelText(/Date/i), {
+			target: { value: '2026-04-12' },
+		});
+	};
+
+	it('renders the membership-flip callout when the preview contains flips', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.resolve(
+					previewResponse({
+						membership_changes: [
+							{
+								name: 'Alice Smith',
+								email: 'alice@example.com',
+								before: false,
+								after: true,
+							},
+						],
+					}),
+				);
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByTestId('membership-flip-callout')).toBeInTheDocument(),
+		);
+		expect(screen.getByText(/Non-member → Member/i)).toBeInTheDocument();
+	});
+
+	it('renders the missing-event banner when active events have no column', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.resolve(
+					previewResponse({ missing_event_columns: ['woods'] }),
+				);
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByTestId('missing-event-banner')).toBeInTheDocument(),
+		);
+		expect(
+			screen.getByRole('button', { name: /Edit tournament events/i }),
+		).toBeInTheDocument();
+	});
+
+	it('"Edit tournament events" focuses the first event checkbox', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.resolve(
+					previewResponse({ missing_event_columns: ['woods'] }),
+				);
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByTestId('missing-event-banner')).toBeInTheDocument(),
+		);
+
+		const btn = screen.getByRole('button', { name: /Edit tournament events/i });
+		await act(async () => {
+			fireEvent.click(btn);
+		});
+
+		// First event checkbox (knockdowns) should now be focused.
+		const firstCheckbox = document.querySelector(
+			'fieldset input[type="checkbox"]',
+		);
+		expect(document.activeElement).toBe(firstCheckbox);
+	});
+
+	it('opens the commit confirm modal when there are membership flips', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.resolve(
+					previewResponse({
+						membership_changes: [
+							{
+								name: 'Alice Smith',
+								email: 'alice@example.com',
+								before: true,
+								after: false,
+							},
+						],
+					}),
+				);
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 7 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		// Modal opens — commit not yet sent.
+		expect(
+			screen.getByRole('heading', { name: /Confirm save/i }),
+		).toBeInTheDocument();
+		expect(api.post).not.toHaveBeenCalledWith(
+			'/upload/commit',
+			expect.anything(),
+		);
+
+		// Confirm in the modal triggers the actual commit.
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Yes, save now/i }));
+		});
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(
+				'/upload/commit',
+				expect.any(Object),
+			),
+		);
+	});
+
+	it('opens the commit confirm modal when active events are missing columns', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview')
+				return Promise.resolve(
+					previewResponse({ missing_event_columns: ['woods'] }),
+				);
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 8 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		expect(
+			screen.getByRole('heading', { name: /Confirm save/i }),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Missing event columns/i)).toBeInTheDocument();
+	});
+
+	it('opens the commit confirm modal in update mode when existing results will be replaced', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 99 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		render(
+			<MemoryRouter>
+				<TournamentDraftPage
+					mode="update"
+					tournamentId={99}
+					initialMetadata={{
+						name: 'Existing Tournament',
+						date: '2026-01-01',
+						events: {
+							has_knockdowns: true,
+							has_distance: true,
+							has_speed: true,
+							has_woods: true,
+						},
+						points: {
+							total_points_knockdowns: 120,
+							total_points_distance: 120,
+							total_points_speed: 120,
+							total_points_woods: 120,
+						},
+					}}
+					existingResultCount={12}
+					cancelTo="/admin/tournaments/99"
+				/>
+			</MemoryRouter>,
+		);
+
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		expect(
+			screen.getByRole('heading', { name: /Confirm save/i }),
+		).toBeInTheDocument();
+		expect(screen.getByText(/Updating existing results/i)).toBeInTheDocument();
+		// Not yet committed.
+		expect(api.post).not.toHaveBeenCalledWith(
+			'/upload/commit',
+			expect.anything(),
+		);
+	});
+
+	it('does NOT open the modal when nothing requires confirmation', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 7 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		renderPage();
+		fillCreateMetadata();
+		await stageFile();
+
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		// No modal heading.
+		expect(
+			screen.queryByRole('heading', { name: /Confirm save/i }),
+		).not.toBeInTheDocument();
+		// Commit went through directly.
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(
+				'/upload/commit',
+				expect.any(Object),
+			),
+		);
 	});
 });

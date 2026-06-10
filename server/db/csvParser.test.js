@@ -121,6 +121,28 @@ describe('csvParser', () => {
 				),
 			).toBe(true);
 		});
+
+		it('reports missing active-event columns in the structured field', () => {
+			const text = csv(
+				'name,email,knockdowns,distance',
+				'Alice,alice@example.com,100,90',
+			);
+			const result = parseCSV(text, allEvents);
+			// speed + woods columns missing while both are active
+			expect(result.missing_event_columns).toEqual(
+				expect.arrayContaining(['speed', 'woods']),
+			);
+			expect(result.missing_event_columns).toHaveLength(2);
+		});
+
+		it('returns an empty missing_event_columns array when no columns are missing', () => {
+			const text = csv(
+				'name,email,knockdowns,distance,speed,woods',
+				'Alice,alice@example.com,100,90,110,80',
+			);
+			const result = parseCSV(text, allEvents);
+			expect(result.missing_event_columns).toEqual([]);
+		});
 	});
 
 	describe('blank cells', () => {

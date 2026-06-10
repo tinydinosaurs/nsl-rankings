@@ -351,7 +351,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | POST | `/api/rankings/results` | admin | Add or upsert a single result |
 | PUT | `/api/rankings/results/:id` | admin | Edit a result |
 | DELETE | `/api/rankings/results/:id` | admin | Delete a result |
-| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write) |
+| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write). Response shape: `{ competitors, warnings, errors, membership_changes, missing_event_columns }` |
 | POST | `/api/upload/commit` | admin | Commit previewed results to DB |
 | GET | `/api/health` | — | Health check |
 
@@ -363,7 +363,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 - Scans first 5 rows for the header row (spreadsheets often have junk rows at the top)
 - Column names are matched via aliases — see `COLUMN_ALIASES` in `csvParser.js`
 - Blank cells in **active** events → `0` (competitor participated, scored nothing)
-- Missing event column for an **active** event → `0` with a warning (this behavior is slated to change — see ROADMAP #19; the unified-preview UX will warn-and-remediate instead)
+- Missing event column for an **active** event → `0` with a warning, and the event is included in the parser's structured `missing_event_columns: string[]` field. `TournamentDraftPage` renders a warn-and-remediate banner from that field with `[Choose different file]` / `[Edit tournament events]` actions, and the commit-time confirmation modal surfaces it as an explicit acknowledgement.
 - **Non-score values** in `NON_SCORE_VALUES` (`dns`, `dnf`, `scratch`, `n/a`, `-`, `wd`) → `null` (excluded from the competitor's average for that event)
 - **DQ / disqualified** → `0` (penalty counts toward the average — a disqualification is a result, not "didn't participate")
 - Non-score and DQ warnings are **aggregated by event + value** (e.g. `knockdowns: 3 row(s) marked "DNS"`) rather than emitted per row
