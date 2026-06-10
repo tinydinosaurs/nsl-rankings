@@ -992,6 +992,64 @@ describe('NSL Rankings Integration Tests', () => {
 			expect(response.status).toBe(401);
 		});
 	});
+
+	describe('Public Leaderboard Endpoint', () => {
+		it('should return 200 with rankings/tournament_count/last_updated shape without auth', async () => {
+			const response = await request(app).get('/api/rankings/public');
+			expect(response.status).toBe(200);
+			expect(response.body).toHaveProperty('rankings');
+			expect(Array.isArray(response.body.rankings)).toBe(true);
+			expect(response.body).toHaveProperty('tournament_count');
+			expect(response.body).toHaveProperty('last_updated');
+		});
+
+		it('should set Cache-Control: public, max-age=300 so embeds can cache the response', async () => {
+			const response = await request(app).get('/api/rankings/public');
+			expect(response.status).toBe(200);
+			expect(response.headers['cache-control']).toBe('public, max-age=300');
+		});
+
+		it('should return real ranking data after a tournament is committed', async () => {
+			const csvPath = path.join(__dirname, 'temp-public-test.csv');
+			fs.writeFileSync(csvPath, cleanCsvData);
+			try {
+				const preview = await request(app)
+					.post('/api/upload/preview')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.attach('csv', csvPath)
+					.field('has_knockdowns', 'true')
+					.field('has_distance', 'true')
+					.field('has_speed', 'true')
+					.field('has_woods', 'true');
+				expect(preview.status).toBe(200);
+
+				const commit = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_name: 'Public Endpoint Test',
+						tournament_date: '2024-05-01',
+						activeEvents: ['knockdowns', 'distance', 'speed', 'woods'],
+						totalPoints: {
+							knockdowns: 120,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
+						competitors: preview.body.competitors,
+					});
+				expect(commit.status).toBe(201);
+
+				const response = await request(app).get('/api/rankings/public');
+				expect(response.status).toBe(200);
+				expect(response.body.rankings.length).toBeGreaterThan(0);
+				expect(response.body.tournament_count).toBe(1);
+				expect(response.body.last_updated).toBe('2024-05-01');
+			} finally {
+				fs.unlinkSync(csvPath);
+			}
+		});
+	});
 });
 
 // Test summary for integration coverage

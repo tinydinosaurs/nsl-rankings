@@ -32,8 +32,17 @@ if (!clientUrl && process.env.NODE_ENV === 'production') {
 	process.exit(1);
 }
 
+// CLIENT_URL accepts a comma-separated list of allowed origins so the public
+// leaderboard can be embedded on additional sites (e.g. the WordPress page).
+// In dev we fall back to the Vite default. Empty entries from a trailing comma
+// or extra whitespace are filtered out.
+const allowedOrigins = (clientUrl || 'http://localhost:5173')
+	.split(',')
+	.map((origin) => origin.trim())
+	.filter(Boolean);
+
 app.use(helmet());
-app.use(cors({ origin: clientUrl || 'http://localhost:5173' }));
+app.use(cors({ origin: allowedOrigins }));
 app.use(express.json());
 
 // Create route instances with database dependency injection
