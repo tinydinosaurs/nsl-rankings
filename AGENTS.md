@@ -352,7 +352,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | PUT | `/api/rankings/results/:id` | admin | Edit a result |
 | DELETE | `/api/rankings/results/:id` | admin | Delete a result |
 | POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write). Response shape: `{ competitors, warnings, errors, membership_changes, missing_event_columns }` |
-| POST | `/api/upload/commit` | admin | Commit previewed results to DB |
+| POST | `/api/upload/commit` | admin | Commit previewed results to DB. Accepts optional `replace_mode: boolean` (only valid with `tournament_id`) — when true, every existing result for that tournament is deleted inside the same transaction before the new rows are inserted. Default behavior (omitted or false) is upsert: matching emails overwrite, new emails insert, untouched results stay. |
 | GET | `/api/health` | — | Health check |
 
 ---
@@ -387,7 +387,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments. "Add Tournament" navigates to `/admin/tournaments/new` |
 | `/admin/tournaments/new`   | `TournamentDraftPage`  | Admin | Create a tournament. Single-page draft — metadata, file picker, and inline preview on one screen. Draft is held in sessionStorage; **nothing is written to the DB until Commit**. With a file: posts to `/api/upload/commit`. Without a file: posts to `/api/rankings/tournaments` (metadata-only "shell" tournament). |
 | `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, delete tournament. "Upload Results" button navigates to the upload page. |
-| `/admin/tournaments/:id/upload` | `TournamentUploadWrapper` → `TournamentDraftPage` (`mode="update"`) | Admin | Add results to an existing tournament. Wrapper loads the tournament and seeds the draft page's initial metadata; metadata is editable inline and lands in the same transaction as the results via `/api/upload/commit` with `tournament_id` set. No sessionStorage draft layer in update mode. |
+| `/admin/tournaments/:id/upload` | `TournamentUploadWrapper` → `TournamentDraftPage` (`mode="update"`) | Admin | Add results to an existing tournament. Wrapper loads the tournament and seeds the draft page's initial metadata; metadata is editable inline and lands in the same transaction as the results via `/api/upload/commit` with `tournament_id` set. When the tournament already has results, the commit-confirm modal exposes a choice between **Update existing results** (upsert) and **Replace all results** (delete + insert in one transaction). No sessionStorage draft layer in update mode. |
 | `/admin/users`             | `AdminUsersPage`       | Owner | Create/edit/delete admin and owner accounts           |
 | `/admin/account`           | `AccountPage`          | Admin | Profile (username + role) and self-service password change |
 | `/admin/help`              | `HelpPage`             | Admin | Admin documentation — upload flow, CSV format, scoring math |

@@ -186,6 +186,7 @@ function createUploadRouter(db) {
 				activeEvents,
 				totalPoints,
 				competitors,
+				replace_mode: replaceModeRaw,
 			} = req.body;
 
 			// Optional: if provided, attach results to this existing tournament instead of creating one
@@ -194,6 +195,17 @@ function createUploadRouter(db) {
 					? parseInt(req.body.tournament_id, 10)
 					: null;
 			const isExisting = tournamentId !== null && !isNaN(tournamentId);
+
+			// replace_mode = true means: wipe existing tournament_results for this
+			// tournament inside the same transaction, then insert from the payload.
+			// Only meaningful on the existing-tournament path — a new tournament
+			// has nothing to replace.
+			const replaceMode = replaceModeRaw === true || replaceModeRaw === 'true';
+			if (replaceMode && !isExisting) {
+				throw new ValidationError(
+					'replace_mode is only valid when tournament_id is supplied',
+				);
+			}
 
 			if (!isExisting && !tournament_date) {
 				throw new ValidationError('Tournament date is required');
@@ -389,6 +401,17 @@ function createUploadRouter(db) {
 				const inserted = [];
 				const updated = [];
 
+				// Replace mode — wipe existing rows for this tournament *inside the
+				// same transaction* so a downstream failure rolls everything back
+				// and the admin never sees an empty tournament.
+				let replacedCount = 0;
+				if (replaceMode && isExisting) {
+					const delResult = db
+						.prepare('DELETE FROM tournament_results WHERE tournament_id = ?')
+						.run(finalTournamentId);
+					replacedCount = delResult.changes;
+				}
+
 				for (const comp of competitors) {
 					// All competitors now have email addresses (required by parser)
 					let competitorId = comp.existing_competitor_id;
@@ -451,7 +474,12 @@ function createUploadRouter(db) {
 					);
 				}
 
-				return { tournamentId: finalTournamentId, inserted, updated };
+				return {
+					tournamentId: finalTournamentId,
+					inserted,
+					updated,
+					replacedCount,
+				};
 			});
 
 			const result = commitAll();
@@ -460,6 +488,8 @@ function createUploadRouter(db) {
 				tournament_id: result.tournamentId,
 				new_competitors: result.inserted,
 				updated_competitors: result.updated,
+				replace_mode: replaceMode,
+				replaced_count: result.replacedCount,
 			});
 		}),
 	);

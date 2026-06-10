@@ -1,18 +1,27 @@
 import Modal from '../../components/shared/Modal/Modal.jsx';
 
 /**
- * Pre-commit confirmation. Shown only when at least one of three conditions
+ * Pre-commit confirmation. Shown only when at least one of these conditions
  * applies:
  *   1. The preview contains membership flips (admin is about to change a
  *      competitor's member/non-member status).
  *   2. The preview is missing one or more active-event columns (admin asked
  *      for an event but the file has no column for it — values will be saved
  *      as "not held").
- *   3. We are in update mode and the tournament already has results that
- *      this commit will replace.
+ *   3. We are in update mode and the tournament already has results
+ *      (`willReplaceExistingResults`). In this case the footer shows a
+ *      three-button choice — Cancel / Update existing results / Replace all
+ *      results — and the body copy describes both modes side-by-side so the
+ *      admin can choose without leaving the modal.
  *
- * One modal, multiple sections — only the sections that apply are rendered.
- * A single Confirm button performs the commit; Cancel just closes the modal.
+ * The `onConfirm` callback receives the chosen commit mode:
+ *   - `'upsert'`  — overwrite scores for matches, add new competitors, leave
+ *                   others alone (the default; server upserts).
+ *   - `'replace'` — wipe existing rows for this tournament inside the same
+ *                   transaction, then insert from the file.
+ *
+ * When `willReplaceExistingResults` is false the footer is a single primary
+ * confirm button that always calls `onConfirm('upsert')`.
  */
 export default function CommitConfirmModal({
 	isOpen,
@@ -22,7 +31,6 @@ export default function CommitConfirmModal({
 	missingEventColumns = [],
 	willReplaceExistingResults = false,
 	existingResultCount = 0,
-	competitorCount = 0,
 }) {
 	if (!isOpen) return null;
 
@@ -36,26 +44,30 @@ export default function CommitConfirmModal({
 
 				{willReplaceExistingResults && (
 					<section className="confirm-section">
-						<h3>Updating existing results</h3>
+						<h3>This tournament already has results</h3>
 						<p>
-							This tournament already has <strong>{existingResultCount}</strong>{' '}
-							{existingResultCount === 1 ? 'result' : 'results'}. Saving will:
+							There {existingResultCount === 1 ? 'is' : 'are'} currently{' '}
+							<strong>{existingResultCount}</strong>{' '}
+							{existingResultCount === 1 ? 'result' : 'results'} on this
+							tournament. Choose how this upload should be applied:
 						</p>
-						<ul>
-							<li>
-								<strong>Overwrite</strong> the existing score for any competitor
-								who appears in your file.
-							</li>
-							<li>
-								<strong>Add</strong> any competitors in your file who
-								aren&apos;t already in this tournament.
-							</li>
-							<li>
-								<strong>Leave alone</strong> any existing results for
-								competitors who aren&apos;t in your file. To remove those, use{' '}
-								<em>Remove All Results</em> on the tournament page first.
-							</li>
-						</ul>
+						<dl className="commit-mode-choices">
+							<dt>Update existing results</dt>
+							<dd>
+								<strong>Overwrite</strong> the score for any competitor in your
+								file, <strong>add</strong> any new competitors in your file, and{' '}
+								<strong>leave alone</strong> any existing results for
+								competitors who aren&apos;t in your file. Use this when you have
+								a partial file — a fix for one score, a missed competitor, etc.
+							</dd>
+							<dt>Replace all results</dt>
+							<dd>
+								<strong>Delete every existing result</strong> on this
+								tournament, then save the results from your file. Use this when
+								the previous upload was wrong, or when a competitor needs to be
+								removed from the tournament entirely. This can&apos;t be undone.
+							</dd>
+						</dl>
 					</section>
 				)}
 
@@ -103,9 +115,32 @@ export default function CommitConfirmModal({
 					<button type="button" className="btn btn-ghost" onClick={onCancel}>
 						Cancel
 					</button>
-					<button type="button" className="btn btn-primary" onClick={onConfirm}>
-						Yes, save now
-					</button>
+					{willReplaceExistingResults ? (
+						<>
+							<button
+								type="button"
+								className="btn btn-primary"
+								onClick={() => onConfirm('upsert')}
+							>
+								Update existing results
+							</button>
+							<button
+								type="button"
+								className="btn btn-danger"
+								onClick={() => onConfirm('replace')}
+							>
+								Replace all results
+							</button>
+						</>
+					) : (
+						<button
+							type="button"
+							className="btn btn-primary"
+							onClick={() => onConfirm('upsert')}
+						>
+							Yes, save now
+						</button>
+					)}
 				</div>
 			</div>
 		</Modal>

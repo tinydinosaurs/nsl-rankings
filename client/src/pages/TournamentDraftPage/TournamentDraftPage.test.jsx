@@ -622,11 +622,143 @@ describe('TournamentDraftPage — slice 5 confirmations', () => {
 		expect(
 			screen.getByRole('heading', { name: /Confirm save/i }),
 		).toBeInTheDocument();
-		expect(screen.getByText(/Updating existing results/i)).toBeInTheDocument();
+		expect(
+			screen.getByText(/This tournament already has results/i),
+		).toBeInTheDocument();
 		// Not yet committed.
 		expect(api.post).not.toHaveBeenCalledWith(
 			'/upload/commit',
 			expect.anything(),
+		);
+	});
+
+	it('sends replace_mode: false when admin chooses "Update existing results"', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 99 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		render(
+			<MemoryRouter>
+				<TournamentDraftPage
+					mode="update"
+					tournamentId={99}
+					initialMetadata={{
+						name: 'Existing Tournament',
+						date: '2026-01-01',
+						events: {
+							has_knockdowns: true,
+							has_distance: true,
+							has_speed: true,
+							has_woods: true,
+						},
+						points: {
+							total_points_knockdowns: 120,
+							total_points_distance: 120,
+							total_points_speed: 120,
+							total_points_woods: 120,
+						},
+					}}
+					existingResultCount={12}
+					cancelTo="/admin/tournaments/99"
+				/>
+			</MemoryRouter>,
+		);
+
+		await stageFile();
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		// Both choice buttons should be rendered side-by-side in the modal.
+		expect(
+			screen.getByRole('button', { name: /Update existing results/i }),
+		).toBeInTheDocument();
+		expect(
+			screen.getByRole('button', { name: /Replace all results/i }),
+		).toBeInTheDocument();
+
+		await act(async () => {
+			fireEvent.click(
+				screen.getByRole('button', { name: /Update existing results/i }),
+			);
+		});
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(
+				'/upload/commit',
+				expect.objectContaining({
+					tournament_id: 99,
+					replace_mode: false,
+				}),
+			),
+		);
+	});
+
+	it('sends replace_mode: true when admin chooses "Replace all results"', async () => {
+		api.post.mockImplementation((url) => {
+			if (url === '/upload/preview') return Promise.resolve(previewResponse());
+			if (url === '/upload/commit')
+				return Promise.resolve({ data: { tournament_id: 99 } });
+			throw new Error(`unexpected url ${url}`);
+		});
+
+		render(
+			<MemoryRouter>
+				<TournamentDraftPage
+					mode="update"
+					tournamentId={99}
+					initialMetadata={{
+						name: 'Existing Tournament',
+						date: '2026-01-01',
+						events: {
+							has_knockdowns: true,
+							has_distance: true,
+							has_speed: true,
+							has_woods: true,
+						},
+						points: {
+							total_points_knockdowns: 120,
+							total_points_distance: 120,
+							total_points_speed: 120,
+							total_points_woods: 120,
+						},
+					}}
+					existingResultCount={12}
+					cancelTo="/admin/tournaments/99"
+				/>
+			</MemoryRouter>,
+		);
+
+		await stageFile();
+		await waitFor(() =>
+			expect(screen.getByText(/competitors found/i)).toBeInTheDocument(),
+		);
+
+		await act(async () => {
+			fireEvent.click(screen.getByRole('button', { name: /Confirm & Save/i }));
+		});
+
+		await act(async () => {
+			fireEvent.click(
+				screen.getByRole('button', { name: /Replace all results/i }),
+			);
+		});
+
+		await waitFor(() =>
+			expect(api.post).toHaveBeenCalledWith(
+				'/upload/commit',
+				expect.objectContaining({
+					tournament_id: 99,
+					replace_mode: true,
+				}),
+			),
 		);
 	});
 

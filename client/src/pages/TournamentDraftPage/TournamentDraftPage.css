@@ -173,3 +173,40 @@
 	color: var(--status-info-text);
 	border: 1px solid var(--accent);
 }
+
+/* ----- Commit-confirm modal ----- */
+
+.commit-confirm-modal .confirm-section {
+	margin-top: var(--nsl-space-md);
+}
+
+.commit-confirm-modal .confirm-section h3 {
+	margin: 0 0 var(--nsl-space-2xs);
+	font-size: 1rem;
+}
+
+.commit-confirm-modal .commit-mode-choices {
+	margin: var(--nsl-space-2xs) 0 0;
+	display: grid;
+	gap: var(--nsl-space-xs);
+}
+
+.commit-confirm-modal .commit-mode-choices dt {
+	font-weight: var(--nsl-weight-semibold);
+	margin-bottom: var(--nsl-space-3xs);
+}
+
+.commit-confirm-modal .commit-mode-choices dd {
+	margin: 0;
+	color: var(--text-muted);
+	font-size: 0.95rem;
+	line-height: 1.45;
+}
+
+.commit-confirm-modal .button-row {
+	display: flex;
+	gap: var(--nsl-space-xs);
+	justify-content: flex-end;
+	flex-wrap: wrap;
+	margin-top: var(--nsl-space-md);
+}
