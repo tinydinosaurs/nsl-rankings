@@ -30,7 +30,7 @@ Set in **Render Dashboard → nsl-rankings service → Environment**.
 |---|---|---|
 | `NODE_ENV` | yes | Must be `production`. Triggers fail-fast checks for the secrets below. |
 | `JWT_SECRET` | yes | Long random string. Service refuses to start if missing or set to the dev fallback. Rotating invalidates all existing JWTs (everyone gets logged out). |
-| `CLIENT_URL` | yes | CORS allowlist origin. Currently the Render URL; update when moving to a custom domain or when adding the WordPress embed. |
+| `CLIENT_URL` | yes | CORS allowlist origin(s). Accepts a single URL or a comma-separated list (e.g. `https://admin.example.com,https://www.example.com`). Whitespace around commas is trimmed. Update when moving to a custom domain or when adding the WordPress embed — see `docs/WORDPRESS_EMBED.md`. |
 | `OWNER_USERNAME` | first boot only | Seeds the owner account on first boot if no owner exists. Safe to remove from the dashboard after the owner is created — seed only runs when the `users` table has no owner row. |
 | `OWNER_PASSWORD` | first boot only | Required alongside `OWNER_USERNAME`. Same removal note. |
 | `ADMIN_USERNAME` | optional | Seeds one admin on first boot if explicitly set. No env var = no admin seeded. |

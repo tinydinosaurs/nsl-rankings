@@ -320,7 +320,7 @@ Middleware:
 - `requireAdmin` — both `admin` and `owner` pass
 - `authenticate` — any valid JWT passes
 
-The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
+The public leaderboard (`GET /api/rankings/public`) requires **no auth**, sends `Cache-Control: public, max-age=300`, and is CORS-allowed for every origin in `CLIENT_URL` (which accepts a comma-separated list — see `docs/WORDPRESS_EMBED.md`).
 
 ---
 
@@ -334,7 +334,7 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | POST | `/api/auth/users` | owner | Create a user |
 | PUT | `/api/auth/users/:id` | owner | Update username/password/role |
 | DELETE | `/api/auth/users/:id` | owner | Delete a user |
-| GET | `/api/rankings/public` | — | Public leaderboard + tournament stats |
+| GET | `/api/rankings/public` | — | Public leaderboard + tournament stats. Sends `Cache-Control: public, max-age=300` for embeds (e.g. the WordPress page). |
 | GET | `/api/rankings` | authenticated | Full rankings (authenticated view) |
 | GET | `/api/rankings/competitors` | authenticated | List competitors with scores + tournament counts |
 | GET | `/api/rankings/competitors/:id` | admin | Competitor record |

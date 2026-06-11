@@ -24,6 +24,8 @@ function createRankingsRouter(db) {
 	});
 
 	// GET /api/rankings/public — public rankings table (no auth required)
+	// Cached for 5 minutes so embeds on external sites (e.g. the WordPress
+	// leaderboard page) survive traffic spikes without hammering the server.
 	router.get('/public', (req, res) => {
 		const rankings = computeRankings(db);
 		const { tournament_count, last_updated } = db
@@ -31,6 +33,7 @@ function createRankingsRouter(db) {
 				`SELECT COUNT(*) as tournament_count, MAX(date) as last_updated FROM tournaments`,
 			)
 			.get();
+		res.set('Cache-Control', 'public, max-age=300');
 		res.json({ rankings, tournament_count, last_updated });
 	});
 
