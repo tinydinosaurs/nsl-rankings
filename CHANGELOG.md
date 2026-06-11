@@ -10,6 +10,16 @@ visiting the leaderboard — so user-facing changes are anything those folks
 would notice. Internal refactors, test changes, and tooling updates can be
 noted under `Changed` only when they meaningfully affect contributors.
 
+## [0.4.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.3.1...v0.4.0) (2026-06-11)
+
+
+### Added
+
+* **server:** CORS allowlist + cache header for WordPress embed ([#32](https://github.com/tinydinosaurs/nsl-rankings/issues/32)) ([19fd4ce](https://github.com/tinydinosaurs/nsl-rankings/commit/19fd4cea62c4bc23e1573b839e4aa641da45086a))
+* **upload:** add replace-mode for re-uploading to a tournament ([#28](https://github.com/tinydinosaurs/nsl-rankings/issues/28)) ([65f89f9](https://github.com/tinydinosaurs/nsl-rankings/commit/65f89f9282c88266252d2fa5d769f9025c954482))
+* **upload:** server-side groundwork for draft-until-commit upload flow ([#21](https://github.com/tinydinosaurs/nsl-rankings/issues/21)) ([58b201d](https://github.com/tinydinosaurs/nsl-rankings/commit/58b201d5c62431485b5449424e611ceb960505e4))
+* **upload:** warn-and-remediate banner for missing required CSV columns ([#30](https://github.com/tinydinosaurs/nsl-rankings/issues/30)) ([208aa79](https://github.com/tinydinosaurs/nsl-rankings/commit/208aa793d9fdf18ddb7e1ca53ce45de15f3f6545))
+
 ## [0.3.1](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.3.0...v0.3.1) (2026-05-20)
 
 
