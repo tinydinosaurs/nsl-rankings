@@ -19,7 +19,7 @@
 		"axios": "^1.16.0",
 		"papaparse": "^5.4.1",
 		"react": "^18.2.0",
-		"react-dom": "^18.2.0",
+		"react-dom": "^19.2.7",
 		"react-router-dom": "^6.30.4"
 	},
 	"devDependencies": {
