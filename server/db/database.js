@@ -90,6 +90,8 @@ const existingOwner = db
 if (!existingOwner) {
 	if (!process.env.OWNER_USERNAME || !process.env.OWNER_PASSWORD) {
 		if (process.env.NODE_ENV === 'production') {
+			// Render (and any other production host) must set NODE_ENV=production
+			// along with OWNER_USERNAME and OWNER_PASSWORD before first boot.
 			console.error(
 				'FATAL: OWNER_USERNAME and OWNER_PASSWORD must be set in environment variables.',
 			);
@@ -108,7 +110,7 @@ if (!existingOwner) {
 		db.prepare(
 			'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 		).run(username, hash, 'owner');
-		console.log(`Owner created: username=${username}`);
+		console.log('Owner account created from environment variables.');
 	}
 }
 // NO else block
