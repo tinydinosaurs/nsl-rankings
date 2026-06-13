@@ -47,14 +47,17 @@ In the WordPress page editor:
 
 ```html
 <!-- NSL Leaderboard embed — replace RANKINGS_URL with your server URL -->
-<div id="nsl-leaderboard" class="nsl-leaderboard">Loading leaderboard…</div>
+<div id="nsl-leaderboard" class="nsl-leaderboard">
+	Loading leaderboard&hellip;
+</div>
 
 <style>
 	.nsl-leaderboard {
 		font-family:
+			'IBM Plex Sans',
 			system-ui,
 			-apple-system,
-			Segoe UI,
+			'Segoe UI',
 			Roboto,
 			sans-serif;
 		color: #1a1a1a;
@@ -106,7 +109,7 @@ In the WordPress page editor:
 		var container = document.getElementById('nsl-leaderboard');
 
 		function fmt(val) {
-			if (val === null || val === undefined) return '—';
+			if (val === null || val === undefined) return '\u2014';
 			return (Math.round(val * 10) / 10).toFixed(1);
 		}
 
@@ -126,7 +129,7 @@ In the WordPress page editor:
 			var rankings = (payload && payload.rankings) || [];
 			if (rankings.length === 0) {
 				container.innerHTML =
-					'<p>No rankings yet — check back after the first tournament.</p>';
+					'<p>No rankings yet \u2014 check back after the first tournament.</p>';
 				return;
 			}
 
@@ -167,7 +170,7 @@ In the WordPress page editor:
 					payload.tournament_count +
 					(payload.tournament_count === 1 ? ' tournament' : ' tournaments');
 				if (payload.last_updated) {
-					meta += ' · last updated ' + escapeHtml(payload.last_updated);
+					meta += ' \u00B7 last updated ' + escapeHtml(payload.last_updated);
 				}
 				meta += '.</p>';
 			}
