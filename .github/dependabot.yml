@@ -1,0 +1,85 @@
+# Dependabot configuration.
+#
+# Strategy: prefer weekly checks over daily so newly-published versions
+# get 0–7 days of natural cooling-off in the wild before we even see a
+# PR. Group patch + minor bumps into a single PR per ecosystem to cut
+# noise, but keep production and dev dependencies separate so prod-side
+# updates get more eyeballs. Major bumps still open as individual PRs
+# (Dependabot's default) since they always need real review.
+#
+# This file does NOT replace per-PR review judgment — see notes in
+# AGENTS.md about waiting on patches from single-maintainer packages.
+
+version: 2
+updates:
+  # Root workspace (concurrently, etc.)
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 10
+    groups:
+      prod-patch-minor:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+      dev-patch-minor:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+
+  # Server workspace
+  - package-ecosystem: npm
+    directory: /server
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 10
+    groups:
+      prod-patch-minor:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+      dev-patch-minor:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+
+  # Client workspace
+  - package-ecosystem: npm
+    directory: /client
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Chicago
+    open-pull-requests-limit: 10
+    groups:
+      prod-patch-minor:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+      dev-patch-minor:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+
+  # GitHub Actions versions (e.g. actions/checkout@v4)
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: America/Chicago
