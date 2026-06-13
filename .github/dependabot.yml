@@ -7,56 +7,22 @@
 # updates get more eyeballs. Major bumps still open as individual PRs
 # (Dependabot's default) since they always need real review.
 #
+# npm workspaces note: this repo is an npm workspaces monorepo with a
+# single root package-lock.json that resolves deps for /server and
+# /client. Dependabot handles workspace package.json files natively
+# from the root since 2022, so we only declare the root directory here.
+# Declaring /server and /client separately produced duplicate PRs for
+# every workspace dep (one per directory that could "see" it through
+# the hoisted lockfile).
+#
 # This file does NOT replace per-PR review judgment — see notes in
 # AGENTS.md about waiting on patches from single-maintainer packages.
 
 version: 2
 updates:
-  # Root workspace (concurrently, etc.)
+  # All npm deps — root + /server + /client via npm workspaces.
   - package-ecosystem: npm
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-      time: '09:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 10
-    groups:
-      prod-patch-minor:
-        dependency-type: production
-        update-types:
-          - patch
-          - minor
-      dev-patch-minor:
-        dependency-type: development
-        update-types:
-          - patch
-          - minor
-
-  # Server workspace
-  - package-ecosystem: npm
-    directory: /server
-    schedule:
-      interval: weekly
-      day: monday
-      time: '09:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 10
-    groups:
-      prod-patch-minor:
-        dependency-type: production
-        update-types:
-          - patch
-          - minor
-      dev-patch-minor:
-        dependency-type: development
-        update-types:
-          - patch
-          - minor
-
-  # Client workspace
-  - package-ecosystem: npm
-    directory: /client
     schedule:
       interval: weekly
       day: monday
