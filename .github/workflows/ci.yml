@@ -1,5 +1,11 @@
 name: CI
 
+# Jobs run in parallel. Splitting lint/server-tests/client-tests/signatures
+# into separate jobs means a failure's job name tells you exactly where to
+# look, and one slow or failing job doesn't block the others from finishing.
+# Naming convention: `test-<scope>` so future jobs (test-e2e, test-visual)
+# slot in without restructuring.
+
 on:
   push:
     branches: [main]
@@ -7,8 +13,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Lint & test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,21 +31,53 @@ jobs:
       - name: Lint
         run: npm run lint
 
+  test-server:
+    name: Test (server)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
       - name: Test
         env:
           # Required by server/db/database.js seed step. Tests use in-memory
           # SQLite, so these credentials never persist.
           OWNER_USERNAME: ci-owner
           OWNER_PASSWORD: ci-password
-        run: npm test
+        run: npm run test:server
+
+  test-client:
+    name: Test (client)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm run test:client
 
   audit-signatures:
     name: npm audit signatures
     runs-on: ubuntu-latest
     # Supply-chain safeguard: verifies every installed package was published
     # with a valid registry signature. Catches some (not all) credential-
-    # compromise / typosquat scenarios. Runs in parallel with lint+test so it
-    # gates merges without slowing the main job.
+    # compromise / typosquat scenarios.
     steps:
       - uses: actions/checkout@v4
 
