@@ -89,18 +89,27 @@ const existingOwner = db
 	.get('owner');
 if (!existingOwner) {
 	if (!process.env.OWNER_USERNAME || !process.env.OWNER_PASSWORD) {
-		console.error(
-			'FATAL: OWNER_USERNAME and OWNER_PASSWORD must be set in environment variables.',
-		);
-		process.exit(1);
+		if (process.env.NODE_ENV === 'production') {
+			console.error(
+				'FATAL: OWNER_USERNAME and OWNER_PASSWORD must be set in environment variables.',
+			);
+			process.exit(1);
+		}
+		// Local dev fallback — never reaches production
+		const hash = bcrypt.hashSync('owner123', 10);
+		db.prepare(
+			'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+		).run('owner', hash, 'owner');
+		console.log('Owner created with default credentials (dev fallback): username=owner');
+	} else {
+		const username = process.env.OWNER_USERNAME;
+		const password = process.env.OWNER_PASSWORD;
+		const hash = bcrypt.hashSync(password, 10);
+		db.prepare(
+			'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+		).run(username, hash, 'owner');
+		console.log(`Owner created: username=${username}`);
 	}
-	const username = process.env.OWNER_USERNAME;
-	const password = process.env.OWNER_PASSWORD;
-	const hash = bcrypt.hashSync(password, 10);
-	db.prepare(
-		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
-	).run(username, hash, 'owner');
-	console.log(`Owner created: username=${username}`);
 }
 // NO else block
 
