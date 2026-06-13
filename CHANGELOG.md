@@ -10,6 +10,14 @@ visiting the leaderboard — so user-facing changes are anything those folks
 would notice. Internal refactors, test changes, and tooling updates can be
 noted under `Changed` only when they meaningfully affect contributors.
 
+## [0.4.1](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.4.0...v0.4.1) (2026-06-13)
+
+
+### Fixed
+
+* **ci:** scan only repo root in Dependabot for npm workspaces ([#63](https://github.com/tinydinosaurs/nsl-rankings/issues/63)) ([65325ac](https://github.com/tinydinosaurs/nsl-rankings/commit/65325acd24735bc2c04e67638953bd25dd2b8302))
+* **docs:** make WordPress snippet encoding-safe and prefer IBM Plex Sans ([#61](https://github.com/tinydinosaurs/nsl-rankings/issues/61)) ([4ba2bfe](https://github.com/tinydinosaurs/nsl-rankings/commit/4ba2bfecae8c58346bdaf77f6a85da2bac9c1e43))
+
 ## [0.4.0](https://github.com/tinydinosaurs/nsl-rankings/compare/v0.3.1...v0.4.0) (2026-06-11)
 
 
