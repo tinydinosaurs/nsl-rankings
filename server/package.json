@@ -16,7 +16,7 @@
 		"seed:reset": "node seed-reset.js"
 	},
 	"dependencies": {
-		"bcryptjs": "^2.4.3",
+		"bcryptjs": "^3.0.3",
 		"better-sqlite3": "^9.4.3",
 		"cors": "^2.8.5",
 		"dotenv": "^17.3.1",
