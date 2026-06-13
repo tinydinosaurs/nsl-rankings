@@ -1,6 +1,12 @@
 .add-result-loading,
 .add-result-empty {
 	color: var(--text-muted);
-	font-size: 0.9rem;
-	padding: 0.5rem 0;
+	font-size: var(--nsl-size-sm);
+	padding: var(--nsl-space-2xs) 0;
+}
+
+.add-result-helper {
+	color: var(--text-muted);
+	font-size: var(--nsl-size-sm);
+	margin: 0 0 var(--nsl-space-sm);
 }

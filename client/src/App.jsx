@@ -6,9 +6,12 @@ import CompetitorDetailPage from './pages/CompetitorPage/CompetitorDetailPage.js
 import CompetitorsListPage from './pages/CompetitorPage/CompetitorsListPage.jsx';
 import TournamentListPage from './pages/TournamentPage/TournamentListPage.jsx';
 import TournamentDetailPage from './pages/TournamentPage/TournamentDetailPage.jsx';
+import TournamentDraftPage from './pages/TournamentDraftPage/TournamentDraftPage.jsx';
+import TournamentUploadWrapper from './pages/TournamentDraftPage/TournamentUploadWrapper.jsx';
 import AdminPage from './pages/AdminPage/AdminPage.jsx';
-import UploadPage from './pages/UploadPage/UploadPage.jsx';
 import AdminUsersPage from './pages/AdminUsersPage/AdminUsersPage.jsx';
+import AccountPage from './pages/AccountPage/AccountPage.jsx';
+import HelpPage from './pages/HelpPage/HelpPage.jsx';
 import Layout from './components/shared/Layout/Layout.jsx';
 
 function RequireAuth({ children }) {
@@ -58,10 +61,18 @@ export default function App() {
 							}
 						/>
 						<Route
-							path="admin/upload"
+							path="admin/tournaments/new"
 							element={
 								<RequireAdmin>
-									<UploadPage />
+									<TournamentDraftPage />
+								</RequireAdmin>
+							}
+						/>
+						<Route
+							path="admin/tournaments/:id/upload"
+							element={
+								<RequireAdmin>
+									<TournamentUploadWrapper />
 								</RequireAdmin>
 							}
 						/>
@@ -103,6 +114,22 @@ export default function App() {
 								<RequireOwner>
 									<AdminUsersPage />
 								</RequireOwner>
+							}
+						/>
+						<Route
+							path="/admin/account"
+							element={
+								<RequireAuth>
+									<AccountPage />
+								</RequireAuth>
+							}
+						/>
+						<Route
+							path="/admin/help"
+							element={
+								<RequireAdmin>
+									<HelpPage />
+								</RequireAdmin>
 							}
 						/>
 					</Route>

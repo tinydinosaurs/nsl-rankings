@@ -35,7 +35,14 @@ export default [
 			'react-refresh/only-export-components': 'warn',
 			'react/react-in-jsx-scope': 'off', // Not needed with React 17+
 			'react/prop-types': 'off', // We're not using PropTypes
-			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+			// We write contractions and curly quotes in JSX body text and don't
+			// want to escape them as &apos; / &quot; — modern bundlers handle
+			// the raw characters fine.
+			'react/no-unescaped-entities': 'off',
+			'no-unused-vars': [
+				'warn',
+				{ argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+			],
 			'no-console': 'warn',
 		},
 	},

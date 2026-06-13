@@ -426,4 +426,19 @@ describe('Rankings - Member Filtering', () => {
 		expect(after[1].name).toBe('Alice');
 		expect(after[1].rank).toBe(2);
 	});
+
+	it('excludes members with zero tournament_results rows from rankings', () => {
+		// Alice competed; Bob exists as a member but has never competed.
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 1)').run('Alice');
+		db.prepare('INSERT INTO competitors (name, is_member) VALUES (?, 1)').run('Bob');
+		db.prepare(
+			'INSERT INTO tournament_results (competitor_id, tournament_id, knockdowns_earned, distance_earned, speed_earned, woods_earned) VALUES (1, 1, 100, 100, 100, 100)',
+		).run();
+
+		const rankings = computeRankings(db);
+
+		expect(rankings).toHaveLength(1);
+		expect(rankings[0].name).toBe('Alice');
+		expect(rankings[0].rank).toBe(1);
+	});
 });

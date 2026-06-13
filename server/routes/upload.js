@@ -91,7 +91,13 @@ function createUploadRouter(db) {
 				throw new ValidationError('At least one event must be selected');
 			}
 
-			const { competitors, warnings, errors } = parseCSV(csvText, {
+			const {
+				competitors,
+				warnings,
+				errors,
+				missing_event_columns: missingEventColumns = [],
+				missing_required_columns: missingRequiredColumns = [],
+			} = parseCSV(csvText, {
 				activeEvents,
 				totalPoints,
 			});
@@ -100,6 +106,7 @@ function createUploadRouter(db) {
 				throw new FileProcessingError('CSV parsing failed', {
 					errors,
 					warnings,
+					missing_required_columns: missingRequiredColumns,
 				});
 			}
 
@@ -160,6 +167,7 @@ function createUploadRouter(db) {
 				warnings: rebuildPlaceholderWarnings(warnings, enriched),
 				errors: [],
 				membership_changes: membershipChanges,
+				missing_event_columns: missingEventColumns,
 			});
 		}),
 	);
@@ -180,6 +188,7 @@ function createUploadRouter(db) {
 				activeEvents,
 				totalPoints,
 				competitors,
+				replace_mode: replaceModeRaw,
 			} = req.body;
 
 			// Optional: if provided, attach results to this existing tournament instead of creating one
@@ -189,6 +198,17 @@ function createUploadRouter(db) {
 					: null;
 			const isExisting = tournamentId !== null && !isNaN(tournamentId);
 
+			// replace_mode = true means: wipe existing tournament_results for this
+			// tournament inside the same transaction, then insert from the payload.
+			// Only meaningful on the existing-tournament path — a new tournament
+			// has nothing to replace.
+			const replaceMode = replaceModeRaw === true || replaceModeRaw === 'true';
+			if (replaceMode && !isExisting) {
+				throw new ValidationError(
+					'replace_mode is only valid when tournament_id is supplied',
+				);
+			}
+
 			if (!isExisting && !tournament_date) {
 				throw new ValidationError('Tournament date is required');
 			}
@@ -196,7 +216,9 @@ function createUploadRouter(db) {
 				throw new ValidationError('No competitors provided');
 			}
 
-			// Validate totalPoints — only needed when creating a new tournament
+			// Validate totalPoints — needed when creating a new tournament,
+			// and also when updating an existing tournament's totals (validated
+			// lazily inside the isExisting branch below).
 			const validatedPoints = {};
 			if (!isExisting) {
 				for (const event of EVENTS) {
@@ -233,19 +255,101 @@ function createUploadRouter(db) {
 				if (isExisting) {
 					// Verify the tournament exists
 					const existing = db
-						.prepare('SELECT id FROM tournaments WHERE id = ?')
+						.prepare('SELECT id, name, date FROM tournaments WHERE id = ?')
 						.get(tournamentId);
 					if (!existing) {
 						throw new NotFoundError(`Tournament ${tournamentId}`);
 					}
 					finalTournamentId = tournamentId;
+
+					// Optionally update tournament metadata. Each field is updated
+					// only when explicitly provided in the payload, so clients can
+					// commit results without touching metadata (and vice versa, in
+					// principle — though metadata-only commits are rejected up top
+					// by the empty-competitors guard).
+					const updates = [];
+					const params = [];
+					const hasNameUpdate = Object.prototype.hasOwnProperty.call(
+						req.body,
+						'tournament_name',
+					);
+					const hasDateUpdate = Object.prototype.hasOwnProperty.call(
+						req.body,
+						'tournament_date',
+					);
+					const hasEventsUpdate = Array.isArray(activeEvents);
+					const hasTotalsUpdate =
+						totalPoints != null && typeof totalPoints === 'object';
+
+					if (hasNameUpdate) {
+						updates.push('name = ?');
+						params.push(tournament_name || null);
+					}
+					if (hasDateUpdate) {
+						if (!tournament_date) {
+							throw new ValidationError('Tournament date is required');
+						}
+						updates.push('date = ?');
+						params.push(tournament_date);
+					}
+					if (hasEventsUpdate) {
+						for (const event of EVENTS) {
+							updates.push(`has_${event} = ?`);
+							params.push(activeEvents.includes(event) ? 1 : 0);
+						}
+					}
+					if (hasTotalsUpdate) {
+						for (const event of EVENTS) {
+							const val = parseFloat(totalPoints?.[event]);
+							if (!isFinite(val) || val <= 0) {
+								throw new ValidationError(
+									`total_points_${event} must be a positive number`,
+								);
+							}
+							validatedPoints[event] = val;
+							updates.push(`total_points_${event} = ?`);
+							params.push(val);
+						}
+					}
+
+					// Duplicate name+date guard: only when name or date might collide.
+					// Excludes self so an unchanged commit doesn't 409 against itself.
+					if (hasNameUpdate || hasDateUpdate) {
+						const targetName = hasNameUpdate
+							? tournament_name || null
+							: existing.name;
+						const targetDate = hasDateUpdate ? tournament_date : existing.date;
+						const duplicate = db
+							.prepare(
+								`SELECT id FROM tournaments
+								 WHERE id != ? AND date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))`,
+							)
+							.get(tournamentId, targetDate, targetName, targetName);
+						if (duplicate) {
+							throw new ConflictError(
+								'A tournament with this name and date already exists.',
+								{ tournament_id: duplicate.id },
+							);
+						}
+					}
+
+					if (updates.length > 0) {
+						params.push(tournamentId);
+						db.prepare(
+							`UPDATE tournaments SET ${updates.join(', ')} WHERE id = ?`,
+						).run(...params);
+					}
 				} else {
 					// Check for duplicate tournament
 					const duplicate = db
 						.prepare(
 							`SELECT id FROM tournaments WHERE date = ? AND (name = ? OR (name IS NULL AND ? IS NULL))`,
 						)
-						.get(tournament_date, tournament_name || null, tournament_name || null);
+						.get(
+							tournament_date,
+							tournament_name || null,
+							tournament_name || null,
+						);
 
 					if (duplicate) {
 						throw new ConflictError(
@@ -279,8 +383,36 @@ function createUploadRouter(db) {
 					finalTournamentId = tResult.lastInsertRowid;
 				}
 
+				// Decide which event columns to populate on each result row. The
+				// payload's activeEvents wins when present; for an existing
+				// tournament with no activeEvents in the payload, fall back to the
+				// tournament's stored has_<event> flags.
+				let effectiveActiveEvents;
+				if (Array.isArray(activeEvents)) {
+					effectiveActiveEvents = activeEvents;
+				} else {
+					const row = db
+						.prepare(
+							`SELECT has_knockdowns, has_distance, has_speed, has_woods
+							 FROM tournaments WHERE id = ?`,
+						)
+						.get(finalTournamentId);
+					effectiveActiveEvents = EVENTS.filter((ev) => row[`has_${ev}`] === 1);
+				}
+
 				const inserted = [];
 				const updated = [];
+
+				// Replace mode — wipe existing rows for this tournament *inside the
+				// same transaction* so a downstream failure rolls everything back
+				// and the admin never sees an empty tournament.
+				let replacedCount = 0;
+				if (replaceMode && isExisting) {
+					const delResult = db
+						.prepare('DELETE FROM tournament_results WHERE tournament_id = ?')
+						.run(finalTournamentId);
+					replacedCount = delResult.changes;
+				}
 
 				for (const comp of competitors) {
 					// All competitors now have email addresses (required by parser)
@@ -329,18 +461,27 @@ function createUploadRouter(db) {
 					).run(
 						competitorId,
 						finalTournamentId,
-						activeEvents.includes('knockdowns')
+						effectiveActiveEvents.includes('knockdowns')
 							? (comp.knockdowns_earned ?? null)
 							: null,
-						activeEvents.includes('distance')
+						effectiveActiveEvents.includes('distance')
 							? (comp.distance_earned ?? null)
 							: null,
-						activeEvents.includes('speed') ? (comp.speed_earned ?? null) : null,
-						activeEvents.includes('woods') ? (comp.woods_earned ?? null) : null,
+						effectiveActiveEvents.includes('speed')
+							? (comp.speed_earned ?? null)
+							: null,
+						effectiveActiveEvents.includes('woods')
+							? (comp.woods_earned ?? null)
+							: null,
 					);
 				}
 
-				return { tournamentId: finalTournamentId, inserted, updated };
+				return {
+					tournamentId: finalTournamentId,
+					inserted,
+					updated,
+					replacedCount,
+				};
 			});
 
 			const result = commitAll();
@@ -349,6 +490,8 @@ function createUploadRouter(db) {
 				tournament_id: result.tournamentId,
 				new_competitors: result.inserted,
 				updated_competitors: result.updated,
+				replace_mode: replaceMode,
+				replaced_count: result.replacedCount,
 			});
 		}),
 	);

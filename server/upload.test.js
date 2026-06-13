@@ -138,7 +138,7 @@ describe('Upload Route', () => {
 
 		it('parses a clean CSV and returns enriched competitors', async () => {
 			const csv =
-				'name,email,knockdowns,distance,speed,woods\nAlice,alice@example.com,100,90,110,80';
+				'name,email,knockdowns,distance,speed,woods,member\nAlice,alice@example.com,100,90,110,80,yes';
 			const res = await request(app)
 				.post('/api/upload/preview')
 				.set('Authorization', `Bearer ${adminToken}`)
@@ -159,10 +159,97 @@ describe('Upload Route', () => {
 			expect(res.body.errors).toHaveLength(0);
 		});
 
+		it('returns missing_event_columns when an active event has no matching CSV column', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,member\nAlice,alice@example.com,100,90,110,yes';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(200);
+			expect(res.body.missing_event_columns).toEqual(['woods']);
+		});
+
+		it('returns an empty missing_event_columns array when all active events have columns', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,woods,member\nAlice,alice@example.com,100,90,110,80,yes';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(200);
+			expect(res.body.missing_event_columns).toEqual([]);
+		});
+
+		it('returns 422 with details.errors when membership column is missing', async () => {
+			const csv =
+				'name,email,knockdowns,distance,speed,woods\nAlice,alice@example.com,100,90,110,80';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(422);
+			expect(res.body.error).toBe('CSV parsing failed');
+			expect(Array.isArray(res.body.details?.errors)).toBe(true);
+			expect(res.body.details.errors[0]).toMatch(/membership column/i);
+			// Structured field for the warn-and-remediate banner.
+			expect(res.body.details.missing_required_columns).toEqual(['is_member']);
+		});
+
+		it('returns 422 with missing_required_columns=["name"] when no name-like column is present', async () => {
+			// No column matches the `name`/`competitor`/`athlete` aliases, so the
+			// header-row scan fails and the parser classifies it as missing-name.
+			const csv = 'score1,score2,member\n100,90,yes\n80,85,no';
+			const res = await request(app)
+				.post('/api/upload/preview')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.field('has_knockdowns', 'true')
+				.field('has_distance', 'true')
+				.field('has_speed', 'true')
+				.field('has_woods', 'true')
+				.field('total_points_knockdowns', '120')
+				.field('total_points_distance', '120')
+				.field('total_points_speed', '120')
+				.field('total_points_woods', '120')
+				.attach('csv', Buffer.from(csv), 'test.csv');
+
+			expect(res.status).toBe(422);
+			expect(res.body.error).toBe('CSV parsing failed');
+			expect(res.body.details.errors[0]).toMatch(/name column/i);
+			expect(res.body.details.missing_required_columns).toEqual(['name']);
+		});
+
 		describe('rebuildPlaceholderWarnings', () => {
 			it('warns for a new no-email competitor', async () => {
 				const csv =
-					'name,knockdowns,distance,speed,woods\nNo Email Person,100,90,110,80';
+					'name,knockdowns,distance,speed,woods,member\nNo Email Person,100,90,110,80,yes';
 				const res = await request(app)
 					.post('/api/upload/preview')
 					.set('Authorization', `Bearer ${adminToken}`)
@@ -190,7 +277,7 @@ describe('Upload Route', () => {
 				);
 
 				const csv =
-					'name,knockdowns,distance,speed,woods\nNo Email Person,100,90,110,80';
+					'name,knockdowns,distance,speed,woods,member\nNo Email Person,100,90,110,80,yes';
 				const res = await request(app)
 					.post('/api/upload/preview')
 					.set('Authorization', `Bearer ${adminToken}`)
@@ -220,9 +307,9 @@ describe('Upload Route', () => {
 				);
 
 				const csv = [
-					'name,knockdowns,distance,speed,woods',
-					'Returning Person,100,90,110,80',
-					'Brand New Person,95,85,105,75',
+					'name,knockdowns,distance,speed,woods,member',
+					'Returning Person,100,90,110,80,yes',
+					'Brand New Person,95,85,105,75,yes',
 				].join('\n');
 
 				const res = await request(app)
@@ -660,6 +747,217 @@ describe('Upload Route', () => {
 				expect(result.knockdowns_earned).toBe(100);
 			});
 		});
+
+		describe('tournament_id — metadata updates (slice 1 of upload refactor)', () => {
+			function seedExisting(overrides = {}) {
+				const name = overrides.name ?? 'Spring Cup';
+				const date = overrides.date ?? '2025-07-01';
+				const flags = {
+					has_knockdowns: 1,
+					has_distance: 1,
+					has_speed: 1,
+					has_woods: 1,
+					total_points_knockdowns: 120,
+					total_points_distance: 120,
+					total_points_speed: 120,
+					total_points_woods: 120,
+					...overrides.flags,
+				};
+				return db
+					.prepare(
+						`INSERT INTO tournaments
+						(name, date, has_knockdowns, has_distance, has_speed, has_woods,
+						 total_points_knockdowns, total_points_distance, total_points_speed, total_points_woods)
+						VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					)
+					.run(
+						name,
+						date,
+						flags.has_knockdowns,
+						flags.has_distance,
+						flags.has_speed,
+						flags.has_woods,
+						flags.total_points_knockdowns,
+						flags.total_points_distance,
+						flags.total_points_speed,
+						flags.total_points_woods,
+					).lastInsertRowid;
+			}
+
+			function competitorRow(overrides = {}) {
+				return {
+					name: 'Alice Nguyen',
+					email: 'alice@example.com',
+					existing_competitor_id: null,
+					knockdowns_earned: 100,
+					distance_earned: 90,
+					speed_earned: 110,
+					woods_earned: 80,
+					...overrides,
+				};
+			}
+
+			it('updates name, date, events, and totals in the same transaction as results', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Spring Cup (renamed)',
+						tournament_date: '2025-07-15',
+						activeEvents: ['knockdowns', 'distance'],
+						totalPoints: {
+							knockdowns: 150,
+							distance: 100,
+							speed: 120,
+							woods: 120,
+						},
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+				const updated = db
+					.prepare('SELECT * FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(updated.name).toBe('Spring Cup (renamed)');
+				expect(updated.date).toBe('2025-07-15');
+				expect(updated.has_knockdowns).toBe(1);
+				expect(updated.has_distance).toBe(1);
+				expect(updated.has_speed).toBe(0);
+				expect(updated.has_woods).toBe(0);
+				expect(updated.total_points_knockdowns).toBe(150);
+				expect(updated.total_points_distance).toBe(100);
+			});
+
+			it('leaves untouched fields alone when the payload omits them', async () => {
+				const existingId = seedExisting({ name: 'Original' });
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						// no tournament_name / tournament_date / activeEvents / totalPoints
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+				const row = db
+					.prepare('SELECT name, date FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(row.name).toBe('Original');
+				expect(row.date).toBe('2025-07-01');
+			});
+
+			it('returns 409 when renaming would collide with another tournament', async () => {
+				seedExisting({ name: 'Existing Cup', date: '2025-08-01' });
+				const targetId = seedExisting({
+					name: 'Different Name',
+					date: '2025-08-01',
+				});
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: targetId,
+						tournament_name: 'Existing Cup',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(409);
+			});
+
+			it('does not 409 when the unchanged metadata matches the tournament itself', async () => {
+				const existingId = seedExisting({
+					name: 'Spring Cup',
+					date: '2025-07-01',
+				});
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Spring Cup',
+						tournament_date: '2025-07-01',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(201);
+			});
+
+			it('returns 400 when tournament_date is explicitly cleared on update', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_date: '',
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(400);
+			});
+
+			it('returns 400 when an updated totalPoints value is non-positive', async () => {
+				const existingId = seedExisting();
+
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						totalPoints: {
+							knockdowns: 0,
+							distance: 120,
+							speed: 120,
+							woods: 120,
+						},
+						competitors: [competitorRow()],
+					});
+
+				expect(res.status).toBe(400);
+			});
+
+			it('rolls back metadata changes when a later step in the transaction fails', async () => {
+				const existingId = seedExisting({ name: 'Original Name' });
+
+				// Bad competitor payload: negative score triggers ValidationError, but
+				// the inner db.transaction() should have already started — actually
+				// validation happens before the transaction, so to truly test rollback
+				// we need a failure that occurs inside the transaction. Use a duplicate
+				// email between competitors so the second INSERT into competitors
+				// fails on the UNIQUE constraint.
+				const res = await request(app)
+					.post('/api/upload/commit')
+					.set('Authorization', `Bearer ${adminToken}`)
+					.send({
+						tournament_id: existingId,
+						tournament_name: 'Renamed In Failing Transaction',
+						competitors: [
+							competitorRow({
+								name: 'Alice',
+								email: 'dup@example.com',
+							}),
+							competitorRow({
+								name: 'Bob',
+								email: 'dup@example.com', // collides with first competitor
+							}),
+						],
+					});
+
+				expect(res.status).toBeGreaterThanOrEqual(400);
+				const row = db
+					.prepare('SELECT name FROM tournaments WHERE id = ?')
+					.get(existingId);
+				expect(row.name).toBe('Original Name');
+			});
+		});
 	});
 
 	describe('membership flag handling', () => {
@@ -776,6 +1074,195 @@ describe('Upload Route', () => {
 				.prepare('SELECT is_member FROM competitors WHERE email = ?')
 				.get('dana@example.com');
 			expect(row.is_member).toBe(1);
+		});
+	});
+
+	// Replace-mode commit (replace-mode follow-up to slice 5).
+	// When `replace_mode: true` is supplied alongside an existing
+	// `tournament_id`, all existing tournament_results rows for that
+	// tournament are deleted inside the same transaction before the
+	// payload's competitors are inserted. Without `replace_mode`, the
+	// default UPSERT behavior preserves competitors not present in the
+	// payload.
+	describe('POST /api/upload/commit — replace_mode', () => {
+		// Helper to seed a tournament with N competitors and their results.
+		// Returns the tournament id.
+		function seedExisting() {
+			const t = db
+				.prepare(
+					`INSERT INTO tournaments
+				   (name, date, has_knockdowns, has_distance, has_speed, has_woods,
+				    total_points_knockdowns, total_points_distance,
+				    total_points_speed, total_points_woods)
+				   VALUES (?, ?, 1, 1, 1, 1, 120, 120, 120, 120)`,
+				)
+				.run('Existing Tournament', '2025-07-01');
+			const tournamentId = t.lastInsertRowid;
+
+			const seedCompetitor = (name, email) => {
+				const c = db
+					.prepare(
+						'INSERT INTO competitors (name, email, is_member) VALUES (?, ?, 1)',
+					)
+					.run(name, email);
+				db.prepare(
+					`INSERT INTO tournament_results
+					   (competitor_id, tournament_id, knockdowns_earned,
+					    distance_earned, speed_earned, woods_earned)
+					   VALUES (?, ?, ?, ?, ?, ?)`,
+				).run(c.lastInsertRowid, tournamentId, 50, 50, 50, 50);
+				return c.lastInsertRowid;
+			};
+
+			const aliceId = seedCompetitor('Alice Original', 'alice@example.com');
+			const bobId = seedCompetitor('Bob Original', 'bob@example.com');
+			return { tournamentId, aliceId, bobId };
+		}
+
+		it('default (no replace_mode) preserves competitors not in the upload', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: 99,
+								distance_earned: 99,
+								speed_earned: 99,
+								woods_earned: 99,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(201);
+			expect(res.body.replace_mode).toBe(false);
+			expect(res.body.replaced_count).toBe(0);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id, knockdowns_earned FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			expect(rows).toHaveLength(2);
+			// Alice's score was overwritten…
+			expect(
+				rows.find((r) => r.competitor_id === aliceId).knockdowns_earned,
+			).toBe(99);
+			// …and Bob (not in the payload) was left untouched.
+			expect(
+				rows.find((r) => r.competitor_id === bobId).knockdowns_earned,
+			).toBe(50);
+		});
+
+		it('replace_mode wipes existing rows and inserts only those in the upload', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						replace_mode: true,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: 77,
+								distance_earned: 77,
+								speed_earned: 77,
+								woods_earned: 77,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(201);
+			expect(res.body.replace_mode).toBe(true);
+			expect(res.body.replaced_count).toBe(2);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id, knockdowns_earned FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			// Only Alice remains — Bob was wiped because he wasn't in the payload.
+			expect(rows).toHaveLength(1);
+			expect(rows[0].competitor_id).toBe(aliceId);
+			expect(rows[0].knockdowns_earned).toBe(77);
+
+			// Competitor records themselves are NOT deleted — only their results.
+			const bobRow = db
+				.prepare('SELECT id FROM competitors WHERE id = ?')
+				.get(bobId);
+			expect(bobRow).toBeDefined();
+		});
+
+		it('rejects replace_mode without tournament_id (only valid on existing tournaments)', async () => {
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						replace_mode: true,
+					}),
+				);
+			expect(res.status).toBe(400);
+		});
+
+		it('rolls back the DELETE when a later insert in the same transaction fails', async () => {
+			const { tournamentId, aliceId, bobId } = seedExisting();
+
+			// Force a validation failure during the insert loop by sending a
+			// competitor with an invalid score. The DELETE must roll back, so
+			// the original two results are still present afterward.
+			const res = await request(app)
+				.post('/api/upload/commit')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send(
+					validCommitBody({
+						tournament_id: tournamentId,
+						replace_mode: true,
+						competitors: [
+							{
+								name: 'Alice Original',
+								email: 'alice@example.com',
+								existing_competitor_id: aliceId,
+								existing_name: 'Alice Original',
+								is_member: true,
+								knockdowns_earned: -1, // invalid — will throw inside the txn
+								distance_earned: 50,
+								speed_earned: 50,
+								woods_earned: 50,
+							},
+						],
+					}),
+				);
+
+			expect(res.status).toBe(400);
+
+			const rows = db
+				.prepare(
+					'SELECT competitor_id FROM tournament_results WHERE tournament_id = ? ORDER BY competitor_id',
+				)
+				.all(tournamentId);
+			expect(rows).toHaveLength(2);
+			expect(rows.map((r) => r.competitor_id).sort()).toEqual(
+				[aliceId, bobId].sort(),
+			);
 		});
 	});
 });

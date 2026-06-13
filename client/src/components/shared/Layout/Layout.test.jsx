@@ -81,11 +81,11 @@ describe('Layout', () => {
 			).toBeInTheDocument();
 		});
 
-		it('shows Upload link when logged in as admin', () => {
+		it('does not show Upload link (replaced by tournament flow)', () => {
 			renderLayout(adminAuth);
 			expect(
-				screen.getByRole('link', { name: 'Upload' }),
-			).toBeInTheDocument();
+				screen.queryByRole('link', { name: 'Upload' }),
+			).not.toBeInTheDocument();
 		});
 
 		it('shows Rankings link when logged in as admin', () => {
@@ -109,9 +109,12 @@ describe('Layout', () => {
 			expect(screen.getByText('Dana')).toBeInTheDocument();
 		});
 
-		it('shows role badge when logged in', () => {
+		it('links the username to the account page', () => {
 			renderLayout(adminAuth);
-			expect(screen.getByText('owner')).toBeInTheDocument();
+			// Username links to /admin/account; role badge intentionally lives on
+			// the account page itself, not in the nav.
+			const link = screen.getByRole('link', { name: 'Dana' });
+			expect(link).toHaveAttribute('href', '/admin/account');
 		});
 
 		it('shows Sign out button when logged in', () => {

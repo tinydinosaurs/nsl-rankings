@@ -1,0 +1,371 @@
+# =============================================================================
+# BRAND: NSL
+# =============================================================================
+# Brand tokens for the National Slingshot League's rankings app.
+# Concept: institutional sport. A two-color brand language — sport-burgundy +
+# calm-blue duotone — that honors the existing logo's palette without
+# inheriting its aesthetic.
+#
+# Target apps:
+#   - NSL Rankings (beta) — leaderboards, tournament detail, competitor pages
+#
+# DESIGN DECISIONS (locked in audit):
+#   - Burgundy is the ceremonial color (logo strip, section dividers,
+#     destructive-confirm chrome). Calm-blue is the working color (CTAs,
+#     links, focus). Both colors carry roles; neither does both jobs.
+#   - All four events (knockdowns, distance, speed, woods) get equal weight.
+#     No event elevated. Hierarchy comes from rank and data, not category.
+#   - Podium softened: 50-tier tints + 4px inset rule on the row. Visual
+#     weight from rank, not saturation.
+#   - No --brand-secondary or --brand-tertiary. Teal and violet remain
+#     in the raw palette but are not "brand" — they are tint families.
+#   - Bronze ramp deleted. Amber.800 carries the warn-foreground role.
+#     Bronze appears only as podium-3rd-place via amber.{50,800} reused.
+#
+# DARK MODE: implementation postponed.
+#   Audience is likely using a laptop or desktop, and is probably using light mode.
+#   Marketing site is light-only. Revisit when (a) component library exists and (b) someone asks.
+#
+# DEPENDENCY:
+#   Requires color.burgundy.{50,100,200,400,600,700,800,900} in base.yaml ✓
+#   Fonts are NSL-specific (IBM Plex Sans / Archivo Black / IBM Plex Mono) and
+#   declared inline below — base.yaml's family.sans-ui/mono are not used.
+#
+# =============================================================================
+
+meta:
+  brand:
+    { value: 'nsl', comment: 'Brand identifier — National Slingshot League' }
+  primary: { value: 'rain', comment: 'Working color — CTAs, links, focus' }
+  identity:
+    { value: 'burgundy', comment: 'Ceremonial color — logo strip, dividers' }
+  tone:
+    {
+      value: 'institutional-sport',
+      comment: 'Considered, settled, not patriotic',
+    }
+  scheme:
+    { value: 'light-only', comment: 'Dark mode deliberately not implemented' }
+
+# ---------------------------------------------------------------------------
+# COLOR — duotone: burgundy (identity) + rain (working)
+# ---------------------------------------------------------------------------
+
+color:
+  # Brand colors — duotone roles
+  # primary-* = the working color (rain, calm-blue) — CTAs, links, focus
+  # identity-* = the ceremonial color (burgundy) — logo, dividers, accents
+  # The split is deliberate: a destructive-primary "Delete tournament" button
+  # never sits next to a "Save" button in the same hue. CTAs are blue; danger
+  # is red; ceremonial accents are burgundy. Three colors, three jobs.
+  brand:
+    primary:
+      {
+        value: '{color.rain.600}',
+        comment: 'Calm-blue — CTAs, links, focus (working color)',
+      }
+    primary-mid:
+      {
+        value: '{color.rain.400}',
+        comment: 'Rain mid — hover, decorative icons',
+      }
+    primary-light:
+      {
+        value: '{color.rain.200}',
+        comment: 'Rain light — tinted card surfaces',
+      }
+    primary-tint:
+      {
+        value: '{color.rain.50}',
+        comment: 'Rain tint — ghost hover, subtle backgrounds',
+      }
+    primary-text:
+      { value: '{color.rain.600}', comment: 'Link color, primary text accent' }
+    primary-border:
+      {
+        value: '{color.rain.600}',
+        comment: 'Rain border — focus rings, active inputs',
+      }
+
+    # Identity (burgundy) — ceremonial, used sparingly
+    identity:
+      {
+        value: '{color.burgundy.700}',
+        comment: 'Sport-burgundy — logo strip, hero dividers',
+      }
+    identity-mid:
+      {
+        value: '{color.burgundy.600}',
+        comment: 'Burgundy mid — hover on identity surfaces',
+      }
+    identity-light:
+      {
+        value: '{color.burgundy.200}',
+        comment: 'Burgundy light — tinted ceremonial surfaces',
+      }
+    identity-tint:
+      {
+        value: '{color.burgundy.50}',
+        comment: 'Burgundy tint — section background washes',
+      }
+    identity-text:
+      {
+        value: '{color.burgundy.700}',
+        comment: 'Burgundy on white — section eyebrows',
+      }
+
+    # Gradient — burgundy to rain, the duotone signature
+    gradient-from:
+      { value: '{color.burgundy.700}', comment: 'Gradient start — burgundy' }
+    gradient-to:
+      { value: '{color.rain.600}', comment: 'Gradient end — calm-blue' }
+    gradient:
+      {
+        value: 'linear-gradient(135deg, oklch(38% 0.13 18), oklch(46% 0.12 240))',
+        comment: 'NSL signature — burgundy meeting calm-blue',
+      }
+
+  # Light surfaces.
+  bg:
+    page:
+      { value: '{color.base.light-200}', comment: 'Warm-white page background' }
+    surface: { value: '{color.base.light-100}', comment: 'Card surface' }
+    elevated:
+      {
+        value: '{color.base.light-50}',
+        comment: 'Elevated — modals, dropdowns',
+      }
+    input: { value: '{color.base.light-100}', comment: 'Input background' }
+
+  text:
+    primary:
+      {
+        value: '{color.base.light-900}',
+        comment: 'Primary text — high contrast',
+      }
+    secondary:
+      { value: '{color.base.light-700}', comment: 'Secondary text, labels' }
+    tertiary:
+      {
+        value: '{color.base.light-400}',
+        comment: 'Placeholder, disabled, hints',
+      }
+
+  border:
+    subtle: { value: '{color.base.light-300}', comment: 'Hairline borders' }
+    default: { value: '{color.base.light-300}', comment: 'Default borders' }
+    strong:
+      {
+        value: '{color.base.light-400}',
+        comment: 'Emphasis — focus rings on neutral',
+      }
+
+  # Status — light mode values, snapped to base ramps
+  # NOTE: warning is amber.600 (text) on amber.50 (bg). amber.800 from base
+  # is the parallel "deep" warn foreground for places needing more contrast.
+  # No bronze ramp; podium-bronze reuses amber.{50,800} below.
+  status:
+    info:
+      bg: { value: '{color.rain.50}', comment: 'Info bg — rain.50' }
+      text: { value: '{color.rain.600}', comment: 'Info text — rain.600' }
+      tint: { value: '{color.rain.50}', comment: 'Info tint' }
+      border: { value: '{color.rain.600}', comment: 'Info border' }
+    success:
+      bg: { value: '{color.green.50}', comment: 'Success bg — green.50' }
+      text: { value: '{color.green.600}', comment: 'Success text — green.600' }
+      tint: { value: '{color.green.50}', comment: 'Success tint' }
+      border: { value: '{color.green.600}', comment: 'Success border' }
+    warning:
+      bg: { value: '{color.amber.50}', comment: 'Warning bg — amber.50' }
+      text: { value: '{color.amber.600}', comment: 'Warning text — amber.600' }
+      tint: { value: '{color.amber.50}', comment: 'Warning tint' }
+      border: { value: '{color.amber.600}', comment: 'Warning border' }
+    error:
+      bg: { value: '{color.red.50}', comment: 'Error bg — red.50' }
+      text: { value: '{color.red.600}', comment: 'Error text — red.600' }
+      tint: { value: '{color.red.50}', comment: 'Error tint' }
+      border: { value: '{color.red.600}', comment: 'Error border' }
+
+  # ---------------------------------------------------------------------------
+  # EVENT IDENTITY — NSL-specific category tokens
+  # All four events get equal weight (no elevation). Used as 3px left-rule
+  # on chips/badges, NEVER as full card backgrounds (see audit finding 01).
+  # Hues chosen to be distinct but quiet — no rainbow. Score cards stay
+  # neutral; only the event chip / leaderboard event-column reads in hue.
+  # ---------------------------------------------------------------------------
+  event:
+    knockdowns:
+      rule:
+        { value: '{color.burgundy.700}', comment: 'Burgundy — anchor event' }
+      tint: { value: '{color.burgundy.50}', comment: 'For chip background' }
+      text: { value: '{color.burgundy.700}', comment: 'For chip label' }
+    distance:
+      rule:
+        { value: '{color.rain.600}', comment: 'Calm-blue — range/precision' }
+      tint: { value: '{color.rain.50}' }
+      text: { value: '{color.rain.600}' }
+    speed:
+      rule: { value: '{color.violet.600}', comment: 'Violet — tempo/intensity' }
+      tint: { value: '{color.violet.50}' }
+      text: { value: '{color.violet.600}' }
+    woods:
+      rule:
+        { value: '{color.green.600}', comment: 'Green — environment/terrain' }
+      tint: { value: '{color.green.50}' }
+      text: { value: '{color.green.600}' }
+
+  # ---------------------------------------------------------------------------
+  # PODIUM — softened. 50-tier tints + 800-tier 4px inset rule.
+  # Visual weight from rank rule, not row saturation (see audit finding 02).
+  # Bronze reuses amber {50,800} — no separate bronze ramp.
+  # ---------------------------------------------------------------------------
+  podium:
+    gold:
+      row-bg:
+        {
+          value: '{color.gold.50}',
+          comment: 'Soft tint — first-place row background',
+        }
+      rule:
+        {
+          value: '{color.gold.600}',
+          comment: '4px inset border-left on first-place row',
+        }
+      chip-bg:
+        {
+          value: '{color.gold.100}',
+          comment: 'Rank-1 chip / overall-rank score card',
+        }
+      chip-text: { value: '{color.gold.800}' }
+    silver:
+      row-bg:
+        {
+          value: '{color.base.light-100}',
+          comment: 'Soft neutral — second-place row',
+        }
+      rule:
+        { value: '{color.base.light-400}', comment: '4px inset rule — neutral' }
+      chip-bg: { value: '{color.base.light-200}' }
+      chip-text: { value: '{color.base.light-700}' }
+    bronze:
+      row-bg:
+        {
+          value: '{color.amber.50}',
+          comment: 'Reused amber.50 — no bronze ramp needed',
+        }
+      rule:
+        { value: '{color.amber.600}', comment: '4px inset rule — amber.600' }
+      chip-bg: { value: '{color.amber.100}' }
+      chip-text: { value: '{color.amber.800}' }
+    neutral:
+      row-bg:
+        {
+          value: '{color.bg.surface}',
+          comment: '4th place onward — no special bg',
+        }
+      rule: { value: '{color.border.subtle}' }
+      chip-bg: { value: '{color.base.light-200}' }
+      chip-text: { value: '{color.base.light-700}' }
+
+# ---------------------------------------------------------------------------
+# TYPOGRAPHY — IBM Plex Sans for UI, headings, and tabular numerals.
+# Archivo Black for display. 1.25 scale anchored at 16px.
+# ---------------------------------------------------------------------------
+
+typography:
+  font:
+    ui:
+      {
+        value: "'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif",
+        comment: 'IBM Plex Sans — UI, headings, tabular numerals',
+      }
+    display:
+      {
+        value: "'Archivo Black', 'Archivo', 'Helvetica Neue', Arial, sans-serif",
+        comment: 'Archivo Black — display, hero, page headings',
+      }
+    mono:
+      {
+        value: "'IBM Plex Mono', ui-monospace, monospace",
+        comment: 'IBM Plex Mono - Tabular numerals on leaderboards',
+      }
+
+  # Standard 1.25 scale anchored at 16px (NSL audience reads at typical density).
+  size:
+    xs: { value: '{typography.size-125.xs}', comment: '10px — meta/timestamps' }
+    sm:
+      {
+        value: '{typography.size-125.sm}',
+        comment: '13px — captions, table cells',
+      }
+    base: { value: '{typography.size-125.base}', comment: '16px — body' }
+    md:
+      { value: '{typography.size-125.md}', comment: '20px — lead, card values' }
+    lg: { value: '{typography.size-125.lg}', comment: '25px — subheadings' }
+    xl:
+      { value: '{typography.size-125.xl}', comment: '31px — section headings' }
+    2xl: { value: '{typography.size-125.2xl}', comment: '39px — page headings' }
+    3xl: { value: '{typography.size-125.3xl}', comment: '49px — display' }
+
+  weight:
+    body: { value: '{typography.weight.regular}', comment: '400' }
+    label:
+      { value: '{typography.weight.medium}', comment: '500 — chips, badges' }
+    display:
+      {
+        value: '{typography.weight.semibold}',
+        comment: '600 — headings, score values',
+      }
+    score:
+      {
+        value: '{typography.weight.bold}',
+        comment: '700 — leaderboard primary numbers',
+      }
+
+# ---------------------------------------------------------------------------
+# RADIUS — restrained. NSL is institutional, not playful.
+# ---------------------------------------------------------------------------
+
+radius:
+  component:
+    button: { value: '{border-radius.md}', comment: '4px' }
+    input: { value: '{border-radius.md}', comment: '4px' }
+    card: { value: '{border-radius.lg}', comment: '8px — score cards, panels' }
+    modal: { value: '{border-radius.lg}', comment: '8px' }
+    badge:
+      {
+        value: '{border-radius.full}',
+        comment: 'pill — rank chips, event chips',
+      }
+    chip:
+      { value: '{border-radius.sm}', comment: '2px — event chip on table cell' }
+    tooltip: { value: '{border-radius.md}', comment: '4px' }
+
+# =============================================================================
+# MIGRATION NOTES — for the dev moving the existing index.css to brand.nsl
+# =============================================================================
+# Mapping from existing index.css tokens to brand.nsl equivalents:
+#
+#   --brand-primary       → color.brand.primary       (var(--blue-700) ✓ same)
+#   --brand-primary-hover → color.brand.primary-mid   (var(--blue-800) close)
+#   --brand-secondary     → DELETE — was teal-700, no replacement
+#   --brand-tertiary      → DELETE — was violet-700, no replacement
+#   --brand-identity      → color.brand.identity      (was indigo-700; now burgundy.700)
+#
+#   --podium-gold-row-bg  → color.podium.gold.row-bg  (was amber-200; now gold.50)
+#                         + color.podium.gold.rule    (NEW — apply as 4px inset border-left)
+#   --podium-silver-*     → color.podium.silver.*     (softened tints)
+#   --podium-bronze-*     → color.podium.bronze.*     (reuses amber, no bronze ramp)
+#
+#   --tint-blue-*  / --tint-teal-* / --tint-amber-* / --tint-bronze-* / --tint-pink-*
+#     → DELETE the per-card "score-card--{hue}" variants. Score cards are
+#       neutral surfaces. If a card needs event identity, add a 3px left
+#       border via the .event-chip / .event-rule pattern referencing
+#       color.event.{knockdowns,distance,speed,woods}.rule.
+#
+#   @media (prefers-color-scheme: dark) { ... }
+#     → DELETE the entire block, plus the --dark-* palette values.
+#
+# After migration, expect ~120 fewer lines in index.css and a palette that
+# names 4 working hues (rain, burgundy, amber, green) instead of 9.
+# =============================================================================

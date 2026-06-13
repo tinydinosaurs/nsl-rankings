@@ -5,6 +5,8 @@ const { EVENTS } = require('../constants/events');
 const { generatePlaceholderEmail } = require('../utils/competitorUtils');
 
 // Aliases: maps various human-entered column names to canonical event names
+// NOTE: if you add or change aliases here, also update the "CSV format" section
+// in client/src/pages/HelpPage/HelpPage.jsx so the admin help docs stay in sync.
 const COLUMN_ALIASES = {
 	knockdowns: [
 		'knockdowns',
@@ -48,12 +50,27 @@ const COLUMN_ALIASES = {
 	],
 };
 
-// Known non-score designations — treated as null (not scored/not penalized), not 0
-const NON_SCORE_VALUES = new Set(['dns', 'dq', 'dnf', 'scratch', 'n/a', '-', 'wd', 'disqualified']);
+// Known non-score designations — treated as null (not scored, not penalized).
+// Excluded from the competitor's average for that event.
+// DQ / disqualified are intentionally NOT in this set: a disqualification is a
+// penalty, not "didn't participate," so it counts as 0 in the average. See
+// `DQ_VALUES` below.
+const NON_SCORE_VALUES = new Set(['dns', 'dnf', 'scratch', 'n/a', '-', 'wd']);
+
+// Disqualification designations — treated as 0 (penalty counts toward average).
+const DQ_VALUES = new Set(['dq', 'disqualified']);
 
 // Boolean parsing for the membership column. Returns true, false, or null (unknown).
 const MEMBER_TRUTHY = new Set(['true', 't', 'yes', 'y', '1', 'member']);
-const MEMBER_FALSY = new Set(['false', 'f', 'no', 'n', '0', 'non-member', 'nonmember']);
+const MEMBER_FALSY = new Set([
+	'false',
+	'f',
+	'no',
+	'n',
+	'0',
+	'non-member',
+	'nonmember',
+]);
 
 function parseMemberValue(raw) {
 	if (raw === undefined || raw === null) return null;
@@ -88,6 +105,10 @@ function parseCSV(csvText, tournamentSettings) {
 	const { activeEvents, totalPoints } = tournamentSettings;
 	const warnings = [];
 	const errors = [];
+	// Structured list of required columns that were missing from the header
+	// row. Mirrors `missing_event_columns` and drives a warn-and-remediate
+	// banner on the client. Populated below before the required-column bail-out.
+	const missingRequiredColumns = [];
 
 	// Parse with PapaParse — try to detect headers automatically
 	const result = Papa.parse(csvText.trim(), {
@@ -125,9 +146,15 @@ function parseCSV(csvText, tournamentSettings) {
 
 	if (headerRowIndex === -1) {
 		errors.push(
-			'Could not find a header row. Make sure one of your columns is labeled "name", "competitor", "athlete", or similar.',
+			'No name column found in header row. Add a name column (e.g. "Name", "Competitor", or "Athlete") and re-upload.',
 		);
-		return { competitors: [], warnings, errors };
+		missingRequiredColumns.push('name');
+		return {
+			competitors: [],
+			warnings,
+			errors,
+			missing_required_columns: missingRequiredColumns,
+		};
 	}
 
 	if (headerRowIndex > 0) {
@@ -147,21 +174,41 @@ function parseCSV(csvText, tournamentSettings) {
 	});
 
 	if (colMap.name === undefined) {
-		errors.push('No name column found in header row.');
-		return { competitors: [], warnings, errors };
-	}
-
-	// Warn (once) if no membership column was found — all rows will default to member.
-	const memberColumnPresent = colMap.is_member !== undefined;
-	if (!memberColumnPresent) {
-		warnings.push(
-			'No membership column found (e.g. "member" or "NSL member"). All rows will be treated as members.',
+		errors.push(
+			'No name column found in header row. Add a name column (e.g. "Name", "Competitor", or "Athlete") and re-upload.',
 		);
+		missingRequiredColumns.push('name');
 	}
 
-	// Warn about active events with no matching column
+	// Membership column is required: it gates inclusion on the public leaderboard,
+	// so a missing column must fail loudly rather than silently default everyone to member.
+	if (colMap.is_member === undefined) {
+		errors.push(
+			'No membership column found (e.g. "member" or "NSL member"). Add the column and re-upload. Use "yes"/"no" — blank cells will be treated as non-members.',
+		);
+		missingRequiredColumns.push('is_member');
+	}
+
+	// If any required column was missing, return early with the structured
+	// `missing_required_columns` array so the client can render a warn-and-
+	// remediate banner instead of a plain error string.
+	if (missingRequiredColumns.length > 0) {
+		return {
+			competitors: [],
+			warnings,
+			errors,
+			missing_required_columns: missingRequiredColumns,
+		};
+	}
+
+	// Warn about active events with no matching column. The structured
+	// `missing_event_columns` array drives the slice-5 preview banner with
+	// one-click remediation; the string warning stays for back-compat with
+	// the existing inline warnings list.
+	const missingEventColumns = [];
 	for (const event of activeEvents) {
 		if (colMap[event] === undefined) {
+			missingEventColumns.push(event);
 			warnings.push(
 				`Event "${event}" is marked active but no matching column was found in the CSV. This event will be treated as not held (excluded from scoring).`,
 			);
@@ -172,7 +219,12 @@ function parseCSV(csvText, tournamentSettings) {
 	const dataRows = rows.slice(headerRowIndex + 1);
 	const competitors = [];
 	const competitorsWithoutEmail = [];
+	const blankMembershipRows = [];
 	const seenEmails = new Set();
+	// Aggregate non-score values by event + value so admins see
+	// "Distance: 3 row(s) marked DNS" instead of 3 separate per-row warnings.
+	const nonScoreCounts = new Map(); // key: `${event}|${rawLower}` -> count
+	const dqCounts = new Map(); // key: event -> count
 
 	dataRows.forEach((row, rowIndex) => {
 		const lineNum = headerRowIndex + rowIndex + 2; // 1-based, accounting for header
@@ -203,21 +255,24 @@ function parseCSV(csvText, tournamentSettings) {
 
 		const competitor = { name: rawName, email: rawEmail };
 
-		// Membership: default true when the column is absent (backward compat).
-		// When the column is present, parse each row; unrecognized values warn and fall back to false.
-		if (memberColumnPresent) {
-			const rawMember = row[colMap.is_member]?.toString();
+		// Membership column is guaranteed present here (missing column errors out above).
+		// Blank cells default to non-member and are aggregated into a single warning.
+		// Unrecognized values warn per-row so the admin can find and fix them.
+		const rawMember = row[colMap.is_member]?.toString();
+		const trimmedMember = (rawMember ?? '').trim();
+		if (trimmedMember === '') {
+			competitor.is_member = false;
+			blankMembershipRows.push(rawName);
+		} else {
 			const parsed = parseMemberValue(rawMember);
 			if (parsed === null) {
 				warnings.push(
-					`Row ${lineNum} (${rawName}): Unrecognized membership value "${rawMember ?? ''}" — treated as non-member.`,
+					`Row ${lineNum} (${rawName}): Unrecognized membership value "${rawMember}" — treated as non-member.`,
 				);
 				competitor.is_member = false;
 			} else {
 				competitor.is_member = parsed;
 			}
-		} else {
-			competitor.is_member = true;
 		}
 
 		for (const event of EVENTS) {
@@ -243,9 +298,12 @@ function parseCSV(csvText, tournamentSettings) {
 			} else if (NON_SCORE_VALUES.has(raw.toLowerCase())) {
 				// Known non-score designation → null (excluded from average, not penalized)
 				competitor[`${event}_earned`] = null;
-				warnings.push(
-					`Row ${lineNum} (${rawName}): "${raw}" in "${event}" treated as not scored (excluded from average).`,
-				);
+				const key = `${event}|${raw.toLowerCase()}`;
+				nonScoreCounts.set(key, (nonScoreCounts.get(key) ?? 0) + 1);
+			} else if (DQ_VALUES.has(raw.toLowerCase())) {
+				// Disqualification → 0 (penalty counts toward average)
+				competitor[`${event}_earned`] = 0;
+				dqCounts.set(event, (dqCounts.get(event) ?? 0) + 1);
 			} else {
 				const val = parseFloat(raw);
 				if (isNaN(val)) {
@@ -279,11 +337,39 @@ function parseCSV(csvText, tournamentSettings) {
 		);
 	}
 
+	// Aggregate blank membership cells into a single count warning.
+	if (blankMembershipRows.length > 0) {
+		warnings.push(
+			`${blankMembershipRows.length} row(s) had no membership value and will be saved as non-members.`,
+		);
+	}
+
+	// Aggregated non-score warnings (e.g. "Distance: 3 row(s) marked DNS — excluded from average").
+	for (const [key, count] of nonScoreCounts) {
+		const [event, value] = key.split('|');
+		warnings.push(
+			`${event}: ${count} row(s) marked "${value.toUpperCase()}" — not scored (excluded from average).`,
+		);
+	}
+
+	// Aggregated DQ warnings (counts as 0 in the average).
+	for (const [event, count] of dqCounts) {
+		warnings.push(
+			`${event}: ${count} row(s) marked DQ — counted as 0 (penalty applied to average).`,
+		);
+	}
+
 	if (competitors.length === 0) {
 		errors.push('No valid competitor rows found after parsing.');
 	}
 
-	return { competitors, warnings, errors };
+	return {
+		competitors,
+		warnings,
+		errors,
+		missing_event_columns: missingEventColumns,
+		missing_required_columns: missingRequiredColumns,
+	};
 }
 
 module.exports = { parseCSV };

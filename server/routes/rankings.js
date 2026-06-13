@@ -24,6 +24,8 @@ function createRankingsRouter(db) {
 	});
 
 	// GET /api/rankings/public — public rankings table (no auth required)
+	// Cached for 5 minutes so embeds on external sites (e.g. the WordPress
+	// leaderboard page) survive traffic spikes without hammering the server.
 	router.get('/public', (req, res) => {
 		const rankings = computeRankings(db);
 		const { tournament_count, last_updated } = db
@@ -31,17 +33,21 @@ function createRankingsRouter(db) {
 				`SELECT COUNT(*) as tournament_count, MAX(date) as last_updated FROM tournaments`,
 			)
 			.get();
+		res.set('Cache-Control', 'public, max-age=300');
 		res.json({ rankings, tournament_count, last_updated });
 	});
 
 	// GET /api/rankings/competitors — enhanced list with scores, counts, and filtering
-	router.get('/competitors', authenticate, asyncHandler((req, res) => {
-		const { filter } = req.query; // 'placeholder-emails' | 'members' | 'non-members'
+	router.get(
+		'/competitors',
+		authenticate,
+		asyncHandler((req, res) => {
+			const { filter } = req.query; // 'placeholder-emails' | 'members' | 'non-members'
 
-		// Get all competitors with email status
-		const competitors = db
-			.prepare(
-				`
+			// Get all competitors with email status
+			const competitors = db
+				.prepare(
+					`
     SELECT 
       id, 
       name, 
@@ -55,52 +61,53 @@ function createRankingsRouter(db) {
     FROM competitors 
     ORDER BY name
   `,
-			)
-			.all();
+				)
+				.all();
 
-		// Enhance with scores and tournament counts
-		const enhancedCompetitors = competitors.map((competitor) => {
-			// Get total score using existing function
-			const scores = computeCompetitorScores(competitor.id, db);
+			// Enhance with scores and tournament counts
+			const enhancedCompetitors = competitors.map((competitor) => {
+				// Get total score using existing function
+				const scores = computeCompetitorScores(competitor.id, db);
 
-			// Count tournaments attended
-			const tournamentCount =
-				db
-					.prepare(
-						`
+				// Count tournaments attended
+				const tournamentCount =
+					db
+						.prepare(
+							`
       SELECT COUNT(DISTINCT tournament_id) as count
       FROM tournament_results 
       WHERE competitor_id = ?
     `,
-					)
-					.get(competitor.id)?.count || 0;
+						)
+						.get(competitor.id)?.count || 0;
 
-			return {
-				id: competitor.id,
-				name: competitor.name,
-				email: competitor.email,
-				is_member: competitor.is_member === 1,
-				has_placeholder_email: Boolean(competitor.has_placeholder_email),
-				total_score: scores.total,
-				tournament_count: tournamentCount,
-				created_at: competitor.created_at,
-			};
-		});
+				return {
+					id: competitor.id,
+					name: competitor.name,
+					email: competitor.email,
+					is_member: competitor.is_member === 1,
+					has_placeholder_email: Boolean(competitor.has_placeholder_email),
+					total_score: scores.total,
+					tournament_count: tournamentCount,
+					created_at: competitor.created_at,
+				};
+			});
 
-		// Apply filtering if requested
-		let filteredCompetitors = enhancedCompetitors;
-		if (filter === 'placeholder-emails') {
-			filteredCompetitors = enhancedCompetitors.filter(
-				(c) => c.has_placeholder_email,
-			);
-		} else if (filter === 'members') {
-			filteredCompetitors = enhancedCompetitors.filter((c) => c.is_member);
-		} else if (filter === 'non-members') {
-			filteredCompetitors = enhancedCompetitors.filter((c) => !c.is_member);
-		}
+			// Apply filtering if requested
+			let filteredCompetitors = enhancedCompetitors;
+			if (filter === 'placeholder-emails') {
+				filteredCompetitors = enhancedCompetitors.filter(
+					(c) => c.has_placeholder_email,
+				);
+			} else if (filter === 'members') {
+				filteredCompetitors = enhancedCompetitors.filter((c) => c.is_member);
+			} else if (filter === 'non-members') {
+				filteredCompetitors = enhancedCompetitors.filter((c) => !c.is_member);
+			}
 
-		res.json(filteredCompetitors);
-	}));
+			res.json(filteredCompetitors);
+		}),
+	);
 
 	// GET /api/rankings/competitors/:id — competitor detail with history
 	router.get(
@@ -126,9 +133,9 @@ function createRankingsRouter(db) {
 				.get(req.params.id);
 			if (!competitor) throw new NotFoundError('Competitor');
 
-				const rawResults = db
-					.prepare(
-						`SELECT
+			const rawResults = db
+				.prepare(
+					`SELECT
                         tr.id as result_id,
                         t.id as tournament_id,
                         t.name as tournament_name,
@@ -161,29 +168,29 @@ function createRankingsRouter(db) {
                     JOIN tournaments t ON t.id = tr.tournament_id
                     WHERE tr.competitor_id = ?
                     ORDER BY t.date DESC`,
-					)
-					.all(req.params.id);
+				)
+				.all(req.params.id);
 
-				// Suppress earned values for events disabled on that tournament,
-				// so disabled events render as null (shown as '—') on the frontend.
-				// tournament_rank passes through via ...r spread.
-				const results = rawResults.map(
-					({ has_knockdowns, has_distance, has_speed, has_woods, ...r }) => ({
-						...r,
-						knockdowns_earned: has_knockdowns ? r.knockdowns_earned : null,
-						distance_earned: has_distance ? r.distance_earned : null,
-						speed_earned: has_speed ? r.speed_earned : null,
-						woods_earned: has_woods ? r.woods_earned : null,
-					}),
-				);
+			// Suppress earned values for events disabled on that tournament,
+			// so disabled events render as null (shown as '—') on the frontend.
+			// tournament_rank passes through via ...r spread.
+			const results = rawResults.map(
+				({ has_knockdowns, has_distance, has_speed, has_woods, ...r }) => ({
+					...r,
+					knockdowns_earned: has_knockdowns ? r.knockdowns_earned : null,
+					distance_earned: has_distance ? r.distance_earned : null,
+					speed_earned: has_speed ? r.speed_earned : null,
+					woods_earned: has_woods ? r.woods_earned : null,
+				}),
+			);
 
-				const scores = computeCompetitorScores(req.params.id, db);
+			const scores = computeCompetitorScores(req.params.id, db);
 
-				const allRankings = computeRankings(db);
-				const competitorRanking = allRankings.find(
-					(r) => r.id === Number(req.params.id),
-				);
-				const overallRank = competitorRanking ? competitorRanking.rank : null;
+			const allRankings = computeRankings(db);
+			const competitorRanking = allRankings.find(
+				(r) => r.id === Number(req.params.id),
+			);
+			const overallRank = competitorRanking ? competitorRanking.rank : null;
 
 			res.json({ competitor, results, scores, overallRank });
 		}),
@@ -204,7 +211,9 @@ function createRankingsRouter(db) {
 			// Admins can flip the badge later via PUT.
 			const isMemberFlag =
 				typeof req.body.is_member === 'boolean'
-					? req.body.is_member ? 1 : 0
+					? req.body.is_member
+						? 1
+						: 0
 					: 0;
 
 			const trimmedName = name.trim();
@@ -254,7 +263,9 @@ function createRankingsRouter(db) {
 		requireAdmin,
 		asyncHandler((req, res) => {
 			const competitor = db
-				.prepare('SELECT id, name, email, is_member FROM competitors WHERE id = ?')
+				.prepare(
+					'SELECT id, name, email, is_member FROM competitors WHERE id = ?',
+				)
 				.get(req.params.id);
 			if (!competitor) {
 				throw new NotFoundError('Competitor');
@@ -266,7 +277,9 @@ function createRankingsRouter(db) {
 				'email' in req.body ? req.body.email?.trim() || null : competitor.email;
 			const isMemberFlag =
 				typeof req.body.is_member === 'boolean'
-					? req.body.is_member ? 1 : 0
+					? req.body.is_member
+						? 1
+						: 0
 					: competitor.is_member;
 
 			// Check for duplicate email (if changing)
@@ -333,38 +346,42 @@ function createRankingsRouter(db) {
 	);
 
 	// GET /api/rankings/tournaments — enhanced list with participant counts and event info
-	router.get('/tournaments', authenticate, asyncHandler((req, res) => {
-		const tournaments = db
-			.prepare('SELECT * FROM tournaments ORDER BY date DESC')
-			.all();
+	router.get(
+		'/tournaments',
+		authenticate,
+		asyncHandler((req, res) => {
+			const tournaments = db
+				.prepare('SELECT * FROM tournaments ORDER BY date DESC')
+				.all();
 
-		// Enhance with participant counts and active events summary
-		const enhancedTournaments = tournaments.map((tournament) => {
-			// Count participants
-			const participantCount =
-				db
-					.prepare(
-						'SELECT COUNT(*) as count FROM tournament_results WHERE tournament_id = ?',
-					)
-					.get(tournament.id)?.count || 0;
+			// Enhance with participant counts and active events summary
+			const enhancedTournaments = tournaments.map((tournament) => {
+				// Count participants
+				const participantCount =
+					db
+						.prepare(
+							'SELECT COUNT(*) as count FROM tournament_results WHERE tournament_id = ?',
+						)
+						.get(tournament.id)?.count || 0;
 
-			// Create active events array
-			const activeEvents = [];
-			if (tournament.has_knockdowns) activeEvents.push('knockdowns');
-			if (tournament.has_distance) activeEvents.push('distance');
-			if (tournament.has_speed) activeEvents.push('speed');
-			if (tournament.has_woods) activeEvents.push('woods');
+				// Create active events array
+				const activeEvents = [];
+				if (tournament.has_knockdowns) activeEvents.push('knockdowns');
+				if (tournament.has_distance) activeEvents.push('distance');
+				if (tournament.has_speed) activeEvents.push('speed');
+				if (tournament.has_woods) activeEvents.push('woods');
 
-			return {
-				...tournament,
-				participant_count: participantCount,
-				active_events: activeEvents,
-				active_event_count: activeEvents.length,
-			};
-		});
+				return {
+					...tournament,
+					participant_count: participantCount,
+					active_events: activeEvents,
+					active_event_count: activeEvents.length,
+				};
+			});
 
-		res.json(enhancedTournaments);
-	}));
+			res.json(enhancedTournaments);
+		}),
+	);
 
 	// GET /api/rankings/tournaments/:id — tournament detail with participant roster
 	router.get(
@@ -526,6 +543,26 @@ function createRankingsRouter(db) {
 			}
 			db.prepare('DELETE FROM tournaments WHERE id = ?').run(req.params.id);
 			res.json({ success: true });
+		}),
+	);
+
+	// DELETE /api/rankings/tournaments/:id/results — admin removes all results for a
+	// tournament but keeps the tournament record (name, date, event config) intact.
+	router.delete(
+		'/tournaments/:id/results',
+		authenticate,
+		requireAdmin,
+		asyncHandler((req, res) => {
+			const t = db
+				.prepare('SELECT id FROM tournaments WHERE id = ?')
+				.get(req.params.id);
+			if (!t) {
+				throw new NotFoundError('Tournament');
+			}
+			const result = db
+				.prepare('DELETE FROM tournament_results WHERE tournament_id = ?')
+				.run(req.params.id);
+			res.json({ success: true, deleted: result.changes });
 		}),
 	);
 

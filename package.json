@@ -1,6 +1,6 @@
 {
-	"name": "sports-rankings",
-	"version": "1.0.0",
+	"name": "nsl-rankings",
+	"version": "0.4.0",
 	"private": true,
 	"workspaces": [
 		"client",
@@ -16,7 +16,8 @@
 		"format": "prettier --write --ignore-path .prettierignore .",
 		"build": "npm run build --workspace=client",
 		"preview": "npm run preview --workspace=client",
-		"start": "node server/index.js"
+		"start": "node server/index.js",
+		"seed:reset": "npm run --workspace=server seed:reset"
 	},
 	"devDependencies": {
 		"concurrently": "^8.2.2"

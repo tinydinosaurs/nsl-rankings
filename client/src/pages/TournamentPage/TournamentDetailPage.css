@@ -4,25 +4,25 @@
 	gap: 1.5rem;
 }
 
-/* Details section */
-.tournament-detail__meta {
+.results-actions {
 	display: flex;
-	flex-direction: column;
-	gap: 0.75rem;
+	gap: var(--nsl-space-2xs);
+	flex-wrap: wrap;
+	align-items: center;
 }
 
 /* Events section */
 .tournament-detail__events {
 	display: flex;
 	flex-direction: column;
-	gap: 1rem;
+	gap: var(--nsl-space-sm);
 }
 
 .section-title-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 0.25rem;
+	margin-bottom: var(--nsl-space-3xs);
 }
 
 .section-title-row .section-title {
@@ -31,89 +31,37 @@
 
 .section-empty-hint {
 	color: var(--text-muted);
-	font-size: 13px;
-	margin-bottom: 16px;
+	font-size: var(--nsl-size-sm);
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .score-card__sublabel {
-	font-size: 0.7rem;
+	font-size: var(--nsl-size-xs);
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
 
-/* Events inline edit form */
-.events-edit-actions {
-	display: flex;
-	gap: 0.5rem;
-	margin-bottom: 0.5rem;
-}
-
-.event-edit-row {
-	display: flex;
-	align-items: center;
-	gap: 1.5rem;
-	padding: 0.3rem 0;
-}
-
-.event-edit-toggle {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	cursor: pointer;
-	min-width: 7rem;
-}
-
-.event-edit-toggle input[type='checkbox'] {
-	width: 1rem;
-	height: 1rem;
-	cursor: pointer;
-	accent-color: var(--accent);
-}
-
-.event-edit-points {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-	font-size: 0.875rem;
-	color: var(--text-muted);
-}
-
-.event-points-input {
-	width: 5rem;
-	padding: 0.25rem 0.5rem;
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	background: var(--surface);
-	color: var(--text);
-	font-size: 0.875rem;
-}
-
-.events-edit-error {
-	color: var(--danger);
-	font-size: 0.875rem;
-}
-
 /* Top Finishers podium */
 .tournament-detail__podium .data-table {
-	margin-top: 0.5rem;
+	margin-top: var(--nsl-space-2xs);
 }
 
 .rank-num {
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	font-variant-numeric: tabular-nums;
 	color: var(--text-muted);
 	width: 2rem;
 }
 
 .tournament-detail__podium .data-table tbody tr[data-rank='1']:hover {
-	background: var(--tint-amber-bg);
+	background: var(--podium-gold-chip-bg);
 }
 .tournament-detail__podium .data-table tbody tr[data-rank='2']:hover {
-	background: var(--gray-100);
+	background: var(--podium-silver-chip-bg);
 }
 .tournament-detail__podium .data-table tbody tr[data-rank='3']:hover {
-	background: var(--tint-bronze-bg);
+	background: var(--podium-bronze-chip-bg);
 }
 
 /* Participants section */
@@ -122,7 +70,7 @@
 }
 
 .section-count {
-	font-weight: 400;
+	font-weight: var(--nsl-weight-regular);
 	color: var(--text-muted);
 	font-size: 0.9em;
 }
@@ -134,7 +82,7 @@
 }
 
 .total-earned {
-	font-weight: 700;
+	font-weight: var(--nsl-weight-bold);
 	color: var(--text);
 }
 
@@ -159,12 +107,12 @@
 }
 
 /* Competitor name button (shared with CompetitorsListPage) */
-.competitor-link {
+/* .competitor-link {
 	background: none;
 	border: none;
 	padding: 0;
 	color: var(--accent);
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 	font-weight: 500;
 	cursor: pointer;
 	text-align: left;
@@ -173,7 +121,7 @@
 .competitor-link:hover {
 	color: var(--accent-hover);
 	text-decoration: underline;
-}
+} */
 
 @media (max-width: 768px) {
 	.event-edit-row {

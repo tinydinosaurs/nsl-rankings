@@ -97,8 +97,11 @@ if (!existingOwner) {
 	const username = process.env.OWNER_USERNAME;
 	const password = process.env.OWNER_PASSWORD;
 	const hash = bcrypt.hashSync(password, 10);
+	// INSERT OR IGNORE to be safe against parallel test workers all racing to
+	// seed the same on-disk dev DB. The role check above already prevents this
+	// in normal use; this is just belt-and-suspenders for vitest's parallel pool.
 	db.prepare(
-		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+		'INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 	).run(username, hash, 'owner');
 	console.log(`Owner created: username=${username}`);
 }
@@ -117,7 +120,7 @@ if (!existingAdmin && process.env.ADMIN_USERNAME) {
 	}
 	const hash = bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10);
 	db.prepare(
-		'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+		'INSERT OR IGNORE INTO users (username, password_hash, role) VALUES (?, ?, ?)',
 	).run(process.env.ADMIN_USERNAME, hash, 'admin');
 	console.log(`Admin created: username=${process.env.ADMIN_USERNAME}`);
 }

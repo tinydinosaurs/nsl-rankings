@@ -1,13 +1,48 @@
-.admin-page {
-	max-width: 960px;
-	margin-left: auto;
-	margin-right: auto;
+/* ── Admin hero (mirror of rankings-hero, slightly more restrained) ────── */
+
+.admin-hero {
+	padding: var(--nsl-space-md) 0 var(--nsl-space-lg);
 }
 
-.dashboard-title {
-	font-size: 24px;
-	font-weight: 700;
-	margin-bottom: 24px;
+.admin-kicker {
+	font-family: var(--nsl-font-mono);
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-medium);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-secondary);
+	margin: 0 0 var(--nsl-space-2xs);
+}
+
+.admin-kicker::before {
+	content: '';
+	display: inline-block;
+	width: 0.45em;
+	height: 0.45em;
+	margin-right: 0.55em;
+	border-radius: 50%;
+	background: var(--brand-primary);
+	transform: translateY(-0.1em);
+}
+
+.admin-hero__title {
+	font-family: var(--nsl-font-display);
+	font-weight: var(--nsl-weight-black);
+	font-stretch: 110%;
+	font-size: clamp(2rem, 4vw, 2.75rem);
+	line-height: 1.02;
+	letter-spacing: -0.025em;
+	color: var(--text);
+	margin: 0;
+}
+
+.admin-hero__title em {
+	font-style: normal;
+	color: var(--brand-primary);
+}
+
+.admin-page section {
+	margin-bottom: var(--nsl-space-lg);
 }
 
 /* ── Stat Cards ─────────────────────────────────────────────────────────── */
@@ -15,8 +50,8 @@
 .stat-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
-	gap: 12px;
-	margin-bottom: 28px;
+	gap: var(--nsl-space-xs);
+	/* margin-bottom: 28px; */
 }
 
 .stat-card-link {
@@ -26,88 +61,44 @@
 }
 
 .stat-card {
-	background: var(--surface);
-	border: 1px solid var(--border);
+	background: var(--bg-elevated);
+	border: 1px solid var(--border-subtle);
 	border-radius: var(--radius);
 	padding: 18px 20px;
-	transition: border-color 0.15s;
+	transition: border-color var(--nsl-duration-fast);
 	flex: 1;
 	text-align: center;
 }
 
 .stat-card-link:hover .stat-card {
-	border-color: var(--accent);
-}
-
-/* ── Stat card color variants ───────────────────────────────────────────── */
-
-.stat-card--blue {
-	background: var(--tint-blue-bg);
-	border-color: var(--tint-blue-border);
-}
-.stat-card--blue .stat-value {
-	color: var(--tint-blue-fg);
-}
-.stat-card-link:hover .stat-card--blue {
-	border-color: var(--tint-blue-fg);
-}
-
-.stat-card--indigo {
-	background: var(--tint-indigo-bg);
-	border-color: var(--tint-indigo-border);
-}
-.stat-card--indigo .stat-value {
-	color: var(--tint-indigo-fg);
-}
-.stat-card-link:hover .stat-card--indigo {
-	border-color: var(--tint-indigo-fg);
-}
-
-.stat-card--amber {
-	background: var(--tint-amber-bg);
-	border-color: var(--tint-amber-border);
-}
-.stat-card--amber .stat-value {
-	color: var(--tint-amber-fg);
-}
-
-.stat-card-link:hover .stat-card--amber {
-	border-color: var(--tint-amber-fg);
-}
-
-.stat-card--green {
-	background: var(--tint-green-bg);
-	border-color: var(--tint-green-border);
-}
-.stat-card--green .stat-value {
-	color: var(--tint-green-fg);
-}
-.stat-card-link:hover .stat-card--green {
-	border-color: var(--tint-green-fg);
+	border-color: var(--brand-primary);
 }
 
 .stat-value {
-	font-size: 36px;
-	font-weight: 700;
-	color: var(--text);
+	/* font-family: var(--nsl-font-display); */
+	font-variant-numeric: tabular-nums;
+	font-size: var(--nsl-size-xl);
+	font-weight: var(--nsl-weight-black);
+	font-stretch: 110%;
+	color: var(--brand-primary);
 	line-height: 1.1;
-	margin-bottom: 4px;
+	margin-bottom: var(--nsl-space-3xs);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 }
 
 .stat-label {
-	font-size: 12px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
 	text-transform: uppercase;
 	letter-spacing: 0.04em;
 }
 
 .stat-sub {
-	font-size: 11px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
-	margin-top: 4px;
+	margin-top: var(--nsl-space-3xs);
 }
 
 /* ── Dashboard Sections ─────────────────────────────────────────────────── */
@@ -117,25 +108,25 @@
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
 	padding: 20px;
-	margin-bottom: 16px;
+	/* margin-bottom: var(--nsl-space-sm); */
 }
 
 .section-heading {
-	font-size: 18px;
-	font-weight: 600;
+	font-size: var(--nsl-size-md);
+	font-weight: var(--nsl-weight-semibold);
 	color: var(--text);
-	margin: 0 0 12px;
+	margin: 0 0 var(--nsl-space-xs);
 }
 
 .section-row {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 14px;
+	margin-bottom: var(--nsl-space-xs);
 }
 
 .section-link {
-	font-size: 12px;
+	font-size: var(--nsl-size-sm);
 	color: var(--accent);
 	text-decoration: none;
 }
@@ -156,12 +147,12 @@
 	background: var(--surface2);
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
-	padding: 14px 12px;
+	padding: var(--nsl-space-sm);
 	text-align: center;
 	cursor: pointer;
 	transition:
-		border-color 0.15s,
-		background 0.15s;
+		border-color var(--nsl-duration-fast),
+		background var(--nsl-duration-fast);
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -169,7 +160,7 @@
 
 .action-card:hover {
 	border-color: var(--brand-primary);
-	background: var(--tint-blue-bg);
+	background: var(--brand-primary-tint);
 }
 
 .action-card:hover .action-label {
@@ -177,8 +168,8 @@
 }
 
 .action-label {
-	font-size: 13px;
-	font-weight: 500;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-medium);
 	color: var(--text);
 	line-height: 1.3;
 }
@@ -188,8 +179,8 @@
 .dashboard-columns {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 16px;
-	margin-bottom: 16px;
+	gap: var(--nsl-space-sm);
+	margin-bottom: var(--nsl-space-sm);
 }
 
 .dashboard-columns .dashboard-section {
@@ -201,18 +192,18 @@
 .panel-list {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
+	gap: var(--nsl-space-3xs);
 }
 
 .panel-row {
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	padding: 8px 10px;
+	padding: var(--nsl-space-2xs);
 	border-radius: calc(var(--radius) - 2px);
 	text-decoration: none;
 	color: var(--text);
-	transition: background 0.12s;
+	transition: background var(--nsl-duration-fast);
 }
 
 .panel-row:hover {
@@ -221,44 +212,32 @@
 
 /* Top 3 row hover — scoped to .panel-row so specificity beats generic hover */
 .panel-row[data-rank='1']:hover {
-	background: var(--tint-amber-bg);
+	background: var(--podium-gold-chip-bg);
 }
 .panel-row[data-rank='2']:hover {
-	background: var(--gray-100);
+	background: var(--podium-silver-chip-bg);
 }
 .panel-row[data-rank='3']:hover {
-	background: var(--tint-bronze-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-	.panel-row[data-rank='1']:hover {
-		background: var(--tint-amber-bg);
-	}
-	.panel-row[data-rank='2']:hover {
-		background: var(--dark-surface2);
-	}
-	.panel-row[data-rank='3']:hover {
-		background: var(--tint-bronze-bg);
-	}
+	background: var(--podium-bronze-chip-bg);
 }
 
 /* Top 5 row */
 
 .top-rank {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--tint-text-high-contrast);
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-bold);
+	color: var(--brand-primary);
 	width: 28px;
 	flex-shrink: 0;
 	text-align: center;
-	border-radius: 4px;
-	padding: 1px 4px;
+	border-radius: var(--nsl-radius-md);
+	padding: var(--nsl-space-px) var(--nsl-space-3xs);
 }
 
 .panel-name {
 	flex: 1;
-	font-size: 13px;
-	font-weight: 500;
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-medium);
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -272,14 +251,14 @@
 
 .meta-date,
 .meta-count {
-	font-size: 12px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
 }
 
 .top-score {
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--tint-text-high-contrast);
+	font-size: var(--nsl-size-sm);
+	font-weight: var(--nsl-weight-semibold);
+	color: var(--brand-primary);
 	flex-shrink: 0;
 	margin-left: auto;
 }
@@ -287,9 +266,9 @@
 /* ── Empty state ────────────────────────────────────────────────────────── */
 
 .empty-state {
-	font-size: 13px;
+	font-size: var(--nsl-size-sm);
 	color: var(--text-muted);
-	margin: 4px 0;
+	margin: var(--nsl-space-3xs) 0;
 }
 
 .empty-state a {

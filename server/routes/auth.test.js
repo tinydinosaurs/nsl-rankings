@@ -17,7 +17,7 @@ function createTestApp(database) {
 	const app = express();
 	app.use(express.json());
 	app.use('/api/auth', createAuthRouter(database));
-	
+
 	// Add routes for testing middleware directly
 	app.get('/api/protected', authenticate, (req, res) => {
 		res.json({ message: 'Protected route accessed', user: req.user });
@@ -25,10 +25,10 @@ function createTestApp(database) {
 	app.get('/api/admin-only', requireAdmin, (req, res) => {
 		res.json({ message: 'Admin route accessed' });
 	});
-	
+
 	// Add global error handler (must be last)
 	app.use(errorHandler);
-	
+
 	return app;
 }
 
@@ -59,9 +59,7 @@ describe('Auth Logic Unit Tests', () => {
 		});
 
 		it('should reject invalid tokens', () => {
-			expect(() =>
-				jwt.verify('invalid.token.here', JWT_SECRET),
-			).toThrow();
+			expect(() => jwt.verify('invalid.token.here', JWT_SECRET)).toThrow();
 		});
 	});
 });
@@ -223,6 +221,98 @@ describe('Auth HTTP Tests - Controlled Environment', () => {
 			expect(response.body).toEqual({ error: 'Username already exists' });
 		});
 	});
+
+	describe('Self-Service Password Change', () => {
+		it('should change the password when current password matches', async () => {
+			const response = await request(app)
+				.put('/api/auth/me/password')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					currentPassword: 'admin123',
+					newPassword: 'NewAdminPass123',
+				});
+
+			expect(response.status).toBe(200);
+			expect(response.body).toEqual({ success: true });
+
+			// Old password should no longer work, new one should.
+			const loginOld = await request(app)
+				.post('/api/auth/login')
+				.send({ username: 'testadmin', password: 'admin123' });
+			expect(loginOld.status).toBe(401);
+
+			const loginNew = await request(app)
+				.post('/api/auth/login')
+				.send({ username: 'testadmin', password: 'NewAdminPass123' });
+			expect(loginNew.status).toBe(200);
+		});
+
+		it('should reject when current password is wrong', async () => {
+			const response = await request(app)
+				.put('/api/auth/me/password')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					currentPassword: 'wrong-password',
+					newPassword: 'NewAdminPass123',
+				});
+
+			expect(response.status).toBe(401);
+			expect(response.body.error).toMatch(/current password is incorrect/i);
+
+			// Original password still works.
+			const login = await request(app)
+				.post('/api/auth/login')
+				.send({ username: 'testadmin', password: 'admin123' });
+			expect(login.status).toBe(200);
+		});
+
+		it('should reject when new password is the same as current', async () => {
+			// Use a strong password so we know the rejection isn't from the validator.
+			// We need to set this up: seed a user whose current password already meets
+			// the strength requirements.
+			const strongHash = bcrypt.hashSync('StrongPass123', 10);
+			db.prepare(
+				'INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)',
+			).run('strongadmin', strongHash, 'admin');
+			const strongToken = signToken({
+				id: 4,
+				username: 'strongadmin',
+				role: 'admin',
+			});
+
+			const response = await request(app)
+				.put('/api/auth/me/password')
+				.set('Authorization', `Bearer ${strongToken}`)
+				.send({
+					currentPassword: 'StrongPass123',
+					newPassword: 'StrongPass123',
+				});
+
+			expect(response.status).toBe(400);
+			expect(response.body.error).toMatch(/different from current/i);
+		});
+
+		it('should reject when new password fails strength rules', async () => {
+			const response = await request(app)
+				.put('/api/auth/me/password')
+				.set('Authorization', `Bearer ${adminToken}`)
+				.send({
+					currentPassword: 'admin123',
+					newPassword: 'short',
+				});
+
+			expect(response.status).toBe(400);
+		});
+
+		it('should reject when not authenticated', async () => {
+			const response = await request(app).put('/api/auth/me/password').send({
+				currentPassword: 'admin123',
+				newPassword: 'NewAdminPass123',
+			});
+
+			expect(response.status).toBe(401);
+		});
+	});
 });
 
 // --- INTEGRATION SMOKE TESTS: Real Production Routes ---
@@ -231,7 +321,7 @@ describe('Auth Integration Smoke Tests', () => {
 	beforeEach(() => {
 		// Create in-memory database for smoke tests
 		db = new Database(':memory:');
-		
+
 		// Create minimal test database
 		db.exec(`
       CREATE TABLE IF NOT EXISTS users (
@@ -245,11 +335,9 @@ describe('Auth Integration Smoke Tests', () => {
 
 		// Seed test user
 		const hash = bcrypt.hashSync('smoketest123', 10);
-		db
-			.prepare(
-				'INSERT OR REPLACE INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)',
-			)
-			.run(1, 'smoketest', hash, 'admin');
+		db.prepare(
+			'INSERT OR REPLACE INTO users (id, username, password_hash, role) VALUES (?, ?, ?, ?)',
+		).run(1, 'smoketest', hash, 'admin');
 
 		// Create app with factory function for smoke tests
 		createTestApp(db);

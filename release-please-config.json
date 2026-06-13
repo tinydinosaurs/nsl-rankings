@@ -1,0 +1,28 @@
+{
+	"release-type": "node",
+	"include-v-in-tag": true,
+	"include-component-in-tag": false,
+	"bump-minor-pre-major": true,
+	"bump-patch-for-minor-pre-major": false,
+	"draft": false,
+	"prerelease": false,
+	"packages": {
+		".": {
+			"package-name": "nsl-rankings",
+			"changelog-path": "CHANGELOG.md"
+		}
+	},
+	"changelog-sections": [
+		{ "type": "feat", "section": "Added" },
+		{ "type": "fix", "section": "Fixed" },
+		{ "type": "perf", "section": "Changed" },
+		{ "type": "refactor", "section": "Changed", "hidden": false },
+		{ "type": "revert", "section": "Changed" },
+		{ "type": "docs", "section": "Changed", "hidden": true },
+		{ "type": "style", "section": "Changed", "hidden": true },
+		{ "type": "chore", "section": "Changed", "hidden": true },
+		{ "type": "test", "section": "Changed", "hidden": true },
+		{ "type": "build", "section": "Changed", "hidden": true },
+		{ "type": "ci", "section": "Changed", "hidden": true }
+	]
+}

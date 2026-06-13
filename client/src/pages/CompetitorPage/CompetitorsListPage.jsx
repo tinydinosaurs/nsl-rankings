@@ -14,6 +14,7 @@ import Badge from '../../components/shared/Badge/Badge.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
+import Checkbox from '../../components/shared/Checkbox/Checkbox.jsx';
 import AddCompetitorModal from '../../components/shared/AddCompetitorModal/AddCompetitorModal.jsx';
 import './CompetitorsListPage.css';
 
@@ -131,7 +132,7 @@ export default function CompetitorsListPage() {
 				header: 'Actions',
 				cell: (info) => (
 					<button
-						className="btn-sm btn-danger"
+						className="btn btn-sm btn-danger"
 						onClick={() => handleDelete(info.row.original)}
 					>
 						Delete
@@ -207,14 +208,11 @@ export default function CompetitorsListPage() {
 							<option value="non-members">Non-members only</option>
 						</select>
 					</label>
-					<label className="checkbox-label">
-						<input
-							type="checkbox"
-							checked={showPlaceholdersOnly}
-							onChange={(e) => setShowPlaceholdersOnly(e.target.checked)}
-						/>
-						Show only placeholder emails
-					</label>
+					<Checkbox
+						label="Show only placeholder emails"
+						checked={showPlaceholdersOnly}
+						onChange={(e) => setShowPlaceholdersOnly(e.target.checked)}
+					/>
 				</div>
 			</div>
 

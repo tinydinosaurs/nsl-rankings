@@ -105,29 +105,34 @@ nsl-rankings/
 │       │   └── shared/
 │       │       ├── AddCompetitorModal/
 │       │       ├── AddResultModal/
-│       │       ├── AddTournamentModal/
 │       │       ├── Badge/
+│       │       ├── Checkbox/
 │       │       ├── ConfirmDialog/
+│       │       ├── EditCompetitorModal/
 │       │       ├── EditResultModal/
+│       │       ├── EditTournamentModal/
 │       │       ├── EditableField/
 │       │       ├── EmptyState/
+│       │       ├── EventChip/
 │       │       ├── EyeIcons/           # Shared SVG eye icon components
+│       │       ├── IdentityStrip/
 │       │       ├── Layout/             # Nav + page shell
 │       │       ├── Modal/
 │       │       ├── PageHeader/
-│       │       └── ResultsUploadForm/  # Shared upload form (UploadPage + TournamentDetailPage)
 │       ├── constants/
 │       │   └── events.js              # Event definitions (client copy)
 │       ├── hooks/
 │       │   └── useAuth.jsx            # Auth context + JWT storage
 │       ├── pages/
+│       │   ├── AccountPage/           # /admin/account — profile + change password
 │       │   ├── AdminPage/             # /admin — dashboard
 │       │   ├── AdminUsersPage/        # /admin/users — owner-only user management
 │       │   ├── CompetitorPage/        # /admin/competitors (list + detail)
+│       │   ├── HelpPage/              # /admin/help — admin documentation
 │       │   ├── LoginPage/             # /login
 │       │   ├── RankingsPage/          # / — public leaderboard
-│       │   ├── TournamentPage/        # /admin/tournaments (list + detail)
-│       │   └── UploadPage/            # /admin/upload — CSV upload flow
+│       │   ├── TournamentDraftPage/   # /admin/tournaments/new + /admin/tournaments/:id/upload — unified draft-until-commit page (TournamentUploadWrapper hydrates the update-mode case)
+│       │   └── TournamentPage/        # /admin/tournaments (list + detail)
 │       ├── styles/
 │       │   └── podium.css       ├── test/
        │   └── setup.js               # Vitest client test setup (jsdom)│       └── utils/
@@ -162,6 +167,31 @@ nsl-rankings/
     └── utils/
         └── competitorUtils.js
 ```
+
+---
+
+## Project Docs Layout
+
+Two folders, two purposes — don't mix them.
+
+- **`docs/`** — public, committed to git. Anything other contributors (or the
+  GitHub UI) should see. Currently: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
+  `SECURITY.md`, `tokens.yaml`. GitHub auto-discovers community health files
+  in `docs/`, the repo root, or `.github/` — keep `CONTRIBUTING.md`,
+  `CODE_OF_CONDUCT.md`, and `SECURITY.md` in one of those three locations
+  or the auto-linked banners in the GitHub UI disappear.
+- **`notes/`** — local-only, **gitignored**. The maintainer's working
+  memory: `ROADMAP.md`, `TECH_DEBT.md`, `TROUBLESHOOTING.md`, design
+  scratch, archived migration plans. Safe to be candid (cost figures,
+  honest "this option sucks because…" notes, half-formed ideas). Files
+  here are visible to the maintainer and to AI assistants working in this
+  workspace, but not to anyone who clones the repo.
+
+When suggesting where to put new documentation, default to `docs/` for
+anything a contributor would benefit from, and `notes/` for working state
+that should stay private. If something in `notes/` matures into
+contributor-facing reference, promote it to `docs/` with an editorial pass
+(strip cost numbers, internal jargon, and unfiltered opinions).
 
 ---
 
@@ -290,7 +320,7 @@ Middleware:
 - `requireAdmin` — both `admin` and `owner` pass
 - `authenticate` — any valid JWT passes
 
-The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
+The public leaderboard (`GET /api/rankings/public`) requires **no auth**, sends `Cache-Control: public, max-age=300`, and is CORS-allowed for every origin in `CLIENT_URL` (which accepts a comma-separated list — see `docs/WORDPRESS_EMBED.md`).
 
 ---
 
@@ -299,11 +329,12 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | Method | Path | Auth | Description |
 | ------ | ---- | ---- | ----------- |
 | POST | `/api/auth/login` | — | Returns JWT |
+| PUT | `/api/auth/me/password` | authenticated | Change own password (verifies current) |
 | GET | `/api/auth/users` | owner | List all users |
 | POST | `/api/auth/users` | owner | Create a user |
 | PUT | `/api/auth/users/:id` | owner | Update username/password/role |
 | DELETE | `/api/auth/users/:id` | owner | Delete a user |
-| GET | `/api/rankings/public` | — | Public leaderboard + tournament stats |
+| GET | `/api/rankings/public` | — | Public leaderboard + tournament stats. Sends `Cache-Control: public, max-age=300` for embeds (e.g. the WordPress page). |
 | GET | `/api/rankings` | authenticated | Full rankings (authenticated view) |
 | GET | `/api/rankings/competitors` | authenticated | List competitors with scores + tournament counts |
 | GET | `/api/rankings/competitors/:id` | admin | Competitor record |
@@ -316,11 +347,12 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | POST | `/api/rankings/tournaments` | admin | Create a tournament |
 | PUT | `/api/rankings/tournaments/:id` | admin | Edit tournament metadata |
 | DELETE | `/api/rankings/tournaments/:id` | admin | Delete tournament + all results |
+| DELETE | `/api/rankings/tournaments/:id/results` | admin | Remove all results from a tournament (keeps the tournament row) |
 | POST | `/api/rankings/results` | admin | Add or upsert a single result |
 | PUT | `/api/rankings/results/:id` | admin | Edit a result |
 | DELETE | `/api/rankings/results/:id` | admin | Delete a result |
-| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write) |
-| POST | `/api/upload/commit` | admin | Commit previewed results to DB |
+| POST | `/api/upload/preview` | admin | Parse CSV, return preview (no DB write). Response shape: `{ competitors, warnings, errors, membership_changes, missing_event_columns }`. On parser failure returns 422 with `details: { errors, warnings, missing_required_columns }` where `missing_required_columns` is a structured `string[]` (values: `'name'`, `'is_member'`) used by the client banner. |
+| POST | `/api/upload/commit` | admin | Commit previewed results to DB. Accepts optional `replace_mode: boolean` (only valid with `tournament_id`) — when true, every existing result for that tournament is deleted inside the same transaction before the new rows are inserted. Default behavior (omitted or false) is upsert: matching emails overwrite, new emails insert, untouched results stay. |
 | GET | `/api/health` | — | Health check |
 
 ---
@@ -330,8 +362,12 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 - Accepted file types: `.csv`, `.xlsx`, `.xls`, `.ods` — Excel/ODS files are converted to CSV via SheetJS before parsing
 - Scans first 5 rows for the header row (spreadsheets often have junk rows at the top)
 - Column names are matched via aliases — see `COLUMN_ALIASES` in `csvParser.js`
+- **Required columns:** `name` and `is_member`. Missing either of them aborts parsing — the parser pushes an error message into `errors` and includes the missing key in the structured `missing_required_columns: string[]` field. The preview route surfaces this as a 422 with `details.missing_required_columns`; `TournamentDraftPage` renders a warn-and-remediate banner with `[Choose different file]` / `[View CSV format guide]` actions instead of the plain error alert.
 - Blank cells in **active** events → `0` (competitor participated, scored nothing)
-- Missing event column for an **active** event → `0` with a warning
+- Missing event column for an **active** event → `0` with a warning, and the event is included in the parser's structured `missing_event_columns: string[]` field. `TournamentDraftPage` renders a warn-and-remediate banner from that field with `[Choose different file]` / `[Edit tournament events]` actions, and the commit-time confirmation modal surfaces it as an explicit acknowledgement.
+- **Non-score values** in `NON_SCORE_VALUES` (`dns`, `dnf`, `scratch`, `n/a`, `-`, `wd`) → `null` (excluded from the competitor's average for that event)
+- **DQ / disqualified** → `0` (penalty counts toward the average — a disqualification is a result, not "didn't participate")
+- Non-score and DQ warnings are **aggregated by event + value** (e.g. `knockdowns: 3 row(s) marked "DNS"`) rather than emitted per row
 - Competitors with no email → generate placeholder, warn, **do not skip**
 - Duplicate email within one CSV → warning, skip the second row, continue parsing
 - Values exceeding `total_points` → warning, accept the value, continue
@@ -347,12 +383,15 @@ The public leaderboard (`GET /api/rankings/public`) requires **no auth**.
 | `/`                        | `RankingsPage`         | None  | Public leaderboard                                    |
 | `/login`                   | `LoginPage`            | None  | Redirect to `/admin` if already authed                |
 | `/admin`                   | `AdminPage`            | Admin | Dashboard: stats, quick actions, recent tournaments, top 5 |
-| `/admin/upload`            | `UploadPage`           | Admin | 3-step: configure → preview → confirm                 |
 | `/admin/competitors`       | `CompetitorsListPage`  | Admin | List, search, filter, add, delete competitors         |
 | `/admin/competitors/:id`   | `CompetitorDetailPage` | Admin | Edit name/email, view history, delete results         |
-| `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments                         |
-| `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, upload results inline, delete tournament |
+| `/admin/tournaments`       | `TournamentListPage`   | Admin | List, add, delete tournaments. "Add Tournament" navigates to `/admin/tournaments/new` |
+| `/admin/tournaments/new`   | `TournamentDraftPage`  | Admin | Create a tournament. Single-page draft — metadata, file picker, and inline preview on one screen. Draft is held in sessionStorage; **nothing is written to the DB until Commit**. With a file: posts to `/api/upload/commit`. Without a file: posts to `/api/rankings/tournaments` (metadata-only "shell" tournament). |
+| `/admin/tournaments/:id`   | `TournamentDetailPage` | Admin | View/edit results, delete tournament. "Upload Results" button navigates to the upload page. |
+| `/admin/tournaments/:id/upload` | `TournamentUploadWrapper` → `TournamentDraftPage` (`mode="update"`) | Admin | Add results to an existing tournament. Wrapper loads the tournament and seeds the draft page's initial metadata; metadata is editable inline and lands in the same transaction as the results via `/api/upload/commit` with `tournament_id` set. When the tournament already has results, the commit-confirm modal exposes a choice between **Update existing results** (upsert) and **Replace all results** (delete + insert in one transaction). No sessionStorage draft layer in update mode. |
 | `/admin/users`             | `AdminUsersPage`       | Owner | Create/edit/delete admin and owner accounts           |
+| `/admin/account`           | `AccountPage`          | Admin | Profile (username + role) and self-service password change |
+| `/admin/help`              | `HelpPage`             | Admin | Admin documentation — upload flow, CSV format, scoring math |
 
 React Router v6 is already configured in `client/src/App.jsx`. Add new routes there — do not create a new router.
 

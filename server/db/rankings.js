@@ -55,10 +55,21 @@ function computeCompetitorScores(competitorId, dbInstance = db) {
  * Compute full rankings: all members with their scores, sorted by total desc.
  * Non-members are excluded entirely. Admins manage non-members through the
  * competitor list, but they don't appear on any leaderboard.
+ *
+ * Competitors with zero tournament_results rows are also excluded — no results
+ * means no ranking. They still show up in admin views; they just don't get a
+ * spot (or a rank-with-zero) on the leaderboard.
  */
 function computeRankings(dbInstance = db) {
 	const competitors = dbInstance
-		.prepare('SELECT id, name FROM competitors WHERE is_member = 1 ORDER BY name')
+		.prepare(
+			`SELECT id, name FROM competitors
+       WHERE is_member = 1
+         AND EXISTS (
+           SELECT 1 FROM tournament_results tr WHERE tr.competitor_id = competitors.id
+         )
+       ORDER BY name`,
+		)
 		.all();
 
 	const rankings = competitors.map((c) => {

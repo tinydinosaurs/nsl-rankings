@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../../utils/api.js';
 import Modal from '../Modal/Modal.jsx';
+import Checkbox from '../Checkbox/Checkbox.jsx';
 
 /**
  * Edit competitor profile in a single modal — name, email, and member status
@@ -108,19 +109,12 @@ export default function EditCompetitorModal({
 					</small>
 				</div>
 
-				<div className="form-group">
-					<label className="checkbox-label">
-						<input
-							type="checkbox"
-							checked={isMember}
-							onChange={(e) => setIsMember(e.target.checked)}
-						/>
-						NSL member
-					</label>
-					<small className="form-help">
-						Only members appear on the public leaderboard.
-					</small>
-				</div>
+				<Checkbox
+					label="NSL member"
+					description="Only members appear on the public leaderboard."
+					checked={isMember}
+					onChange={(e) => setIsMember(e.target.checked)}
+				/>
 
 				<div className="modal-actions">
 					<button

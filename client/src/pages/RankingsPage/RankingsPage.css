@@ -1,40 +1,29 @@
-.page-header {
-	display: flex;
-	align-items: baseline;
-	gap: 12px;
-	margin-bottom: 24px;
-	flex-wrap: wrap;
-}
-.page-header h1 {
-	font-size: 24px;
-}
+/* ── Hero meta (passed into PageHeader's `meta` slot) ─────────────────── */
 .rankings-meta {
 	display: flex;
-	gap: 16px;
+	gap: var(--nsl-space-sm);
 	align-items: baseline;
-	margin-left: auto;
 	flex-wrap: wrap;
 }
 .meta-stat {
-	color: var(--text-muted);
-	font-size: 14px;
+	color: var(--text-secondary);
+	font-size: var(--nsl-size-sm);
 }
 .meta-updated {
-	color: var(--text-muted);
-	font-size: 13px;
-	font-style: italic;
-}
-.page-loading {
-	color: var(--text-muted);
-	padding: 48px 0;
-	text-align: center;
-}
-.empty-state {
-	color: var(--text-muted);
-	text-align: center;
-	padding: 48px;
+	font-family: var(--nsl-font-mono);
+	color: var(--text-tertiary);
+	font-size: var(--nsl-size-xs);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
 }
 
+.page-loading {
+	color: var(--text-secondary);
+	padding: var(--nsl-space-xl) 0;
+	text-align: center;
+}
+
+/* ── Leaderboard table ──────────────────────────────────────────────── */
 .table-wrapper {
 	padding: 0;
 	overflow-x: auto;
@@ -43,18 +32,18 @@
 .rankings-table {
 	width: 100%;
 	border-collapse: collapse;
-	font-size: 14px;
+	font-size: var(--nsl-size-sm);
 }
 
 .rankings-table th {
-	padding: 12px 16px;
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
 	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-semibold);
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
-	color: var(--text-muted);
-	border-bottom: 1px solid var(--border);
+	letter-spacing: 0.08em;
+	color: var(--text-tertiary);
+	border-bottom: 1px solid var(--border-subtle);
 	white-space: nowrap;
 	user-select: none;
 }
@@ -63,52 +52,45 @@
 	cursor: pointer;
 }
 .rankings-table th.sortable:hover {
-	color: var(--text);
+	color: var(--text-primary);
 }
 
 .rankings-table td {
-	padding: 12px 16px;
-	border-bottom: 1px solid var(--border);
+	padding: var(--nsl-space-xs) var(--nsl-space-sm);
+	border-bottom: 1px solid var(--border-subtle);
 }
 
 .rankings-table tr:last-child td {
 	border-bottom: none;
 }
 .rankings-table tbody tr:hover {
-	background: var(--surface2);
+	background: var(--bg-elevated);
 }
 
-/* Podium row hover overrides — higher specificity than generic tbody tr:hover */
+/* Podium row hover — keep the resting tint, don't fall back to neutral. */
 .rankings-table tbody tr[data-rank='1']:hover {
-	background: var(--tint-amber-bg);
+	background: var(--podium-gold-row-bg);
 }
 .rankings-table tbody tr[data-rank='2']:hover {
-	background: var(--gray-100);
+	background: var(--podium-silver-row-bg);
 }
 .rankings-table tbody tr[data-rank='3']:hover {
-	background: var(--tint-bronze-bg);
-}
-
-@media (prefers-color-scheme: dark) {
-	.rankings-table tbody tr[data-rank='1']:hover {
-		background: var(--tint-amber-bg);
-	}
-	.rankings-table tbody tr[data-rank='2']:hover {
-		background: var(--dark-surface2);
-	}
-	.rankings-table tbody tr[data-rank='3']:hover {
-		background: var(--tint-bronze-bg);
-	}
+	background: var(--podium-bronze-row-bg);
 }
 
 .rank-num {
-	font-weight: 700;
-	color: var(--text-muted);
+	font-family: var(--nsl-font-display);
+	font-weight: var(--nsl-weight-black);
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: 'tnum';
+	color: var(--text-tertiary);
+	letter-spacing: -0.02em;
 }
 .score-cell {
 	font-variant-numeric: tabular-nums;
-	font-weight: 600;
+	font-feature-settings: 'tnum';
+	font-weight: var(--nsl-weight-semibold);
 }
 .score-null {
-	color: var(--border);
+	color: var(--text-tertiary);
 }

@@ -9,6 +9,7 @@ import {
 import api from '../../utils/api';
 import { formatScore } from '../../utils/formatScore.js';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
+import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import '../../styles/podium.css';
 import './RankingsPage.css';
 
@@ -94,21 +95,23 @@ export default function RankingsPage() {
 
 	return (
 		<div className="rankings-page">
-			<div className="page-header">
-				<h1>National Rankings</h1>
-				<div className="rankings-meta">
-					{meta.tournament_count != null && (
-						<span className="meta-stat">
-							{data.length} competitor{data.length !== 1 ? 's' : ''} &middot;{' '}
-							{meta.tournament_count} tournament
-							{meta.tournament_count !== 1 ? 's' : ''}
-						</span>
-					)}
-					{meta.last_updated && (
-						<span className="meta-updated">Updated {meta.last_updated}</span>
-					)}
-				</div>
-			</div>
+			<PageHeader
+				title="National Rankings"
+				meta={
+					<div className="rankings-meta">
+						{meta.tournament_count != null && (
+							<span className="meta-stat">
+								{data.length} competitor{data.length !== 1 ? 's' : ''} &middot;{' '}
+								{meta.tournament_count} tournament
+								{meta.tournament_count !== 1 ? 's' : ''}
+							</span>
+						)}
+						{meta.last_updated && (
+							<span className="meta-updated">Updated {meta.last_updated}</span>
+						)}
+					</div>
+				}
+			/>
 
 			{data.length === 0 ? (
 				<EmptyState message="No rankings yet. Results will appear here once an admin uploads tournament data." />
@@ -143,10 +146,12 @@ export default function RankingsPage() {
 						</thead>
 						<tbody>
 							{table.getRowModel().rows.map((row) => (
-							<tr
-								key={row.id}
-								data-rank={row.original.rank <= 3 ? row.original.rank : undefined}
-							>
+								<tr
+									key={row.id}
+									data-rank={
+										row.original.rank <= 3 ? row.original.rank : undefined
+									}
+								>
 									{row.getVisibleCells().map((cell) => (
 										<td key={cell.id}>
 											{flexRender(

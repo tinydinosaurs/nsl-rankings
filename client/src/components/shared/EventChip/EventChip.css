@@ -1,0 +1,33 @@
+.event-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--nsl-space-3xs);
+	padding: var(--nsl-space-3xs) var(--nsl-space-2xs) var(--nsl-space-3xs)
+		var(--nsl-space-3xs);
+	border-left: 3px solid currentColor;
+	border-radius: 0 var(--nsl-radius-sm) var(--nsl-radius-sm) 0;
+	font-family: var(--nsl-font-sans-ui);
+	font-size: var(--nsl-size-xs);
+	font-weight: var(--nsl-weight-semibold);
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	line-height: 1;
+	white-space: nowrap;
+}
+
+.event-chip--knockdowns {
+	color: var(--event-knockdowns-text);
+	background: var(--event-knockdowns-tint);
+}
+.event-chip--distance {
+	color: var(--event-distance-text);
+	background: var(--event-distance-tint);
+}
+.event-chip--speed {
+	color: var(--event-speed-text);
+	background: var(--event-speed-tint);
+}
+.event-chip--woods {
+	color: var(--event-woods-text);
+	background: var(--event-woods-tint);
+}

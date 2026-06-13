@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../../utils/api.js';
 import PageHeader from '../../components/shared/PageHeader/PageHeader.jsx';
 import EmptyState from '../../components/shared/EmptyState/EmptyState.jsx';
 import ConfirmDialog from '../../components/shared/ConfirmDialog/ConfirmDialog.jsx';
 import EditResultModal from '../../components/shared/EditResultModal/EditResultModal.jsx';
-import EditableField from '../../components/shared/EditableField/EditableField.jsx';
-import ResultsUploadForm from '../../components/shared/ResultsUploadForm/ResultsUploadForm.jsx';
+import EditTournamentModal from '../../components/shared/EditTournamentModal/EditTournamentModal.jsx';
+import AddResultModal from '../../components/shared/AddResultModal/AddResultModal.jsx';
 import Badge from '../../components/shared/Badge/Badge.jsx';
 import { EVENT_LIST as EVENTS } from '../../constants/events.js';
 import { formatScore as fmt } from '../../utils/formatScore.js';
@@ -24,13 +24,11 @@ export default function TournamentDetailPage() {
 	const [deleteResultTarget, setDeleteResultTarget] = useState(null);
 	const [editResultTarget, setEditResultTarget] = useState(null);
 	const [deleteTournamentOpen, setDeleteTournamentOpen] = useState(false);
-	const [editingEvents, setEditingEvents] = useState(false);
-	const [eventDraft, setEventDraft] = useState(null);
-	const [eventSaving, setEventSaving] = useState(false);
-	const [eventError, setEventError] = useState('');
+	const [editTournamentOpen, setEditTournamentOpen] = useState(false);
+	const [addResultOpen, setAddResultOpen] = useState(false);
+	const [removeResultsOpen, setRemoveResultsOpen] = useState(false);
 	const [sortKey, setSortKey] = useState('competitor_name');
 	const [sortDir, setSortDir] = useState('asc');
-	const [showUploadForm, setShowUploadForm] = useState(false);
 
 	const load = useCallback(async () => {
 		setLoading(true);
@@ -71,76 +69,14 @@ export default function TournamentDetailPage() {
 		}
 	};
 
-	const handleSaveName = async (newName) => {
-		await api.put(`/rankings/tournaments/${id}`, { name: newName });
-		setTournament((t) => ({ ...t, name: newName }));
-	};
-
-	const handleSaveDate = async (newDate) => {
-		await api.put(`/rankings/tournaments/${id}`, { date: newDate });
-		setTournament((t) => ({ ...t, date: newDate }));
-	};
-
-	const handleEditEvents = () => {
-		setEventDraft({
-			knockdowns: {
-				enabled: Boolean(tournament.has_knockdowns),
-				total: tournament.total_points_knockdowns,
-			},
-			distance: {
-				enabled: Boolean(tournament.has_distance),
-				total: tournament.total_points_distance,
-			},
-			speed: {
-				enabled: Boolean(tournament.has_speed),
-				total: tournament.total_points_speed,
-			},
-			woods: {
-				enabled: Boolean(tournament.has_woods),
-				total: tournament.total_points_woods,
-			},
-		});
-		setEventError('');
-		setEditingEvents(true);
-	};
-
-	const handleCancelEvents = () => {
-		setEditingEvents(false);
-		setEventDraft(null);
-		setEventError('');
-	};
-
-	const handleSaveEvents = async () => {
-		const enabledCount = EVENTS.filter((e) => eventDraft[e.key].enabled).length;
-		if (enabledCount === 0) {
-			setEventError('At least one event must be enabled');
-			return;
-		}
-		for (const { key, label } of EVENTS) {
-			if (eventDraft[key].enabled) {
-				const total = Number(eventDraft[key].total);
-				if (!total || total <= 0) {
-					setEventError(`${label} total points must be greater than 0`);
-					return;
-				}
-			}
-		}
-		setEventSaving(true);
-		setEventError('');
+	const handleRemoveAllResults = async () => {
 		try {
-			const payload = {};
-			for (const { key } of EVENTS) {
-				payload[`has_${key}`] = eventDraft[key].enabled ? 1 : 0;
-				payload[`total_points_${key}`] = Number(eventDraft[key].total);
-			}
-			const res = await api.put(`/rankings/tournaments/${id}`, payload);
-			setTournament((t) => ({ ...t, ...res.data }));
-			setEditingEvents(false);
-			setEventDraft(null);
+			await api.delete(`/rankings/tournaments/${id}/results`);
+			setRemoveResultsOpen(false);
+			load();
 		} catch (err) {
-			setEventError(err.response?.data?.error || 'Failed to save events');
-		} finally {
-			setEventSaving(false);
+			setError(err.response?.data?.error || 'Failed to remove results');
+			setRemoveResultsOpen(false);
 		}
 	};
 
@@ -162,10 +98,10 @@ export default function TournamentDetailPage() {
 	if (!tournament) return <EmptyState message="Tournament not found." />;
 
 	const EVENT_VARIANTS = {
-		knockdowns: 'blue',
-		distance: 'teal',
-		speed: 'indigo',
-		woods: 'green',
+		knockdowns: 'knockdowns',
+		distance: 'distance',
+		speed: 'speed',
+		woods: 'woods',
 	};
 
 	const participantsWithTotal = participants.map((p) => ({
@@ -194,102 +130,30 @@ export default function TournamentDetailPage() {
 	return (
 		<div className="tournament-detail-page">
 			<PageHeader
-				title={tournament.name}
+				title={tournament.name || 'Untitled tournament'}
 				subtitle={tournament.date}
 				action={
-					<button
-						className="btn btn-danger"
-						onClick={() => setDeleteTournamentOpen(true)}
-					>
-						Delete Tournament
-					</button>
+					<>
+						<button
+							className="btn btn-secondary"
+							onClick={() => setEditTournamentOpen(true)}
+						>
+							Edit Tournament
+						</button>
+						<button
+							className="btn btn-danger"
+							onClick={() => setDeleteTournamentOpen(true)}
+						>
+							Delete Tournament
+						</button>
+					</>
 				}
 			/>
 
-			{/* Details */}
-			<section className="card tournament-detail__meta">
-				<h2 className="section-title">Details</h2>
-				<EditableField
-					label="Name"
-					value={tournament.name}
-					onSave={handleSaveName}
-				/>
-				<EditableField
-					label="Date"
-					value={tournament.date}
-					onSave={handleSaveDate}
-					type="date"
-				/>
-			</section>
-
 			{/* Events */}
 			<section className="card tournament-detail__events">
-				<div className="section-title-row">
-					<h2 className="section-title">Events</h2>
-					{!editingEvents && (
-						<button
-							className="btn btn-sm btn-secondary"
-							onClick={handleEditEvents}
-						>
-							Edit Events
-						</button>
-					)}
-				</div>
-				{editingEvents && eventDraft ? (
-					<>
-						<div className="events-edit-actions">
-							<button
-								className="btn btn-sm btn-primary"
-								onClick={handleSaveEvents}
-								disabled={eventSaving}
-							>
-								{eventSaving ? 'Saving…' : 'Save'}
-							</button>
-							<button
-								className="btn btn-sm btn-secondary"
-								onClick={handleCancelEvents}
-								disabled={eventSaving}
-							>
-								Cancel
-							</button>
-						</div>
-						{EVENTS.map(({ key, label }) => (
-							<div key={key} className="event-edit-row">
-								<label className="event-edit-toggle">
-									<input
-										type="checkbox"
-										checked={eventDraft[key].enabled}
-										onChange={(e) =>
-											setEventDraft((d) => ({
-												...d,
-												[key]: { ...d[key], enabled: e.target.checked },
-											}))
-										}
-									/>
-									<span>{label}</span>
-								</label>
-								{eventDraft[key].enabled && (
-									<label className="event-edit-points">
-										<span>Total points</span>
-										<input
-											type="number"
-											min="1"
-											className="event-points-input"
-											value={eventDraft[key].total}
-											onChange={(e) =>
-												setEventDraft((d) => ({
-													...d,
-													[key]: { ...d[key], total: e.target.value },
-												}))
-											}
-										/>
-									</label>
-								)}
-							</div>
-						))}
-						{eventError && <p className="events-edit-error">{eventError}</p>}
-					</>
-				) : activeEvents.length === 0 ? (
+				<h2 className="section-title">Events</h2>
+				{activeEvents.length === 0 ? (
 					<em className="muted">No events configured</em>
 				) : (
 					<div className="score-cards">
@@ -366,61 +230,69 @@ export default function TournamentDetailPage() {
 
 			{/* Participants */}
 			<section className="card tournament-detail__participants">
-			<div className="section-title-row">
-				<h2 className="section-title">
-					Results <span className="section-count">({participants.length})</span>
-				</h2>
-				{participants.length > 0 && !showUploadForm && (
-					<button
-						className="btn btn-sm btn-secondary"
-						onClick={() => setShowUploadForm(true)}
-					>
-						Upload Results
-					</button>
-				)}
-			</div>
-			{participants.length === 0 ? (
-				<>
-					<p className="section-empty-hint">
-						No results yet. Upload a results file to get started.
-					</p>
-					<ResultsUploadForm
-						activeEvents={activeEvents.map((e) => e.key)}
-						totalPoints={{
-							knockdowns: tournament.total_points_knockdowns,
-							distance: tournament.total_points_distance,
-							speed: tournament.total_points_speed,
-							woods: tournament.total_points_woods,
+				<div className="section-title-row">
+					<h2 className="section-title">
+						Results{' '}
+						<span className="section-count">({participants.length})</span>
+					</h2>
+					{participants.length > 0 && (
+						<div className="results-actions">
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() =>
+									navigate(`/admin/tournaments/${tournament.id}/upload`)
+								}
+							>
+								Upload Results
+							</button>
+							<button
+								className="btn btn-sm btn-secondary"
+								onClick={() => setAddResultOpen(true)}
+							>
+								Add Competitor
+							</button>
+							<button
+								className="btn btn-sm btn-danger"
+								onClick={() => setRemoveResultsOpen(true)}
+							>
+								Remove All Results
+							</button>
+						</div>
+					)}
+				</div>
+				{participants.length === 0 && (
+					<div
+						className="section-empty-hint"
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'flex-start',
+							gap: '0.75rem',
 						}}
-						tournamentId={tournament.id}
-						tournamentName={tournament.name}
-						tournamentDate={tournament.date}
-						onSuccess={() => load()}
-					/>
-				</>
-			) : showUploadForm ? (
-				<>
-					<div style={{ marginBottom: 20 }}>
-						<ResultsUploadForm
-							activeEvents={activeEvents.map((e) => e.key)}
-							totalPoints={{
-								knockdowns: tournament.total_points_knockdowns,
-								distance: tournament.total_points_distance,
-								speed: tournament.total_points_speed,
-								woods: tournament.total_points_woods,
-							}}
-							tournamentId={tournament.id}
-							tournamentName={tournament.name}
-							tournamentDate={tournament.date}
-							onSuccess={() => { load(); setShowUploadForm(false); }}
-							onBack={() => setShowUploadForm(false)}
-							onBackLabel="Cancel"
-						/>
+					>
+						<span>
+							No results yet. Upload a results file or add one manually to get
+							started.
+						</span>
+						<div className="results-actions">
+							<button
+								className="btn btn-primary"
+								onClick={() =>
+									navigate(`/admin/tournaments/${tournament.id}/upload`)
+								}
+							>
+								Upload Results
+							</button>
+							<button
+								className="btn btn-secondary"
+								onClick={() => setAddResultOpen(true)}
+							>
+								Add Competitor
+							</button>
+						</div>
 					</div>
-					<hr style={{ border: 'none', borderTop: '1px solid var(--border)', marginBottom: 20 }} />
-				</>
-			) : null}
-			{participants.length > 0 && (
+				)}
+				{participants.length > 0 && (
 					<div className="table-wrapper">
 						<table className="data-table">
 							<thead>
@@ -549,6 +421,39 @@ export default function TournamentDetailPage() {
 				onConfirm={handleDeleteTournament}
 				onCancel={() => setDeleteTournamentOpen(false)}
 			/>
+
+			<ConfirmDialog
+				isOpen={removeResultsOpen}
+				title="Remove All Results"
+				message={`Remove all ${participants.length} result(s) from "${tournament.name || 'this tournament'}"? The tournament itself will remain so you can upload a new file or add competitors individually. This cannot be undone.`}
+				confirmLabel="Remove All Results"
+				variant="danger"
+				onConfirm={handleRemoveAllResults}
+				onCancel={() => setRemoveResultsOpen(false)}
+			/>
+
+			<EditTournamentModal
+				isOpen={editTournamentOpen}
+				tournament={tournament}
+				onClose={() => setEditTournamentOpen(false)}
+				onSaved={(updated) => setTournament((t) => ({ ...t, ...updated }))}
+			/>
+
+			{addResultOpen && (
+				<AddResultModal
+					tournamentId={tournament.id}
+					existingCompetitorIds={participants.map((p) => p.competitor_id)}
+					helperText={
+						<>
+							Select an existing competitor from the list. To add a brand-new
+							competitor to the system, head to the{' '}
+							<Link to="/admin/competitors">Competitors page</Link> first.
+						</>
+					}
+					onClose={() => setAddResultOpen(false)}
+					onSaved={load}
+				/>
+			)}
 		</div>
 	);
 }

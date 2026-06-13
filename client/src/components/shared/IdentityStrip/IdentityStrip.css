@@ -1,0 +1,9 @@
+.identity-strip {
+	background: var(--brand-identity);
+	height: var(--nsl-space-3xs); /* 4px */
+}
+
+.identity-strip__thin {
+	background: var(--brand-identity-light);
+	height: 1px;
+}
