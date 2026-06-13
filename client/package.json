@@ -18,7 +18,7 @@
 		"@tanstack/react-table": "^8.13.2",
 		"axios": "^1.16.0",
 		"papaparse": "^5.4.1",
-		"react": "^18.2.0",
+		"react": "^19.2.7",
 		"react-dom": "^18.2.0",
 		"react-router-dom": "^6.30.4"
 	},
@@ -26,7 +26,7 @@
 		"@testing-library/jest-dom": "^6.9.1",
 		"@testing-library/react": "^16.3.2",
 		"@testing-library/user-event": "^14.6.1",
-		"@types/react": "^18.2.55",
+		"@types/react": "^19.2.17",
 		"@types/react-dom": "^18.2.19",
 		"@vitejs/plugin-react": "^4.2.1",
 		"@vitest/eslint-plugin": "^1.6.9",
